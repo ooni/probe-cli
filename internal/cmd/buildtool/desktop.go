@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"runtime"
 
@@ -46,6 +47,8 @@ func desktopBuildOomobile(deps buildtoolmodel.Dependencies, targetOs string) {
 		target:     "java",
 	}
 	config.envp.Append("GOOS", targetOs)
+
+	fmt.Println(targetOs)
 
 	// NOTE: we only support windows builds on amd64 for now
 	if targetOs == "windows" {
