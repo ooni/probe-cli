@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"runtime"
 
@@ -35,6 +36,7 @@ func desktopSubcommand() *cobra.Command {
 
 // desktopBuildOomobile invokes the oomobile build.
 func desktopBuildOomobile(deps buildtoolmodel.Dependencies, targetOs string) {
+	fmt.Println(targetOs)
 	deps.PsiphonMaybeCopyConfigFiles()
 	deps.GolangCheck()
 
@@ -46,6 +48,8 @@ func desktopBuildOomobile(deps buildtoolmodel.Dependencies, targetOs string) {
 		target:     "java",
 	}
 	config.envp.Append("GOOS", targetOs)
+
+	fmt.Println(targetOs)
 
 	// NOTE: we only support windows builds on amd64 for now
 	if targetOs == "windows" {

@@ -6,6 +6,7 @@ on:
       - "release/**"
       - "fullbuild"
       - "desktopbuild"
+      - "fix/desktop-action"
     tags:
       - "v*"
   schedule:
@@ -29,6 +30,13 @@ jobs:
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
       - run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
       - run: make DESKTOP/linux
 
@@ -52,6 +60,13 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+      
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
       - run: make DESKTOP/darwin
 
@@ -75,18 +90,18 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+      
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - name: Install oomobile
-        run: |
-          go install github.com/ooni/oomobile/cmd/gomobile@latest
-          go install github.com/ooni/oomobile/cmd/gobind@latest
-          go get github.com/ooni/oomobile/bind@latest
+      - name: Add Git Bash to PATH
+        run: echo "C:\Program Files\Git\bin" >> $env:GITHUB_PATH
 
-      - name: Init oomobile
-        run: gomobile init
-
-      - name: Run bind
-        run: gomobile bind -target java/amd64 -o DESKTOP/oonimkall.jar ./pkg/oonimkall
+      - run: make DESKTOP/windows
 
       - uses: actions/upload-artifact@v4
         with:
