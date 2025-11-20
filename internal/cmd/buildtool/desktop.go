@@ -36,6 +36,7 @@ func desktopSubcommand() *cobra.Command {
 
 // desktopBuildOomobile invokes the oomobile build.
 func desktopBuildOomobile(deps buildtoolmodel.Dependencies, targetOs string) {
+	fmt.Println(targetOs)
 	deps.PsiphonMaybeCopyConfigFiles()
 	deps.GolangCheck()
 
