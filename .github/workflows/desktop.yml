@@ -98,17 +98,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - name: Install oomobile
-        run: |
-          go install github.com/ooni/oomobile/cmd/gomobile@latest
-          go install github.com/ooni/oomobile/cmd/gobind@latest
-          go get github.com/ooni/oomobile/bind@latest
-
-      - name: Init oomobile
-        run: gomobile init
-
-      - name: Run bind
-        run: gomobile bind -target java/amd64 -o DESKTOP/oonimkall.jar ./pkg/oonimkall
+        run: make DESKTOP/windows
 
       - uses: actions/upload-artifact@v4
         with:
