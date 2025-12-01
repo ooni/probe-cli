@@ -72,7 +72,8 @@ func (mgr downloadManager) doRun(ctx context.Context) error {
 			return err
 		}
 		if kind == websocket.TextMessage {
-			data, err := netxlite.ReadAllContext(ctx, reader)
+			limitReader := io.LimitReader(reader, netxlite.MaxPayloadSize)
+			data, err := netxlite.ReadAllContext(ctx, limitReader)
 			if err != nil {
 				return err
 			}
