@@ -22,7 +22,7 @@ import (
 
 const (
 	testName    = "http_header_field_manipulation"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 )
 
 // Config contains the experiment config.
