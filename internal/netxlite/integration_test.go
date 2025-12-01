@@ -621,3 +621,63 @@ func TestHTTP3Transport(t *testing.T) {
 		txp.CloseIdleConnections()
 	})
 }
+
+func TestHTTPTransportWithLimitBodyReader(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
+	t.Run("works as intended", func(t *testing.T) {
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
+		td := netxlite.NewTLSDialer(d, netx.NewTLSHandshakerStdlib(log.Log))
+		txp := netxlite.NewHTTPTransport(log.Log, d, td)
+		client := &http.Client{Transport: txp}
+		resp, err := client.Get("https://www.google.com/robots.txt")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		client.CloseIdleConnections()
+	})
+	t.Run("we can send larger body than netxlite.MaxPayloadSize", func(t *testing.T) {
+		srvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			header := w.Header()
+			header["Content-Length"] = []string{fmt.Sprintf("%d", 1<<28)}
+			header["Content-Type"] = []string{"application/octet-stream"}
+			w.WriteHeader(200)
+
+			for i := 0; i < 256; i++ {
+				mbBuf := make([]byte, 1<<20)
+				n, err := w.Write(mbBuf)
+				if n < len(mbBuf) || err != nil {
+					t.Log("test server received err", err)
+				}
+			}
+		}))
+		defer srvr.Close()
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
+		// don't actually care about those QUIRKS in this context
+		netx := &netxlite.Netx{}
+		txp := netx.NewHTTPTransportStdlib(model.DiscardLogger)
+		req, err := http.NewRequest("GET", srvr.URL, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := txp.RoundTrip(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		data, err := netxlite.ReadAllContext(req.Context(), netxlite.LimitBodyReader(resp))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if int64(len(data)) > netxlite.MaxPayloadSize {
+			t.Fatal("Body payload exceeded", netxlite.MaxPayloadSize)
+		}
+		if int64(len(data)) != netxlite.MaxPayloadSize {
+			t.Fatal("Body payload was prematurely truncated to ", len(data))
+		}
+	})
+}
