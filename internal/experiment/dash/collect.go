@@ -53,7 +53,7 @@ func collect(ctx context.Context, baseURL, authorization string,
 	// read, parse, and ignore the response body. Historically the
 	// most userful data has always been on the server side, therefore,
 	// it doesn't matter much that we're discarding server results.
-	data, err = netxlite.ReadAllContext(ctx, resp.Body)
+	data, err = netxlite.ReadAllContext(ctx, netxlite.LimitBodyReader(resp))
 	if err != nil {
 		return err
 	}

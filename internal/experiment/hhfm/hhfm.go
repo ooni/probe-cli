@@ -22,7 +22,7 @@ import (
 
 const (
 	testName    = "http_header_field_manipulation"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 )
 
 // Config contains the experiment config.
@@ -192,7 +192,7 @@ func transact(txp Transport, req *http.Request,
 		return nil, nil, urlgetter.ErrHTTPRequestFailed
 	}
 	callbacks.OnProgress(0.75, "reading response body...")
-	data, err := netxlite.ReadAllContext(req.Context(), resp.Body)
+	data, err := netxlite.ReadAllContext(req.Context(), netxlite.LimitBodyReader(resp))
 	callbacks.OnProgress(1.00, fmt.Sprintf("got reseponse body... %+v", err))
 	if err != nil {
 		return nil, nil, err

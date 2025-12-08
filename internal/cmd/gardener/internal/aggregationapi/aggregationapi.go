@@ -57,7 +57,7 @@ func Query(
 	runtimex.Assert(resp.StatusCode == 200, "aggregationapi: http request failed")
 
 	// read the response body
-	data := runtimex.Try1(netxlite.ReadAllContext(ctx, resp.Body))
+	data := runtimex.Try1(netxlite.ReadAllContext(ctx, netxlite.LimitBodyReader(resp)))
 
 	// parse the response body
 	var apiResp Response

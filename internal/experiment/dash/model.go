@@ -25,7 +25,7 @@ const (
 	testName = "dash"
 
 	// testVersion is the version of the experiment.
-	testVersion = "0.14.0"
+	testVersion = "0.14.1"
 
 	// totalStep is the total number of steps we should run
 	// during the download experiment.

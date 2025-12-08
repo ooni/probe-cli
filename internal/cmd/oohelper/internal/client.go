@@ -130,7 +130,7 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 	if resp.StatusCode != 200 {
 		return nil, ErrHTTPStatusCode
 	}
-	data, err = netxlite.ReadAllContext(ctx, resp.Body)
+	data, err = netxlite.ReadAllContext(ctx, netxlite.LimitBodyReader(resp))
 	if err != nil {
 		return nil, err
 	}
