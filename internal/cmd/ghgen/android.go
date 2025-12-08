@@ -30,7 +30,6 @@ func buildAndPublishAndroid(w io.Writer, job *Job) {
 	newJob(w, buildJob, runsOnUbuntu, noDependencies, noPermissions)
 	newStepCheckout(w)
 	newStepSetupGo(w, "android")
-	newStepSetupPsiphon(w)
 	newStepMake(w, "android")
 	newStepUploadArtifacts(w, artifacts)
 
