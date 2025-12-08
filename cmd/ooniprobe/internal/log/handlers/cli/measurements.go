@@ -34,7 +34,7 @@ func logTestKeys(w io.Writer, testKeys string) error {
 		testKeysLines[len(testKeysLines)-1] = testKeysLines[len(testKeysLines)-1] + "}"
 	}
 	for _, line := range testKeysLines {
-		fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+		fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s │\n",
 			utils.RightPad(line, colWidth*2)))
 	}
 	return nil
@@ -61,30 +61,30 @@ func logMeasurementItem(w io.Writer, f log.Fields) error {
 	isFirst := f.Get("is_first").(bool)
 	isLast := f.Get("is_last").(bool)
 	if isFirst {
-		fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth*2+2)+"┓\n")
+		fmt.Fprintf(w, "┏%s┓\n", strings.Repeat("━", colWidth*2+2))
 	} else {
-		fmt.Fprintf(w, "┢"+strings.Repeat("━", colWidth*2+2)+"┪\n")
+		fmt.Fprintf(w, "┢%s┪\n", strings.Repeat("━", colWidth*2+2))
 	}
 
 	anomalyStr := fmt.Sprintf("ok: %s", statusIcon(!isAnomaly))
 	uploadStr := fmt.Sprintf("uploaded: %s", statusIcon(isUploaded))
 	failureStr := fmt.Sprintf("success: %s", statusIcon(!isFailed))
 
-	fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+	fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s │\n",
 		utils.RightPad(
 			fmt.Sprintf("#%d", rID), colWidth*2)))
 
 	if url != "" {
-		fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+		fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s │\n",
 			utils.RightPad(
 				fmt.Sprintf("%s (%s)", url, urlCategoryCode), colWidth*2)))
 	}
 
-	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+	fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s %s│\n",
 		utils.RightPad(testName, colWidth),
 		utils.RightPad(anomalyStr, colWidth)))
 
-	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+	fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s %s│\n",
 		utils.RightPad(failureStr, colWidth),
 		utils.RightPad(uploadStr, colWidth)))
 
