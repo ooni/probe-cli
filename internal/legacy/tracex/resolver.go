@@ -92,6 +92,31 @@ func (r *ResolverSaver) LookupHTTPS(ctx context.Context, domain string) (*model.
 	return r.Resolver.LookupHTTPS(ctx, domain)
 }
 
+func (r *ResolverSaver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	start := time.Now()
+	r.Saver.Write(&EventResolveStart{&EventValue{
+		Address:      r.Resolver.Address(),
+		DNSQueryType: "SVCB",
+		Hostname:     domain,
+		Proto:        r.Network(),
+		Time:         start,
+	}})
+	resp, err := r.Resolver.LookupSVCB(ctx, domain)
+
+	stop := time.Now()
+	r.Saver.Write(&EventResolveDone{&EventValue{
+		Address:         r.Resolver.Address(),
+		DNSQueryType:    "SVCB",
+		DNSSVCBRespones: resp,
+		Duration:        stop.Sub(start),
+		Err:             NewFailureStr(err),
+		Hostname:        domain,
+		Proto:           r.Network(),
+		Time:            stop,
+	}})
+	return resp, err
+}
+
 func (r *ResolverSaver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
 	// TODO(bassosimone): we should probably implement this method
 	return r.Resolver.LookupNS(ctx, domain)

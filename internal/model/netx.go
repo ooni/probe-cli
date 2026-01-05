@@ -28,9 +28,13 @@ type DNSResponse interface {
 	// Rcode returns the response's Rcode.
 	Rcode() int
 
-	// DecodeHTTPS returns information gathered from all the HTTPS
+	// DecodeHTTPS returns information gathered from all the HTTPS/SVCB
 	// records found inside of this response.
 	DecodeHTTPS() (*HTTPSSvc, error)
+
+	// DecodeSVCB returns information gathered from all the SVCB records
+	// found inside of this response.
+	DecodeSVCB() ([]*SVCB, error)
 
 	// DecodeLookupHost returns the addresses in the response matching
 	// the original query type (one of A and AAAA).
@@ -189,6 +193,35 @@ type HTTPSSvc struct {
 	Ech []byte
 }
 
+// SVCB is the reply to an SVCB DNS query.
+type SVCB struct {
+	// Priority is the priority of the SVCB record.
+	Priority uint16
+
+	// TargetName is the target name of the SVCB record.
+	TargetName string
+
+	// ALPN contains the ALPNs inside the SVCB reply.
+	ALPN []string
+
+	// IPv4 contains the IPv4 hint (which may be empty).
+	IPv4 []string
+
+	// IPv6 contains the IPv6 hint (which may be empty).
+	IPv6 []string
+
+	// Port is the port to use for the connection.
+	Port uint16
+
+	// DoHPath is the path to use for DNS-over-HTTPS.
+	DoHPath string
+
+	// OHttp denotes whether oblivious DNS over HTTPS is supported.
+	OHttp bool
+
+	//This could also include ECH and other SVCB parameters
+}
+
 // MeasuringNetwork defines the constructors required for implementing OONI experiments. All
 // these constructors MUST guarantee proper error wrapping to map Go errors to OONI errors
 // as documented by the [netxlite] package. The [*netxlite.Netx] type is currently the default
@@ -310,6 +343,9 @@ type Resolver interface {
 
 	// LookupNS issues a NS query for a domain.
 	LookupNS(ctx context.Context, domain string) ([]*net.NS, error)
+
+	//LookupSVCB issues a SVCB query for a domain.
+	LookupSVCB(ctx context.Context, domain string) ([]*SVCB, error)
 }
 
 // TLSConn is the interface representing a *tls.Conn compatible

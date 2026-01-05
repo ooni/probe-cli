@@ -172,7 +172,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		return ErrUnsupportedURLScheme
 	}
 
-	// Implementation note: we must not return an error from now now. Returning an
+	// Implementation note: we must not return an error from now. Returning an
 	// error means that we don't have a measurement to submit.
 
 	// 4. possibly expand a domain to a list of IP addresses.
