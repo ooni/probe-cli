@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_darwin_cli:
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,13 +27,6 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-macos-${{ steps.goversion.outputs.version }}"
-
-      - run: |
-          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
-          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
-        env:
-          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
-          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
       - run: make CLI/darwin
 
@@ -58,7 +51,7 @@ jobs:
           path: ./CLI/miniooni-darwin-arm64
 
   test_darwin_cli:
-    runs-on: macos-13
+    runs-on: macos-15
     needs: build_darwin_cli
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +67,7 @@ jobs:
         shell: bash
 
   publish_darwin_cli:
-    runs-on: macos-13
+    runs-on: macos-15
     needs: test_darwin_cli
     permissions:
       contents: write

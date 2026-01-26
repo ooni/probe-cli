@@ -27,7 +27,6 @@ func buildAndPublishCLIWindows(w io.Writer, job *Job) {
 	newStepCheckout(w)
 	newStepSetupGo(w, "windows")
 	newStepInstallMingwW64(w)
-	newStepSetupPsiphon(w)
 	newStepMake(w, "EXPECTED_MINGW_W64_VERSION=\"10-win32\" CLI/windows")
 
 	newStepUploadArtifacts(w, artifacts)

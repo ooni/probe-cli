@@ -38,7 +38,7 @@ jobs:
           path: ./DESKTOP/oonimkall.jar
 
   build_darwin_desktop_jar:
-    runs-on: macos-13
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v4

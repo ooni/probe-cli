@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_ios_mobile:
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,13 +27,6 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-ios-${{ steps.goversion.outputs.version }}"
-
-      - run: |
-          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
-          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
-        env:
-          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
-          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
       # ./internal/cmd/buildtool needs coreutils for sha256 plus GNU build tools
       - run: brew install autoconf automake coreutils libtool
