@@ -54,7 +54,7 @@ func TestNewSnowflakeRendezvousMethod(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, ok := meth.(*snowflakeRendezvousMethodDomainFronting); !ok {
+		if _, ok := meth.(*SnowflakeRendezvousMethodDomainFronting); !ok {
 			t.Fatal("unexpected method type")
 		}
 	})
@@ -64,7 +64,7 @@ func TestNewSnowflakeRendezvousMethod(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, ok := meth.(*snowflakeRendezvousMethodDomainFronting); !ok {
+		if _, ok := meth.(*SnowflakeRendezvousMethodDomainFronting); !ok {
 			t.Fatal("unexpected method type")
 		}
 	})
@@ -92,7 +92,7 @@ func TestNewSnowflakeRendezvousMethod(t *testing.T) {
 
 func TestNewSnowflakeDialer(t *testing.T) {
 	dialer := NewSnowflakeDialer()
-	_, ok := dialer.RendezvousMethod.(*snowflakeRendezvousMethodDomainFronting)
+	_, ok := dialer.RendezvousMethod.(*SnowflakeRendezvousMethodDomainFronting)
 	if !ok {
 		t.Fatal("invalid rendezvous method type")
 	}
