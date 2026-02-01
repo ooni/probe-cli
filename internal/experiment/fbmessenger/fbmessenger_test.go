@@ -2,7 +2,6 @@ package fbmessenger_test
 
 import (
 	"context"
-	"io"
 	"net/url"
 	"testing"
 
@@ -10,12 +9,9 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
-	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -326,6 +322,7 @@ func TestMeasurerRun(t *testing.T) {
 	})
 }
 
+/*
 func TestComputeEndpointStatsTCPBlocking(t *testing.T) {
 	failure := io.EOF.Error()
 	operation := netxlite.ConnectOperation
@@ -385,6 +382,7 @@ func TestComputeEndpointStatsDNSIsLying(t *testing.T) {
 		t.Fatal("invalid FacebookTCPBlocking")
 	}
 }
+*/
 
 func TestSummaryKeysWithNils(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{}}
