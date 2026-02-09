@@ -166,7 +166,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		return fmt.Errorf("%w: %s", ErrInvalidURL, err.Error())
 	}
 	switch URL.Scheme {
-	case "https", "dot", "udp", "tcp":
+	case "https", "dot", "udp", "tcp", "system":
 		// all good
 	default:
 		return ErrUnsupportedURLScheme
