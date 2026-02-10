@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_ios_mobile:
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,11 +27,6 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-ios-${{ steps.goversion.outputs.version }}"
-
-      - name: Select Xcode 15.2
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.2.app
-          xcodebuild -version
 
       # ./internal/cmd/buildtool needs coreutils for sha256 plus GNU build tools
       - run: brew install autoconf automake coreutils libtool
