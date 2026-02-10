@@ -29,7 +29,7 @@ require (
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/minivpn v0.0.7
 	github.com/ooni/netem v0.0.0-20250905215919-3882eda4fb66
-	github.com/ooni/probe-assets v0.29.0
+	github.com/ooni/probe-assets v0.30.0
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
