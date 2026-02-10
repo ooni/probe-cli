@@ -40,7 +40,7 @@ $miniooni --yes -o E2E/o.jsonl \
 
 $miniooni --yes -o E2E/o.jsonl \
 	--probe-services=https://api.ooni.io/ \
-	--tunnel=psiphon \
+	--tunnel=none \
 	web_connectivity -i https://mail.google.com/robots.txt
 
 $miniooni --yes -o E2E/o.jsonl \
