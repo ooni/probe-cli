@@ -7,6 +7,7 @@ on:
       - "release/**"
       - "fullbuild"
       - "iosbuild"
+      - "chore/macos-version"
     tags:
       - "v*"
   schedule:
@@ -14,7 +15,7 @@ on:
 
 jobs:
   build_ios_mobile:
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
         with:
