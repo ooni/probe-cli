@@ -92,12 +92,12 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.1.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.6.1.tar.gz",
+				"tar", "-xf", "openssl-3.6.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
