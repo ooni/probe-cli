@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-__install_extra="build-tools;35.0.0 platforms;android-36"
+__install_extra="build-tools;36.0.0 platforms;android-36"
 
 __ndk_version=$(cat ./NDKVERSION)
 
