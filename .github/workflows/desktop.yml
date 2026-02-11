@@ -6,6 +6,7 @@ on:
       - "release/**"
       - "fullbuild"
       - "desktopbuild"
+      - "update-maven-publish"
     tags:
       - "v*"
   schedule:
@@ -93,62 +94,12 @@ jobs:
           name: oonimkall-windows.jar
           path: ./DESKTOP/oonimkall.jar
 
-  merge_desktop_jar:
+  publish_desktop_jar_github:
     runs-on: ubuntu-22.04
     needs:
       - build_linux_desktop_jar
       - build_darwin_desktop_jar
       - build_windows_desktop_jar
-
-    steps:
-      - name: Download Linux JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: oonimkall-linux.jar
-          path: linux
-
-      - name: Download Darwin JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: oonimkall-darwin.jar
-          path: darwin
-
-      - name: Download Windows JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: oonimkall-windows.jar
-          path: windows
-
-      - name: Unzip all JARs
-        run: |
-          mkdir -p merged
-          unzip -q linux/oonimkall.jar -d merged
-          unzip -q darwin/oonimkall.jar -d darwin_unzip
-          unzip -q windows/oonimkall.jar -d windows_unzip
-
-      - name: Copy Darwin native libs
-        run: |
-          cp -r darwin_unzip/jniLibs/amd64/*.dylib merged/jniLibs/amd64/ || true
-          cp -r darwin_unzip/jniLibs/arm64/*.dylib merged/jniLibs/arm64/ || true
-
-      - name: Copy Windows native libs
-        run: |
-          cp -r windows_unzip/jniLibs/amd64/* merged/jniLibs/amd64/ || true
-
-      - name: Repack merged JAR
-        run: |
-          cd merged
-          jar cf ../oonimkall-desktop.jar .
-
-      - name: Upload merged multiplatform JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: oonimkall-desktop.jar
-          path: oonimkall-desktop.jar
-  
-  publish_desktop_jar_github:
-    runs-on: ubuntu-22.04
-    needs: merge_desktop_jar
     permissions:
       contents: write
     steps:
@@ -158,16 +109,36 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: oonimkall-desktop.jar
+          name: oonimkall-linux.jar
+          path: linux
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: darwin
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: windows
+
+      - name: Rename artifacts
+        run: |
+          mv linux/oonimkall.jar oonimkall-linux.jar
+          mv darwin/oonimkall.jar oonimkall-darwin.jar
+          mv windows/oonimkall.jar oonimkall-windows.jar
 
       - name: Upload to Github
-        run: ./script/ghpublish.bash oonimkall-desktop.jar
+        run: ./script/ghpublish.bash oonimkall-linux.jar oonimkall-darwin.jar oonimkall-windows.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish_desktop_jar_maven:
     runs-on: ubuntu-22.04
-    needs: merge_desktop_jar
+    needs:
+      - build_linux_desktop_jar
+      - build_darwin_desktop_jar
+      - build_windows_desktop_jar
     steps:
       - uses: actions/checkout@v4
         with:
@@ -185,29 +156,65 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Download oonimkall-desktop JAR
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: oonimkall-desktop.jar
-          path: MULTIPLATFORM
+          name: oonimkall-linux.jar
+          path: MULTIPLATFORM/linux
 
-      - name: Set Project Version
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: MULTIPLATFORM/darwin
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: MULTIPLATFORM/windows
+
+      - name: Prepare JARs for Maven
         run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          else
-            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
-            VERSION="${SHORT_SHA}"
-          fi
-          echo "Generated version: $VERSION"
-          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-desktop -DnewVersion=${VERSION}-desktop -DremoveSnapshot=true
-        env:
-          # Maven versions plugin might need GPG passphrase if it triggers a 'verify' phase.
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          mv MULTIPLATFORM/linux/oonimkall.jar MULTIPLATFORM/oonimkall-linux.jar
+          mv MULTIPLATFORM/darwin/oonimkall.jar MULTIPLATFORM/oonimkall-darwin.jar
+          mv MULTIPLATFORM/windows/oonimkall.jar MULTIPLATFORM/oonimkall-windows.jar
 
       - name: Publish to Maven Central
         run: |
-          mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-desktop --batch-mode -DskipTests
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            BASE_VERSION="${GITHUB_REF_NAME#v}"
+          else
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+            BASE_VERSION="${SHORT_SHA}"
+          fi
+          
+          echo "Base Version: $BASE_VERSION"
+          
+          # Function to deploy a specific platform
+          deploy_platform() {
+            PLATFORM=$1
+            JAR_NAME=$2
+            VERSION="${BASE_VERSION}-${PLATFORM}"
+            
+            echo "--------------------------------------------------"
+            echo "Deploying $PLATFORM version $VERSION..."
+            echo "--------------------------------------------------"
+            
+            # Revert to original pom if backup exists (from previous iteration)
+            if [ -f MULTIPLATFORM/pom.xml.versionsBackup ]; then
+               mvn -f MULTIPLATFORM/pom.xml versions:revert
+            fi
+
+            # Set the version for this platform
+            mvn -f MULTIPLATFORM/pom.xml versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+            
+            # Deploy
+            # We pass desktop.jar.name to select the correct file
+            mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-desktop --batch-mode -DskipTests -Ddesktop.jar.name=${JAR_NAME}
+          }
+
+          deploy_platform "linux" "oonimkall-linux.jar"
+          deploy_platform "darwin" "oonimkall-darwin.jar"
+          deploy_platform "windows" "oonimkall-windows.jar"
+          
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
