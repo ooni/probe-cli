@@ -6,7 +6,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "desktopbuild"
-      - "update-maven-publish"
     tags:
       - "v*"
   schedule:
