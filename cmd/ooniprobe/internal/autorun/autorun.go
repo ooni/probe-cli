@@ -1,4 +1,4 @@
-// Package autorun contains code to manage automatic runs
+/ Package autorun contains code to manage automatic runs
 package autorun
 
 import "sync"
