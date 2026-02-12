@@ -157,11 +157,6 @@
 
 		<profile>
 			<id>deploy-desktop</id>
-			<properties>
-				<project.artifact.file>${project.basedir}/oonimkall-desktop.jar</project.artifact.file>
-				<project.artifact.type>jar</project.artifact.type>
-				<project.packaging>jar</project.packaging>
-			</properties>
 			<build>
 				<plugins>
 					<plugin>
@@ -177,7 +172,7 @@
 								<configuration>
 									<artifacts>
 										<artifact>
-											<file>${project.artifact.file}</file>
+											<file>${project.basedir}/${desktop.jar.name}</file>
 											<type>jar</type>
 										</artifact>
 									</artifacts>
