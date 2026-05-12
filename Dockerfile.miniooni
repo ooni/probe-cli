@@ -1,0 +1,43 @@
+# builder
+FROM golang:1.24.12 AS builder
+RUN apt update && apt install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY . .
+
+ENV GOBIN=/go/bin
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+	go install -v -ldflags '-s -w' ./internal/cmd/miniooni
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+	go install -v -ldflags '-s -w' ./internal/cmd/scheduler
+
+# runtime - minimal Debian slim
+FROM debian:bookworm-slim
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# copy binaries
+COPY --from=builder /go/bin/miniooni /usr/local/bin/miniooni
+COPY --from=builder /go/bin/scheduler /usr/local/bin/scheduler
+RUN chmod +x /usr/local/bin/miniooni /usr/local/bin/scheduler
+
+# runtime env defaults (overridable)
+ENV INTERVAL=86400 \
+    MAX_MULTIPLIER=4 \
+    COUNTDOWN=false
+
+# scheduler runs miniooni and consents by default (--yes)
+ENTRYPOINT ["/usr/local/bin/scheduler", "/usr/local/bin/miniooni", "--yes"]
