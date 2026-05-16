@@ -63,7 +63,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			HTTPHost: string(measurement.Input),
 		},
 		Session: sess,
-		Target:  fmt.Sprintf(m.config.TestHelperURL),
+		Target:  fmt.Sprintf("%s", m.config.TestHelperURL),
 	}
 	tk, _ := g.Get(ctx)
 	measurement.TestKeys = &TestKeys{
