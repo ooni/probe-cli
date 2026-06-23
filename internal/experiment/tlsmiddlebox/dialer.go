@@ -15,9 +15,14 @@ import (
 
 const timeout time.Duration = 15 * time.Second
 
-func NewDialerTTLWrapper() model.Dialer {
+func NewDialerTTLWrapper(localPort int) model.Dialer {
 	return &dialerTTLWrapper{
-		Dialer: &net.Dialer{Timeout: timeout},
+		Dialer: &net.Dialer{
+			Timeout: timeout,
+			LocalAddr: &net.TCPAddr{
+				Port: localPort,
+			},
+		},
 	}
 }
 

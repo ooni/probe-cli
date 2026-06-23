@@ -7,7 +7,9 @@ package tlsmiddlebox
 import (
 	"context"
 	"crypto/tls"
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"sort"
 	"sync"
@@ -19,6 +21,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 )
 
 // ClientIDs to map configurable inputs to uTLS fingerprints
@@ -30,36 +34,137 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 	4: &utls.HelloIOS_Auto,
 }
 
+// ICMP listener for TTL-exceeded messages
+func (m *Measurer) ListenTTLExceeded(ctx context.Context, logger model.Logger, target string) error {
+	// The target string contains both the IP and port
+	host, _, err := net.SplitHostPort(target)
+	if err != nil {
+		return err
+	}
+
+	targetIP := net.ParseIP(host)
+	if targetIP == nil {
+		return fmt.Errorf("invalid target IP: %q", target)
+	}
+
+	fmt.Println("Target IP:", host)
+
+	conn, err := icmp.ListenPacket("ip4:1", "0.0.0.0")
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+
+	go func() {
+		<-ctx.Done()
+		conn.Close()
+	}()
+
+	buf := make([]byte, 1500)
+
+	for {
+		n, peer, err := conn.ReadFrom(buf)
+		if err != nil {
+			return err
+		}
+
+		msg, err := icmp.ParseMessage(1, buf[:n])
+		if err != nil {
+			continue
+		}
+
+		switch msg.Type {
+		case ipv4.ICMPTypeTimeExceeded:
+			te, ok := msg.Body.(*icmp.TimeExceeded)
+			if !ok {
+				continue
+			}
+
+			data := te.Data
+
+			innerIP, err := ipv4.ParseHeader(data)
+			if err != nil {
+				continue
+			}
+
+			if !innerIP.Dst.Equal(targetIP) {
+				continue
+			}
+
+			ipHeaderLen := innerIP.Len
+			tcpData := te.Data[ipHeaderLen:]
+
+			srcPort := binary.BigEndian.Uint16(tcpData[0:2])
+
+			ttl := -1
+
+			//randomize the base values here
+			if srcPort > 4000 && srcPort < 5000 {
+				ttl = int(srcPort) - 4000
+			} else if srcPort > 5000 {
+				ttl = int(srcPort) - 5000
+			}
+
+			// dstPort := binary.BigEndian.Uint16(tcpData[2:4])
+
+			// fmt.Printf(
+			// "TTL expired for probe -> src=%s dst=%s ttl=%d router=%s src_port=%d dst_port=%d\n",
+			// innerIP.Src,
+			// innerIP.Dst,
+			// innerIP.TTL,
+			// peer,
+			// srcPort,
+			// dstPort,
+			// )
+
+			logger.Infof("TTL expired probe --> Source IP=%s Initial TTL:%d", peer, ttl)
+
+			// logger.Infof("ICMP TTL exceeded from %v", peer)
+			// logger.Infof("ICMP message %v", te)
+		}
+	}
+}
+
 // TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, targetSNI string, trace *CompleteTrace) {
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go m.ListenTTLExceeded(ctx, logger, address)
+
 	// perform an iterative trace with the control SNI
-	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
+	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol(), "control")
 	// perform an iterative trace with the target SNI
-	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
+	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI, "censored")
 }
 
 // startIterativeTrace creates a Trace and calls iterativeTrace
 func (m *Measurer) startIterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string) (tr *IterativeTrace) {
+	address string, sni string, controlOrCensored string) (tr *IterativeTrace) {
 	tr = &IterativeTrace{
 		SNI:        sni,
 		Iterations: []*Iteration{},
 	}
 	maxTTL := m.config.maxttl()
-	m.traceWithIncreasingTTLs(ctx, index, zeroTime, logger, address, sni, maxTTL, tr)
+	if controlOrCensored == "control" {
+		m.traceWithIncreasingTTLs(ctx, index, zeroTime, logger, address, sni, maxTTL, tr, 4000)
+	} else {
+		m.traceWithIncreasingTTLs(ctx, index, zeroTime, logger, address, sni, maxTTL, tr, 5000)
+	}
 	tr.Iterations = alignIterations(tr.Iterations)
 	return
 }
 
 // traceWithIncreasingTTLs performs iterative tracing with increasing TTL values
 func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, maxTTL int64, trace *IterativeTrace) {
+	address string, sni string, maxTTL int64, trace *IterativeTrace, basePort int) {
 	ticker := time.NewTicker(m.config.delay())
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		go m.handshakeWithTTL(ctx, index, zeroTime, logger, address, sni, int(i), trace, wg)
+		go m.handshakeWithTTL(ctx, index, zeroTime, logger, address, sni, int(i), trace, wg, basePort)
 		<-ticker.C
 	}
 	wg.Wait()
@@ -67,12 +172,15 @@ func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zer
 
 // handshakeWithTTL performs the TLS Handshake using the passed ttl value
 func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup) {
+	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup, basePort int) {
 	defer wg.Done()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	// 1. Connect to the target IP
 	// TODO(DecFox, bassosimone): Do we need a trace for this TCP connect?
-	d := NewDialerTTLWrapper()
+
+	localPort := basePort + int(index*1000) + ttl
+	d := NewDialerTTLWrapper(localPort)
+
 	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {

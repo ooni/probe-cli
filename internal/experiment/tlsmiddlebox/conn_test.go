@@ -100,7 +100,7 @@ func TestSetTTL(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		d := NewDialerTTLWrapper()
+		d := NewDialerTTLWrapper(5000)
 		ctx := context.Background()
 		conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:80")
 		if err != nil {
@@ -145,7 +145,7 @@ func TestGetSoErr(t *testing.T) {
 		defer srvr.Close()
 		URL, err := url.Parse(srvr.URL)
 		runtimex.PanicOnError(err, "url.Parse failed")
-		d := NewDialerTTLWrapper()
+		d := NewDialerTTLWrapper(5000)
 		ctx := context.Background()
 		conn, err := d.DialContext(ctx, "tcp", URL.Host)
 		if err != nil {
