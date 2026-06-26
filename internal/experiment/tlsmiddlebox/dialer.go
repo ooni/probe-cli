@@ -6,6 +6,7 @@ package tlsmiddlebox
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -16,20 +17,21 @@ import (
 
 const timeout time.Duration = 15 * time.Second
 
-// Define the Linux socket option enabling error queueing
+// Define the Linux IPPROTO_IP socket option enabling error queueing
 const IP_RECVERR = 12
 
 // Define the Linux recvmsg flag for reading the error queue
 const MSG_ERRQUEUE = 2
 
-func NewDialerTTLWrapper(localPort int) model.Dialer {
+// Define the Linux SOL_SOCKET socket option enabling nanosecond timestamps
+const SO_TIMESTAMPNS = 35
+
+// Define the Linux socket control message type for nanosecond timestamps
+const SCM_TIMESTAMPNS = 35
+
+func NewDialerTTLWrapper() model.Dialer {
 	return &dialerTTLWrapper{
-		Dialer: &net.Dialer{
-			Timeout: timeout,
-			LocalAddr: &net.TCPAddr{
-				Port: localPort,
-			},
-		},
+		Dialer: &net.Dialer{Timeout: timeout},
 	}
 }
 
@@ -45,9 +47,11 @@ type ttlConn struct {
 }
 
 type Hop struct {
-	Addr net.IP
-	Type uint8
-	Code uint8
+	Addr      net.IP
+	Type      uint8
+	Code      uint8
+	Timestamp time.Time
+	TTL       uint8
 }
 
 var _ model.Dialer = &dialerTTLWrapper{}
@@ -82,7 +86,14 @@ func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, addr
 		unix.SetsockoptInt(int(f), unix.IPPROTO_IP, IP_RECVERR, 1)
 	})
 
-	// Set the SO_TIMESTAMPNS socket option to enable
+	if err != nil {
+		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	}
+
+	// Set the SO_TIMESTAMPNS socket option to enable nanosecond timestamps
+	err = raw.Control(func(f uintptr) {
+		unix.SetsockoptInt(int(f), unix.SOL_SOCKET, SO_TIMESTAMPNS, 1)
+	})
 
 	if err != nil {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
@@ -102,57 +113,105 @@ func (d *dialerTTLWrapper) CloseIdleConnections() {
 // ReadErrQueue() uses MSG_ERRQUEUE to read ICMP messages
 func (c *ttlConn) ReadErrQueue() (*Hop, error) {
 	buf := make([]byte, 256)
-	oob := make([]byte, 512)
+	oob := make([]byte, 4096)
 
-	_, oobn, _, _, err := unix.Recvmsg(
+	n, oobn, _, _, err := unix.Recvmsg(
 		c.fd,
 		buf,
 		oob,
 		MSG_ERRQUEUE,
 	)
 
-	if err != nil {
-		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
-	}
+	fmt.Println("recvmsg called")
+	fmt.Println("n:", n, "oobn:", oobn, "err:", err)
 
-	cms, err := unix.ParseSocketControlMessage((oob[:oobn]))
 	if err != nil {
 		return nil, err
 	}
 
-	for _, cm := range cms {
-		if cm.Header.Level != unix.IPPROTO_IP {
-			continue
-		}
-
-		if cm.Header.Type != IP_RECVERR {
-			continue
-		}
-
-		ee := cm.Data
-
-		if len(ee) < 16 {
-			continue
-		}
-
-		icmpType := ee[4]
-		icmpCode := ee[5]
-
-		sa := ee[16:]
-
-		if len(sa) < 8 {
-			continue
-		}
-
-		routerIP := net.IPv4(sa[4], sa[5], sa[6], sa[7])
-
-		return &Hop{
-			Addr: routerIP,
-			Type: icmpType,
-			Code: icmpCode,
-		}, nil
-
-	}
-
+	fmt.Printf("RAW OOB: %x\n", oob[:oobn])
 	return nil, nil
+
+	// buf := make([]byte, 256)
+	// oob := make([]byte, 512)
+
+	// // Read from MSG_ERRQUEUE
+	// _, oobn, _, _, err := unix.Recvmsg(
+	// 	c.fd,
+	// 	buf,
+	// 	oob,
+	// 	MSG_ERRQUEUE,
+	// )
+
+	// if err != nil {
+	// 	return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	// }
+
+	// var (
+	// 	hop           Hop
+	// 	haveICMP      bool
+	// 	haveTimestamp bool
+	// 	ts            time.Time
+	// )
+
+	// cms, err := unix.ParseSocketControlMessage((oob[:oobn]))
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// for i, cm := range cms {
+	// 	fmt.Printf("=== CMS[%d] ===\n", i)
+	// 	fmt.Printf("Level: %d Type: %d Len: %d\n",
+	// 		cm.Header.Level,
+	// 		cm.Header.Type,
+	// 		len(cm.Data),
+	// 	)
+
+	// 	fmt.Printf("RAW DATA: %x\n", cm.Data)
+	// }
+
+	// for _, cm := range cms {
+
+	// 	// Check for timestamp error
+	// 	if cm.Header.Level == unix.SOL_SOCKET && cm.Header.Type == SCM_TIMESTAMPNS {
+	// 		sec := int64(binary.LittleEndian.Uint64(cm.Data[0:8]))
+	// 		nsec := int64(binary.LittleEndian.Uint64(cm.Data[8:16]))
+	// 		ts = time.Unix(sec, nsec)
+	// 		haveTimestamp = true
+	// 		continue
+	// 	}
+
+	// 	// Check for ICMP error
+	// 	if cm.Header.Level == unix.IPPROTO_IP && cm.Header.Type == IP_RECVERR {
+	// 		fmt.Printf("\n--- IP_RECVERR ---\n")
+	// 		fmt.Printf("len(cm.Data): %d\n", len(cm.Data))
+	// 		fmt.Printf("hex dump: %x\n", cm.Data)
+
+	// 		ee := cm.Data
+
+	// 		if len(ee) < 16 {
+	// 			continue
+	// 		}
+
+	// 		hop.Type = ee[4]
+	// 		hop.Code = ee[5]
+
+	// 		sa := ee[16:]
+	// 		if len(sa) >= 8 {
+	// 			hop.Addr = net.IPv4(sa[4], sa[5], sa[6], sa[7])
+	// 		}
+
+	// 		haveICMP = true
+	// 	}
+	// }
+
+	// if !haveICMP {
+	// 	return nil, nil
+	// }
+
+	// if haveTimestamp {
+	// 	hop.Timestamp = ts
+	// }
+
+	// return &hop, nil
 }
