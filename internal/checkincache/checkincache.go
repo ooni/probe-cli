@@ -51,7 +51,6 @@ func GetFeatureFlag(kvStore model.KeyValueStore, name string, defaultFlag bool) 
 	if err := json.Unmarshal(data, &wrapper); err != nil {
 		return defaultFlag // as documented
 	}
-	fmt.Println(wrapper)
 	if time.Now().After(wrapper.Expire) {
 		return defaultFlag // as documented
 	}
