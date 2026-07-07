@@ -118,8 +118,8 @@ type Measurement struct {
 	// ProbeNetworkName contains the probe network name
 	ProbeNetworkName string `json:"probe_network_name"`
 
-	// ReportID contains the report ID
-	ReportID string `json:"report_id"`
+	// ReportID contains the report ID.
+	ReportID string `json:"report_id,omitempty"`
 
 	// ResolverASN is the ASN of the resolver
 	ResolverASN string `json:"resolver_asn"`
