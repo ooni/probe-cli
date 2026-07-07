@@ -29,21 +29,22 @@ const SO_TIMESTAMPNS = 35
 // Define the Linux socket control message type for nanosecond timestamps
 const SCM_TIMESTAMPNS = 35
 
-func NewDialerTTLWrapper() model.Dialer {
+func NewDialerTTLWrapper(ttl int) model.Dialer {
 	return &dialerTTLWrapper{
 		Dialer: &net.Dialer{Timeout: timeout},
+		TTL: ttl,
 	}
 }
 
 // dialerTTLWrapper wraps errors and also returns a TTL wrapped conn
 type dialerTTLWrapper struct {
 	Dialer model.SimpleDialer
+	TTL	int
 }
 
 // ttlConn wraps the TCP connection
 type ttlConn struct {
 	*net.TCPConn
-	fd int
 }
 
 type Hop struct {
@@ -53,8 +54,6 @@ type Hop struct {
 	Timestamp time.Time
 	TTL       uint8
 }
-
-var _ model.Dialer = &dialerTTLWrapper{}
 
 // DialContext implements model.Dialer.DialContext
 func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, address string) (net.Conn, error) {
@@ -70,11 +69,19 @@ func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, addr
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
-	// Extract underlying socket file descriptor from TCP connection
-	var fd int
-	err = raw.Control(func(f uintptr) {
-		fd = int(f)
-	})
+	_ = raw.Control(func(fd uintptr)) {
+		//Set the TTL
+		_ = unix.SetsockoptInt(int(fd), unix.IPPROTO_IP, unix.IP_TTL, d.TTL)
+		// Set the IP_RECVERR socket option to enable ICMP errors to be stored in the socket error queue
+		// Such errors will be subsequently read with MSG_ERRQUEUE
+		_ = unix.SetsockoptInt(int(fd), unix.IPPROTO_IP, unix.IP_RECVERR, 1)
+		// Set the SO_TIMESTAMPNS socket option to enable nanosecond timestamps
+		_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_TIMESTAMPNS, 1)
+
+		return &ttlConn{
+			TCPConn: tcp,
+		}, nil
+	}
 
 	if err != nil {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
@@ -85,24 +92,6 @@ func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, addr
 	err = raw.Control(func(f uintptr) {
 		unix.SetsockoptInt(int(f), unix.IPPROTO_IP, IP_RECVERR, 1)
 	})
-
-	if err != nil {
-		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
-	}
-
-	// Set the SO_TIMESTAMPNS socket option to enable nanosecond timestamps
-	err = raw.Control(func(f uintptr) {
-		unix.SetsockoptInt(int(f), unix.SOL_SOCKET, SO_TIMESTAMPNS, 1)
-	})
-
-	if err != nil {
-		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
-	}
-
-	return &ttlConn{
-		TCPConn: tcp,
-		fd:      fd,
-	}, nil
 }
 
 // CloseIdleConnections implements model.Dialer.CloseIdleConnections
@@ -115,22 +104,39 @@ func (c *ttlConn) ReadErrQueue() (*Hop, error) {
 	buf := make([]byte, 256)
 	oob := make([]byte, 4096)
 
-	n, oobn, _, _, err := unix.Recvmsg(
-		c.fd,
-		buf,
-		oob,
-		MSG_ERRQUEUE,
-	)
+	var hop *Hop
 
-	fmt.Println("recvmsg called")
-	fmt.Println("n:", n, "oobn:", oobn, "err:", err)
-
+	raw, err := c.SyscallConn()
 	if err != nil {
-		return nil, err
+		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
-	fmt.Printf("RAW OOB: %x\n", oob[:oobn])
-	return nil, nil
+	err = raw.Read(func(fd uintptr) bool) {
+		n, oobn, _, _, err := unix.Recvmsg(
+			int(fd),
+			buf,
+			oob,
+			unix.MSG_ERRQUEUE,
+		)
+
+		fmt.Println("recvmsg n=%d oobn=%d err=%v\n", n, oobn, err)
+
+		if err == unix.EAGAIN { //nothing to be read from MSG_ERRQUEUE
+			return false
+		}
+		if err != nil {
+			fmt.Printf("recvmsg error: %v\n", err)
+			return false
+		}
+		if oobn == 0 {
+			return false
+		}
+
+		hop = &Hop{}
+		return false
+	}
+
+	return hop, nil
 
 	// buf := make([]byte, 256)
 	// oob := make([]byte, 512)

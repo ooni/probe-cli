@@ -70,10 +70,13 @@ func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zer
 func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	trace := measurexlite.NewTrace(index, zeroTime)
+
 	// 1. Connect to the target IP
 	// TODO(DecFox, bassosimone): Do we need a trace for this TCP connect?
-	d := NewDialerTTLWrapper()
+	d := NewDialerTTLWrapper(ttl)
+
 	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
@@ -102,6 +105,33 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		}
 	}()
 
+	// go func() {
+	// 	// poll for a short window only
+	// 	deadline := time.NewTimer(800 * time.Millisecond)
+	// 	defer deadline.Stop()
+
+	// 	for {
+	// 		select {
+	// 		case <-ctx.Done():
+	// 			return
+	// 		case <-deadline.C:
+	// 			return
+	// 		default:
+	// 		}
+
+	// 		hop, _ := tc.ReadErrQueue()
+	// 		if hop != nil {
+	// 			select {
+	// 			case done <- hop:
+	// 			default:
+	// 			}
+	// 			return
+	// 		}
+
+	// 		time.Sleep(10 * time.Millisecond)
+	// 	}
+	// }()
+
 	defer conn.Close()
 	// 2. Set the TTL to the passed value
 	err = setConnTTL(conn, ttl)
@@ -124,6 +154,14 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 4. reset the TTL value to ensure that conn closes successfully
 	// Note: Do not check for errors here
 	_ = setConnTTL(conn, 64)
+
+	// 5. wait for possible ICMP event (non-blocking)
+	var hop *Hop
+	select {
+	case hop = <-done:
+	case <-time.After(100 * time.Millisecond):
+	}
+
 	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
 	tr.addIterations(iteration)
 }
