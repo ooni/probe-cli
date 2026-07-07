@@ -10,14 +10,11 @@ import (
 )
 
 const (
-	// signCredentialPath is the registration endpoint path.
-	signCredentialPath = "/api/v1/sign_credential"
-
-	// submitMeasurementPath is the authenticated submission endpoint path.
+	signCredentialPath    = "/api/v1/sign_credential"
 	submitMeasurementPath = "/api/v1/submit_measurement"
 )
 
-// CredentialSubmitter implements [model.Submitter] using the anonymous-credential flow.
+// CredentialSubmitter implements [model.Submitter].
 type CredentialSubmitter struct {
 	registerURL           string
 	submitURL             string
@@ -67,12 +64,13 @@ type CredentialSubmitterConfig struct {
 
 	// Fallback is the legacy submitter used when credential submission fails.
 	Fallback model.Submitter
+
+	// UserAgent is the user-agent string used with by the http client
+	UserAgent string
 }
 
 // NewCredentialSubmitter builds a [CredentialSubmitter], registering for a fresh
-// credential when there is no usable stored one. It returns an error (e.g.
-// [ErrUnavailable] on pure-Go builds, or a registration failure) so the caller
-// can fall back to legacy submission for the whole run.
+// credential when there is no usable stored one.
 func NewCredentialSubmitter(
 	ctx context.Context, config CredentialSubmitterConfig) (*CredentialSubmitter, error) {
 	baseURL := strings.TrimRight(config.BaseURL, "/")
@@ -114,22 +112,9 @@ func NewCredentialSubmitter(
 	return cs, nil
 }
 
-// Submit implements [model.Submitter]. It submits the measurement using the
-// stored credential and persists the rotated credential. On any error it
-// delegates to the fallback submitter.
-func (cs *CredentialSubmitter) Submit(ctx context.Context, m *model.Measurement) (string, error) {
-	uid, err := cs.submitWithCredential(m)
-	if err != nil {
-		cs.logger.Warnf("userauth: credential submission failed, falling back to collector: %s", err.Error())
-		return cs.fallback.Submit(ctx, m)
-	}
-	return uid, nil
-}
-
 // submitWithCredential performs the authenticated submission and credential
 // rotation. It returns the measurement UID on success.
 func (cs *CredentialSubmitter) submitWithCredential(m *model.Measurement) (string, error) {
-	// The measurement is already scrubbed by the experiment before submission.
 	content, err := json.Marshal(m)
 	if err != nil {
 		return "", err
@@ -165,4 +150,15 @@ func (cs *CredentialSubmitter) submitWithCredential(m *model.Measurement) (strin
 
 	cs.logger.Infof("Measurement URL: https://explorer.ooni.org/m/%s", result.MeasurementUID)
 	return result.MeasurementUID, nil
+}
+
+// Submit implements [model.Submitter]. It submits the measurement using the
+// stored credential and persists the rotated credential.
+func (cs *CredentialSubmitter) Submit(ctx context.Context, m *model.Measurement) (string, error) {
+	uid, err := cs.submitWithCredential(m)
+	if err != nil {
+		cs.logger.Warnf("userauth: credential submission failed, falling back to collector: %s", err.Error())
+		return cs.fallback.Submit(ctx, m)
+	}
+	return uid, nil
 }
