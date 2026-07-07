@@ -85,25 +85,12 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		ol.Stop(err)
 		return
 	}
+	defer conn.Close()
 
 	tc := conn.(*ttlConn)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			hop, err := tc.ReadErrQueue()
-			if err != nil {
-				return
-			}
 
-			if hop != nil {
-				fmt.Printf("TTL=%d router=%s ts=%v\n", hop.Type, hop.Addr, hop.Timestamp)
-			}
-		}
-	}()
+	// // 2. start errqueue reader BEFORE handshake
+	// done := make(chan *Hop, 1)
 
 	// go func() {
 	// 	// poll for a short window only
@@ -132,15 +119,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 	}
 	// }()
 
-	defer conn.Close()
-	// 2. Set the TTL to the passed value
-	err = setConnTTL(conn, ttl)
-	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil)
-		tr.addIterations(iteration)
-		ol.Stop(err)
-		return
-	}
+
 	// 3. Perform the handshake and extract the SO_ERROR value (if any)
 	// Note: we switch to a uTLS Handshaker if the configured ClientID is non-zero
 	thx := trace.NewTLSHandshakerStdlib(logger)
@@ -151,18 +130,34 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	_, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
 	soErr := extractSoError(conn)
+
+	hop, err := tc.ReadErrQueue()
+	if err != nil {
+		fmt.Println("errqueue error:", err)
+	}
+
+	if hop != nil {
+		fmt.Printf("got hop: %+v\n", hop)
+	}
+
 	// 4. reset the TTL value to ensure that conn closes successfully
 	// Note: Do not check for errors here
 	_ = setConnTTL(conn, 64)
 
-	// 5. wait for possible ICMP event (non-blocking)
-	var hop *Hop
-	select {
-	case hop = <-done:
-	case <-time.After(100 * time.Millisecond):
-	}
+	// // 5. wait for ICMP messages
+	// var hop *Hop
+	// select {
+	// 	case hop = <-done:
+	// 	case <-time.After(100 * time.Millisecond):
+	// }
 
 	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
+
+	// if hop != nil {
+	// 	fmt.Printf("TTL=%d ICMP=%s type=%d code=%d\n",
+	// 		ttl, hop.Addr, hop.Type, hop.Code,
+	// 	)
+	// }
 	tr.addIterations(iteration)
 }
 

@@ -39,7 +39,7 @@ func NewDialerTTLWrapper(ttl int) model.Dialer {
 // dialerTTLWrapper wraps errors and also returns a TTL wrapped conn
 type dialerTTLWrapper struct {
 	Dialer model.SimpleDialer
-	TTL	int
+	TTL    int
 }
 
 // ttlConn wraps the TCP connection
@@ -69,29 +69,19 @@ func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, addr
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
-	_ = raw.Control(func(fd uintptr)) {
-		//Set the TTL
+	_ = raw.Control(func(fd uintptr) {
+		// Set the TTL
 		_ = unix.SetsockoptInt(int(fd), unix.IPPROTO_IP, unix.IP_TTL, d.TTL)
 		// Set the IP_RECVERR socket option to enable ICMP errors to be stored in the socket error queue
 		// Such errors will be subsequently read with MSG_ERRQUEUE
 		_ = unix.SetsockoptInt(int(fd), unix.IPPROTO_IP, unix.IP_RECVERR, 1)
 		// Set the SO_TIMESTAMPNS socket option to enable nanosecond timestamps
 		_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_TIMESTAMPNS, 1)
-
-		return &ttlConn{
-			TCPConn: tcp,
-		}, nil
-	}
-
-	if err != nil {
-		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
-	}
-
-	// Set the IP_RECVERR socket option to enable ICMP errors to be stored in the socket error queue
-	// Such errors will be subsequently read with MSG_ERRQUEUE
-	err = raw.Control(func(f uintptr) {
-		unix.SetsockoptInt(int(f), unix.IPPROTO_IP, IP_RECVERR, 1)
 	})
+
+	return &ttlConn{
+		TCPConn: tcp,
+	}, nil
 }
 
 // CloseIdleConnections implements model.Dialer.CloseIdleConnections
@@ -111,7 +101,9 @@ func (c *ttlConn) ReadErrQueue() (*Hop, error) {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
-	err = raw.Read(func(fd uintptr) bool) {
+	fmt.Printf("SO_ERROR=%v\n", extractSoError(c))
+
+	err = raw.Read(func(fd uintptr) bool {
 		n, oobn, _, _, err := unix.Recvmsg(
 			int(fd),
 			buf,
@@ -119,7 +111,7 @@ func (c *ttlConn) ReadErrQueue() (*Hop, error) {
 			unix.MSG_ERRQUEUE,
 		)
 
-		fmt.Println("recvmsg n=%d oobn=%d err=%v\n", n, oobn, err)
+		fmt.Printf("recvmsg n=%d oobn=%d err=%v\n", n, oobn, err)
 
 		if err == unix.EAGAIN { //nothing to be read from MSG_ERRQUEUE
 			return false
@@ -134,7 +126,7 @@ func (c *ttlConn) ReadErrQueue() (*Hop, error) {
 
 		hop = &Hop{}
 		return false
-	}
+	})
 
 	return hop, nil
 
