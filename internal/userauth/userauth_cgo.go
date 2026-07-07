@@ -2,7 +2,7 @@
 
 package userauth
 
-// #cgo CFLAGS: -I${SRCDIR}
+// #cgo CFLAGS: -I${SRCDIR}/lib/include
 // #cgo linux,amd64 LDFLAGS: -L${SRCDIR}/lib/linux/amd64 -luniffi_ooniprobe -ldl -lm -lpthread
 // #cgo linux,arm64 LDFLAGS: -L${SRCDIR}/lib/linux/arm64 -luniffi_ooniprobe -ldl -lm -lpthread
 // #cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/lib/darwin/amd64 -luniffi_ooniprobe -framework CoreFoundation -framework Security
