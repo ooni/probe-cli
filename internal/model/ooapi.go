@@ -313,6 +313,22 @@ type OOAPICollectorUpdateResponse struct {
 	MeasurementUID string `json:"measurement_uid"`
 }
 
+// OOAPISubmitMeasurementRequest is a request for the submit measurement API.
+type OOAPISubmitMeasurementRequest struct {
+	Format          string  `json:"format"`
+	Content         string  `json:"content"`
+	Nym             *string `json:"nym"`
+	ZKPRequest      *string `json:"zkp_request"`
+	ManifestVersion *string `json:"manifest_version"`
+	ProtocolVersion *string `json:"protocol_version"`
+}
+
+// OOAPISubmitMeasurementResponse is the response from the submit measurement API.
+type OOAPISubmitMeasurementResponse struct {
+	// MeasurementUID is the measurement UID.
+	MeasurementUID string `json:"measurement_uid"`
+}
+
 // OOAPILoginCredentials contains the login credentials
 type OOAPILoginCredentials struct {
 	Username string `json:"username"`
@@ -419,4 +435,52 @@ type OOAPIRegisterRequest struct {
 // OOAPIRegisterResponse is a reponse from the register API.
 type OOAPIRegisterResponse struct {
 	ClientID string `json:"client_id"`
+}
+
+// OOAPISubmissionPolicyParams holds the credential constraints of a policy.
+type OOAPISubmissionPolicyParams struct {
+	// Age is the [min, max] allowed credential age window.
+	Age []uint32 `json:"age"`
+
+	// MinMeasurementCount is the minimum allowed measurement count.
+	MinMeasurementCount uint32 `json:"min_measurement_count"`
+}
+
+// OOAPISubmissionPolicy is a single submission policy in an [OOAPIManifestBody].
+type OOAPISubmissionPolicy struct {
+	Policy OOAPISubmissionPolicyParams `json:"policy"`
+	Match  OOAPISubmissionPolicyMatch  `json:"match"`
+}
+
+// OOAPISubmissionPolicyMatch selects which probes a policy applies to.
+type OOAPISubmissionPolicyMatch struct {
+	ProbeCC  string `json:"probe_cc"`
+	ProbeASN string `json:"probe_asn"`
+}
+
+// OOAPIManifestBody is the body of an [OOAPIManifest].
+type OOAPIManifestBody struct {
+	// NymScope is the pseudonym scope template, e.g. "ooni.org/{probe_cc}/{probe_asn}".
+	NymScope string `json:"nym_scope"`
+
+	// SubmissionPolicy is the list of submission policies.
+	SubmissionPolicy []OOAPISubmissionPolicy `json:"submission_policy"`
+
+	// PublicParameters is the base64-encoded credential public parameters.
+	PublicParameters string `json:"public_parameters"`
+}
+
+// OOAPIManifestMeta is the metadata of an [OOAPIManifest].
+type OOAPIManifestMeta struct {
+	Version              string `json:"version"`
+	LastModificationDate string `json:"last_modification_date"`
+	ManifestURL          string `json:"manifest_url"`
+	LibraryVersion       string `json:"library_version"`
+	ProtocolVersion      string `json:"protocol_version"`
+}
+
+// OOAPIManifest is the response from the anonymous-credentials manifest API.
+type OOAPIManifest struct {
+	Manifest OOAPIManifestBody `json:"manifest"`
+	Meta     OOAPIManifestMeta `json:"meta"`
 }
