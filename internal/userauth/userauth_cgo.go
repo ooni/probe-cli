@@ -55,8 +55,19 @@ func optionalCString(s string) *C.char {
 	return C.CString(s)
 }
 
+// parseResponse converts a C ClientResponse into a Go (string, error).
+func parseResponse(resp C.ClientResponse) (string, error) {
+	if resp.error != nil {
+		return "", errors.New(C.GoString(resp.error))
+	}
+	if resp.json != nil {
+		return C.GoString(resp.json), nil
+	}
+	return "", errors.New("userauth: empty response from FFI")
+}
+
 // Register registers a new user and returns the base64-encoded credential.
-func Register(url, publicParams, manifestVersion, proxy string, timeout float32) (string, error) {
+func Register(url, publicParams, manifestVersion, proxy, userAgent string, timeout float32) (string, error) {
 	cURL := C.CString(url)
 	defer C.free(unsafe.Pointer(cURL))
 
@@ -71,7 +82,12 @@ func Register(url, publicParams, manifestVersion, proxy string, timeout float32)
 		defer C.free(unsafe.Pointer(cProxy))
 	}
 
-	resp := C.userauth_register(cURL, cPublicParams, cManifestVersion, cProxy, C.float(timeout))
+	cUserAgent := optionalCString(userAgent)
+	if cUserAgent != nil {
+		defer C.free(unsafe.Pointer(cUserAgent))
+	}
+
+	resp := C.userauth_register(cURL, cPublicParams, cManifestVersion, cProxy, C.float(timeout), cUserAgent)
 	defer C.client_response_free(resp)
 
 	jsonStr, err := parseResponse(resp)
@@ -91,7 +107,7 @@ func Register(url, publicParams, manifestVersion, proxy string, timeout float32)
 }
 
 // Submit submits a measurement.
-func Submit(url, content, probeCC, probeASN, proxy string, timeout float32,
+func Submit(url, content, probeCC, probeASN, proxy, userAgent string, timeout float32,
 	cfg *CredentialConfig) (RotatedCredential, error) {
 	cURL := C.CString(url)
 	defer C.free(unsafe.Pointer(cURL))
@@ -110,6 +126,11 @@ func Submit(url, content, probeCC, probeASN, proxy string, timeout float32,
 		defer C.free(unsafe.Pointer(cProxy))
 	}
 
+	cUserAgent := optionalCString(userAgent)
+	if cUserAgent != nil {
+		defer C.free(unsafe.Pointer(cUserAgent))
+	}
+
 	// A nil cConfig tells the FFI to use the anonymous submission path.
 	var cConfig *C.char
 	if cfg != nil {
@@ -121,7 +142,7 @@ func Submit(url, content, probeCC, probeASN, proxy string, timeout float32,
 		defer C.free(unsafe.Pointer(cConfig))
 	}
 
-	resp := C.userauth_submit(cURL, cContent, cProbeCC, cProbeASN, cProxy, C.float(timeout), cConfig)
+	resp := C.userauth_submit(cURL, cContent, cProbeCC, cProbeASN, cProxy, C.float(timeout), cUserAgent, cConfig)
 	defer C.client_response_free(resp)
 
 	jsonStr, err := parseResponse(resp)
@@ -180,15 +201,4 @@ func ProbeID(credentialB64, probeASN, probeCC string) (string, error) {
 		return "", fmt.Errorf("userauth: cannot parse probe id response: %w", err)
 	}
 	return result.ProbeID, nil
-}
-
-// parseResponse converts a C ClientResponse into a Go (string, error).
-func parseResponse(resp C.ClientResponse) (string, error) {
-	if resp.error != nil {
-		return "", errors.New(C.GoString(resp.error))
-	}
-	if resp.json != nil {
-		return C.GoString(resp.json), nil
-	}
-	return "", errors.New("userauth: empty response from FFI")
 }

@@ -29,6 +29,7 @@ type CredentialSubmitter struct {
 	store                 *CredStore
 	logger                model.Logger
 	fallback              model.Submitter
+	userAgent             string
 }
 
 var _ model.Submitter = &CredentialSubmitter{}
@@ -88,6 +89,7 @@ func NewCredentialSubmitter(
 		store:                 config.Store,
 		logger:                config.Logger,
 		fallback:              config.Fallback,
+		userAgent:             config.UserAgent,
 	}
 
 	// Reuse the stored credential when it matches the current manifest version;
@@ -98,7 +100,7 @@ func NewCredentialSubmitter(
 	}
 
 	cs.logger.Info("userauth: registering for a new anonymous credential")
-	credential, err := Register(cs.registerURL, cs.publicParams, cs.manifestVersion, cs.proxy, cs.timeout)
+	credential, err := Register(cs.registerURL, cs.publicParams, cs.manifestVersion, cs.proxy, cs.userAgent, cs.timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +136,7 @@ func (cs *CredentialSubmitter) submitWithCredential(m *model.Measurement) (strin
 	}
 
 	result, err := Submit(cs.submitURL, string(content), cs.probeCC, cs.probeASN,
-		cs.proxy, cs.timeout, config)
+		cs.proxy, cs.userAgent, cs.timeout, config)
 	if err != nil {
 		return "", err
 	}

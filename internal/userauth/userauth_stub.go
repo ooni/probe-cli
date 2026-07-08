@@ -5,12 +5,12 @@ package userauth
 // This file provides pure-Go stubs for builds without cgo (CGO_ENABLED=0)
 
 // Register is unavailable without cgo.
-func Register(url, publicParams, manifestVersion, proxy string, timeout float32) (string, error) {
+func Register(url, publicParams, manifestVersion, proxy, userAgent string, timeout float32) (string, error) {
 	return "", ErrUnavailable
 }
 
 // Submit is unavailable without cgo.
-func Submit(url, content, probeCC, probeASN, proxy string, timeout float32,
+func Submit(url, content, probeCC, probeASN, proxy, userAgent string, timeout float32,
 	cfg *CredentialConfig) (RotatedCredential, error) {
 	return RotatedCredential{}, ErrUnavailable
 }
