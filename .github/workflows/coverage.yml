@@ -24,6 +24,8 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"
 
+      - run: make userauth
+
       - run: ./script/linuxcoverage.bash
 
       - uses: shogo82148/actions-goveralls@v1

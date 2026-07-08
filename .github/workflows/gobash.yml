@@ -42,4 +42,6 @@ jobs:
         with:
           go-version: "${{ matrix.goversion }}"
 
+      - run: make userauth
+
       - run: ./script/go.bash run ./internal/cmd/buildtool generic miniooni
