@@ -123,9 +123,6 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// - measCtx derives from rootCtx and is possibly tied to the
 	// maximum runtime and is used to choose when to stop measuring;
 	//
-	// - submitCtx is like measCtx but, in case we're using a max
-	// runtime, is given more time to finish submitting.
-	//
 	// See https://github.com/ooni/probe/issues/2037.
 	var logger model.Logger = newTaskLogger(r.emitter, r.settings.LogLevel)
 	r.emitter.Emit(eventTypeStatusQueued, eventEmpty{})
@@ -221,28 +218,11 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		endEvent.UploadedKB = experiment.KibiBytesSent()
 	}()
 
-	// open a new report if possible
-	if !r.settings.Options.NoCollector {
-		logger.Info("Opening report... please, be patient")
-		if err := experiment.OpenReportContext(rootCtx); err != nil {
-			r.emitter.EmitFailureGeneric(eventTypeFailureReportCreate, err.Error())
-			return
-		}
-		r.emitter.EmitStatusProgress(0.4, "open report")
-		r.emitter.Emit(eventTypeStatusReportCreate, eventStatusReportGeneric{
-			ReportID: experiment.ReportID(),
-		})
-	}
-
 	// create the default context for measuring
 	measCtx, measCancel := context.WithCancel(rootCtx)
 	defer measCancel()
 
-	// create the default context for submitting
-	submitCtx, submitCancel := context.WithCancel(rootCtx)
-	defer submitCancel()
-
-	// Update measCtx and submitCtx to be timeout bound in case there's
+	// Update measCtx to be timeout bound in case there's
 	// more than one input/target to measure.
 	//
 	// This deviates a little bit from measurement-kit, for which
@@ -258,19 +238,11 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// See https://github.com/measurement-kit/measurement-kit/issues/1922
 	if r.settings.Options.MaxRuntime > 0 && len(targets) > 1 {
 		var (
-			cancelMeas   context.CancelFunc
-			cancelSubmit context.CancelFunc
+			cancelMeas context.CancelFunc
 		)
-		// We give the context used for submitting extra time so that
-		// it's possible to submit the last measurement.
-		//
-		// See https://github.com/ooni/probe/issues/2037 for more info.
 		maxRuntime := time.Duration(r.settings.Options.MaxRuntime) * time.Second
 		measCtx, cancelMeas = context.WithTimeout(measCtx, maxRuntime)
 		defer cancelMeas()
-		maxRuntime += 30 * time.Second
-		submitCtx, cancelSubmit = context.WithTimeout(submitCtx, maxRuntime)
-		defer cancelSubmit()
 	}
 
 	// prepare for cycling through the targets
@@ -319,7 +291,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 
 		// Handle the case where our time for measuring has elapsed while
 		// we were measuring and assume the context interrupted the measurement
-		// midway, so it doesn't make sense to submit it.
+		// midway
 		if builder.Interruptible() && measCtx.Err() != nil {
 			break
 		}
@@ -352,20 +324,6 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			JSONStr: string(data),
 		})
 
-		// if possible, submit the measurement to the OONI backend
-		if !r.settings.Options.NoCollector {
-			logger.Info("Submitting measurement... please, be patient")
-			muid, err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
-			warnOnFailure(logger, "cannot submit measurement", err)
-			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
-				Idx:            int64(idx),
-				Input:          target.Input(),
-				JSONStr:        string(data),
-				Failure:        measurementSubmissionFailure(err),
-				MeasurementUID: muid,
-			})
-		}
-
 		// let the app know that we're done measuring this entry
 		r.emitter.Emit(eventTypeStatusMeasurementDone, eventMeasurementGeneric{
 			Idx:   int64(idx),
@@ -378,18 +336,4 @@ func warnOnFailure(logger model.Logger, message string, err error) {
 	if err != nil {
 		logger.Warnf("%s: %s (%+v)", message, err.Error(), err)
 	}
-}
-
-func measurementSubmissionEventName(err error) string {
-	if err != nil {
-		return eventTypeFailureMeasurementSubmission
-	}
-	return eventTypeStatusMeasurementSubmission
-}
-
-func measurementSubmissionFailure(err error) string {
-	if err != nil {
-		return err.Error()
-	}
-	return ""
 }

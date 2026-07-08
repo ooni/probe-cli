@@ -2,8 +2,6 @@ package oonimkall
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net/url"
 	"runtime"
 	"sync"
@@ -13,7 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // AtomicInt64 allows us to export atomic.Int64 variables to
@@ -128,10 +125,9 @@ type Session struct {
 	TestingCheckInBeforeNewProbeServicesClient func(ctx *Context)
 	TestingCheckInBeforeCheckIn                func(ctx *Context)
 
-	cl        []context.CancelFunc
-	mtx       sync.Mutex
-	submitter model.Submitter
-	sessp     *engine.Session
+	cl    []context.CancelFunc
+	mtx   sync.Mutex
+	sessp *engine.Session
 }
 
 // NewSession is like NewSessionWithContext but without context. This
@@ -300,196 +296,5 @@ func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 		Country: sess.sessp.ProbeCC(),
 		IP:      sess.sessp.ProbeIP(),
 		Org:     sess.sessp.ProbeNetworkName(),
-	}, nil
-}
-
-// SubmitMeasurementResults contains the results of a single measurement submission
-// to the OONI backends using the OONI collector API.
-type SubmitMeasurementResults struct {
-	// UpdateMeasurement is the measurement with updated report ID.
-	UpdatedMeasurement string
-
-	// UpdatedReportID is the report ID used for the measurement.
-	UpdatedReportID string
-
-	// MeasurementUID is the measurement unique identifier returned from the backend
-	MeasurementUID string
-}
-
-// Submit submits the given measurement and returns the results.
-//
-// This function locks the session until it's done. That is, no other operation
-// can be performed as long as this function is pending.
-func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasurementResults, error) {
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	if sess.submitter == nil {
-		submitter, err := sess.sessp.NewSubmitter(ctx.ctx)
-		if err != nil {
-			return nil, err
-		}
-		sess.submitter = submitter
-	}
-	var mm model.Measurement
-	if err := json.Unmarshal([]byte(measurement), &mm); err != nil {
-		return nil, err
-	}
-	muid, err := sess.submitter.Submit(ctx.ctx, &mm)
-	if err != nil {
-		return nil, err
-	}
-	data, err := json.Marshal(mm)
-	runtimex.PanicOnError(err, "json.Marshal should not fail here")
-	return &SubmitMeasurementResults{
-		UpdatedMeasurement: string(data),
-		UpdatedReportID:    mm.ReportID,
-		MeasurementUID:     muid,
-	}, nil
-}
-
-// CheckInConfigWebConnectivity contains WebConnectivity
-// configuration for the check-in API.
-type CheckInConfigWebConnectivity struct {
-	// CategoryCodes contains zero or more category codes (e.g. "HUMR").
-	CategoryCodes []string
-}
-
-// AddCategory adds a category code to ckw.CategoryCode. This method allows you to
-// edit ckw.CategoryCodes, which is inaccessible from Java/ObjC.
-func (ckw *CheckInConfigWebConnectivity) AddCategory(cat string) {
-	ckw.CategoryCodes = append(ckw.CategoryCodes, cat)
-}
-
-func (ckw *CheckInConfigWebConnectivity) toModel() model.OOAPICheckInConfigWebConnectivity {
-	return model.OOAPICheckInConfigWebConnectivity{
-		CategoryCodes: ckw.CategoryCodes,
-	}
-}
-
-// CheckInConfig contains configuration for the check-in API.
-type CheckInConfig struct {
-	// Charging indicates whether the phone is charging.
-	Charging bool
-
-	// OnWiFi indicates whether the phone is using the Wi-Fi.
-	OnWiFi bool
-
-	// Platform is the mobile platform (e.g. "android")
-	Platform string
-
-	// RunType indicates whether this is an automated (model.RunTypeTimed) run
-	// or otherwise a manual run initiated by the user.
-	RunType string
-
-	// SoftwareName is the name of the application.
-	SoftwareName string
-
-	// SoftwareVersion is the version of the application.
-	SoftwareVersion string
-
-	// WebConnectivity contains configuration items specific of
-	// the WebConnectivity experiment.
-	WebConnectivity *CheckInConfigWebConnectivity
-}
-
-// CheckInInfoWebConnectivity contains the WebConnectivity
-// specific results of the check-in API call.
-type CheckInInfoWebConnectivity struct {
-	// ReportID is the report ID we should be using.
-	ReportID string
-
-	// URLs contains the list of URLs to measure.
-	URLs []model.OOAPIURLInfo
-}
-
-// URLInfo contains info on a specific URL to measure.
-type URLInfo struct {
-	// CategoryCode is the URL's category code (e.g. "HUMR").
-	CategoryCode string
-
-	// CountryCode is the test list from which this URL
-	// comes from (e.g. "IT", "FR").
-	CountryCode string
-
-	// URL is the URL itself.
-	URL string
-}
-
-// Size returns the number of URLs included into the result.
-func (ckw *CheckInInfoWebConnectivity) Size() int64 {
-	return int64(len(ckw.URLs))
-}
-
-// At returns the URLInfo at index idx. Note that this function will
-// return nil/null if the index is out of bounds.
-func (ckw *CheckInInfoWebConnectivity) At(idx int64) *URLInfo {
-	if idx < 0 || int(idx) >= len(ckw.URLs) {
-		return nil
-	}
-	w := ckw.URLs[idx]
-	return &URLInfo{
-		CategoryCode: w.CategoryCode,
-		CountryCode:  w.CountryCode,
-		URL:          w.URL,
-	}
-}
-
-func newCheckInInfoWebConnectivity(ckw *model.OOAPICheckInInfoWebConnectivity) *CheckInInfoWebConnectivity {
-	if ckw == nil {
-		return nil
-	}
-	return &CheckInInfoWebConnectivity{
-		ReportID: ckw.ReportID,
-		URLs:     ckw.URLs,
-	}
-}
-
-// CheckInInfo contains the result of the check-in API.
-type CheckInInfo struct {
-	// WebConnectivity contains results that are specific to
-	// the WebConnectivity experiment. This field MAY be null
-	// if the server's response did not contain any info.
-	WebConnectivity *CheckInInfoWebConnectivity
-}
-
-// CheckIn calls the check-in API. Both ctx and config MUST NOT be nil. This
-// function will fail if config is missing required settings. The return value
-// is either an error or a valid CheckInInfo instance. Beware that the returned
-// object MAY still contain nil fields depending on the server's response.
-//
-// This function locks the session until it's done. That is, no other operation
-// can be performed as long as this function is pending.
-func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo, error) {
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	if config.WebConnectivity == nil {
-		return nil, errors.New("oonimkall: missing webconnectivity config")
-	}
-	if err := sess.sessp.MaybeLookupLocationContext(ctx.ctx); err != nil {
-		return nil, err
-	}
-	if sess.TestingCheckInBeforeNewProbeServicesClient != nil {
-		sess.TestingCheckInBeforeNewProbeServicesClient(ctx) // for testing
-	}
-	if sess.TestingCheckInBeforeCheckIn != nil {
-		sess.TestingCheckInBeforeCheckIn(ctx) // for testing
-	}
-	cfg := model.OOAPICheckInConfig{
-		Charging:        config.Charging,
-		OnWiFi:          config.OnWiFi,
-		Platform:        config.Platform,
-		ProbeASN:        sess.sessp.ProbeASNString(),
-		ProbeCC:         sess.sessp.ProbeCC(),
-		RunType:         model.RunType(config.RunType),
-		SoftwareName:    config.SoftwareName,
-		SoftwareVersion: config.SoftwareVersion,
-		WebConnectivity: config.WebConnectivity.toModel(),
-	}
-	result, err := sess.sessp.CheckIn(ctx.ctx, &cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &CheckInInfo{
-		WebConnectivity: newCheckInInfoWebConnectivity(result.Tests.WebConnectivity),
 	}, nil
 }

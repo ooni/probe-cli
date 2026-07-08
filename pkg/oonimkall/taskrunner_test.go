@@ -12,24 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func TestMeasurementSubmissionEventName(t *testing.T) {
-	if measurementSubmissionEventName(nil) != eventTypeStatusMeasurementSubmission {
-		t.Fatal("unexpected submission event name")
-	}
-	if measurementSubmissionEventName(errors.New("mocked error")) != eventTypeFailureMeasurementSubmission {
-		t.Fatal("unexpected submission event name")
-	}
-}
-
-func TestMeasurementSubmissionFailure(t *testing.T) {
-	if measurementSubmissionFailure(nil) != "" {
-		t.Fatal("unexpected submission failure")
-	}
-	if measurementSubmissionFailure(errors.New("mocked error")) != "mocked error" {
-		t.Fatal("unexpected submission failure")
-	}
-}
-
 // MockableTaskRunnerDependencies is the mockable struct used by [TestTaskRunnerRun].
 type MockableTaskRunnerDependencies struct {
 	Builder    *mocks.ExperimentBuilder
@@ -399,27 +381,6 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
-	t.Run("with failure opening report", func(t *testing.T) {
-		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
-		fake.Experiment.MockOpenReportContext = func(ctx context.Context) error {
-			return errors.New("mocked error")
-		}
-		runner.newSession = fake.NewSession
-		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(t, events)
-		expect := []eventKeyCount{
-			{Key: eventTypeStatusQueued, Count: 1},
-			{Key: eventTypeStatusStarted, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 3},
-			{Key: eventTypeStatusGeoIPLookup, Count: 1},
-			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeFailureReportCreate, Count: 1},
-			{Key: eventTypeStatusEnd, Count: 1},
-		}
-		assertReducedEventsLike(t, expect, reduced)
-	})
-
 	t.Run("with success and just a single entry", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulDeps()
@@ -432,11 +393,8 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			{Key: eventTypeStatusEnd, Count: 1},
 		}
@@ -458,8 +416,6 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeFailureMeasurement, Count: 1},
 			{Key: eventTypeStatusEnd, Count: 1},
@@ -488,8 +444,6 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeFailureMeasurement, Count: 1},
 			{Key: eventTypeStatusEnd, Count: 1},
@@ -524,31 +478,25 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusEnd, Count: 1},
@@ -586,19 +534,15 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusEnd, Count: 1},
@@ -640,56 +584,9 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
-			//
-			{Key: eventTypeStatusEnd, Count: 1},
-		}
-		assertReducedEventsLike(t, expect, reduced)
-	})
-
-	t.Run("with measurement submission failure", func(t *testing.T) {
-		// Implementation note: this experiment needs a non-empty input otherwise the
-		// code will not emit a progress event when it finished measuring the input and
-		// we would be missing the eventTypeStatusProgress event.
-		inputs := []string{"a"}
-		runner, emitter := newRunnerForTesting()
-		runner.settings.Inputs = inputs // this is basically ignored because we override MockLoad
-		fake := fakeSuccessfulDeps()
-		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
-			return &mocks.ExperimentTargetLoader{
-				MockLoad: func(ctx context.Context) (targets []model.ExperimentTarget, err error) {
-					// We need to mimic what would happen when settings.Inputs is explicitly provided
-					for _, input := range inputs {
-						targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
-					}
-					return
-				},
-			}
-		}
-		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) (string, error) {
-			return "", errors.New("cannot submit")
-		}
-		runner.newSession = fake.NewSession
-		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(t, events)
-		expect := []eventKeyCount{
-			{Key: eventTypeStatusQueued, Count: 1},
-			{Key: eventTypeStatusStarted, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 3},
-			{Key: eventTypeStatusGeoIPLookup, Count: 1},
-			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
-			//
-			{Key: eventTypeStatusMeasurementStart, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeFailureMeasurementSubmission, Count: 1},
-			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			//
 			{Key: eventTypeStatusEnd, Count: 1},
 		}
@@ -716,12 +613,9 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 3},
 			{Key: eventTypeStatusGeoIPLookup, Count: 1},
 			{Key: eventTypeStatusResolverLookup, Count: 1},
-			{Key: eventTypeStatusProgress, Count: 1},
-			{Key: eventTypeStatusReportCreate, Count: 1},
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
-			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
 			{Key: eventTypeStatusEnd, Count: 1},
 		}
