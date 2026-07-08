@@ -118,6 +118,9 @@ type Measurement struct {
 	// ProbeNetworkName contains the probe network name
 	ProbeNetworkName string `json:"probe_network_name"`
 
+	// ProbeID contains the anonymous probe identifier
+	ProbeID string `json:"probe_id,omitempty"`
+
 	// ReportID contains the report ID.
 	ReportID string `json:"report_id,omitempty"`
 

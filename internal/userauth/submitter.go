@@ -117,14 +117,22 @@ func NewCredentialSubmitter(
 // submitWithCredential performs the authenticated submission and credential
 // rotation. It returns the measurement UID on success.
 func (cs *CredentialSubmitter) submitWithCredential(m *model.Measurement) (string, error) {
-	content, err := json.Marshal(m)
-	if err != nil {
-		return "", err
-	}
-
 	stored := cs.store.Get()
 	if stored.Credential == "" {
 		return "", errors.New("userauth: no stored credential")
+	}
+
+	// Stamp the measurement with the probe id derived from the credential, so the
+	// uploaded measurement carries the anonymous identity.
+	probeID, err := ProbeID(stored.Credential, cs.probeASN, cs.probeCC)
+	if err != nil {
+		return "", err
+	}
+	m.ProbeID = probeID
+
+	content, err := json.Marshal(m)
+	if err != nil {
+		return "", err
 	}
 
 	config := &CredentialConfig{
