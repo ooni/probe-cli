@@ -57,6 +57,9 @@ type Controller struct {
 	// not set, the underlying code defaults to model.RunTypeTimed.
 	RunType model.RunType
 
+	// NoCredentials disables submitting with an anonymous credential.
+	NoCredentials bool
+
 	// numInputs is the total number of inputs
 	numInputs int
 
@@ -153,6 +156,16 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 		log.Debug("disabling maxRuntime with user-provided input")
 		maxRuntime = 0
 	}
+
+	var submitter model.Submitter
+	if c.Probe.Config().Sharing.UploadResults {
+		if s, err := c.Session.NewSubmitter(context.Background(), !c.NoCredentials); err != nil {
+			log.WithError(err).Debug("cannot create submitter; measurements will be saved to disk")
+		} else {
+			submitter = s
+		}
+	}
+
 	start := time.Now()
 	c.ntStartTime = start
 	for idx, input := range inputs {
@@ -200,16 +213,6 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 		}
 
 		saveToDisk := true
-		uploadResults := c.Probe.Config().Sharing.UploadResults
-		var submitter model.Submitter
-		if uploadResults {
-			if s, err := c.Session.NewSubmitter(context.Background(), true); err != nil {
-				log.WithError(err).Debug("cannot create submitter; measurements will be saved to disk")
-			} else {
-				submitter = s
-			}
-		}
-
 		if submitter != nil {
 			if _, err := submitter.Submit(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))

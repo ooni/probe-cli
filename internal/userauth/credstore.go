@@ -7,7 +7,7 @@ import (
 )
 
 // credStoreKey is the key-value store key under which we persist the credential.
-const credStoreKey = "userauth.credential"
+const credStoreKey = "userauth.state"
 
 // StoredCredential is the persisted anonymous credential together with the
 // manifest metadata it was issued against.

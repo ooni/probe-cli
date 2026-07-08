@@ -51,6 +51,10 @@ type Experiment struct {
 	// NoCollector OPTIONALLY indicates we should not be using any collector.
 	NoCollector bool
 
+	// NoCredentials OPTIONALLY indicates we should submit without an anonymous
+	// credential (i.e. anonymously).
+	NoCredentials bool
+
 	// NoJSON OPTIONALLY indicates we don't want to save measurements to a JSON file.
 	NoJSON bool
 
@@ -203,8 +207,8 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (model.Submitter, error)
 		Session: ed.Session,
 		Logger:  ed.Session.Logger(),
 		// oonirun is only used by the miniooni CLI, which submits with a
-		// credential; oonimkall does not go through oonirun.
-		UseAuth: true,
+		// credential by default; oonimkall does not go through oonirun.
+		UseAuth: !ed.NoCredentials,
 	})
 }
 

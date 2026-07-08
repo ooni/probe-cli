@@ -36,6 +36,10 @@ type LinkConfig struct {
 	// NoCollector OPTIONALLY indicates we should not be using any collector.
 	NoCollector bool
 
+	// NoCredentials OPTIONALLY indicates we should submit without an anonymous
+	// credential.
+	NoCredentials bool
+
 	// NoJSON OPTIONALLY indicates we don't want to save measurements to a JSON file.
 	NoJSON bool
 
