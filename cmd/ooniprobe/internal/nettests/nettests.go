@@ -203,7 +203,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 		uploadResults := c.Probe.Config().Sharing.UploadResults
 		var submitter model.Submitter
 		if uploadResults {
-			if s, err := c.Session.NewSubmitter(context.Background()); err != nil {
+			if s, err := c.Session.NewSubmitter(context.Background(), true); err != nil {
 				log.WithError(err).Debug("cannot create submitter; measurements will be saved to disk")
 			} else {
 				submitter = s

@@ -497,7 +497,7 @@ func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	}
 
 	sess := newSessionForTesting(t)
-	subm, err := sess.NewSubmitter(context.Background())
+	subm, err := sess.NewSubmitter(context.Background(), false)
 	if err != nil {
 		t.Fatal(err)
 	}

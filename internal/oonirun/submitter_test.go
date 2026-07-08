@@ -47,7 +47,7 @@ type FakeSubmitterSession struct {
 	Submitter Submitter
 }
 
-func (fse FakeSubmitterSession) NewSubmitter(ctx context.Context) (Submitter, error) {
+func (fse FakeSubmitterSession) NewSubmitter(ctx context.Context, useAuth bool) (Submitter, error) {
 	return fse.Submitter, fse.Error
 }
 

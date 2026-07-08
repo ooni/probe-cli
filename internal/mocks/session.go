@@ -57,7 +57,7 @@ type Session struct {
 
 	MockNewExperimentBuilder func(name string) (model.ExperimentBuilder, error)
 
-	MockNewSubmitter func(ctx context.Context) (model.Submitter, error)
+	MockNewSubmitter func(ctx context.Context, useAuth bool) (model.Submitter, error)
 
 	MockCheckIn func(ctx context.Context,
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
@@ -163,8 +163,8 @@ func (sess *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder,
 	return sess.MockNewExperimentBuilder(name)
 }
 
-func (sess *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) {
-	return sess.MockNewSubmitter(ctx)
+func (sess *Session) NewSubmitter(ctx context.Context, useAuth bool) (model.Submitter, error) {
+	return sess.MockNewSubmitter(ctx, useAuth)
 }
 
 func (sess *Session) CheckIn(ctx context.Context,

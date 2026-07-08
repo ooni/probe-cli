@@ -464,10 +464,16 @@ func (s *Session) newProbeServicesClient(ctx context.Context) (*probeservices.Cl
 }
 
 // NewSubmitter creates a new submitter instance.
-func (s *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) {
+func (s *Session) NewSubmitter(ctx context.Context, useAuth bool) (model.Submitter, error) {
 	psc, err := s.newProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Return the probeservices submitter if the caller chooses to submit
+	// without credentials
+	if !useAuth {
+		return psc, nil
 	}
 
 	// The probe-services client itself submits without a credential; it is

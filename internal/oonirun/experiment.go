@@ -202,6 +202,9 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (model.Submitter, error)
 		Enabled: !ed.NoCollector,
 		Session: ed.Session,
 		Logger:  ed.Session.Logger(),
+		// oonirun is only used by the miniooni CLI, which submits with a
+		// credential; oonimkall does not go through oonirun.
+		UseAuth: true,
 	})
 }
 
