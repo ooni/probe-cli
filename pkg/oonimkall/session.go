@@ -125,10 +125,9 @@ type Session struct {
 	TestingCheckInBeforeNewProbeServicesClient func(ctx *Context)
 	TestingCheckInBeforeCheckIn                func(ctx *Context)
 
-	cl        []context.CancelFunc
-	mtx       sync.Mutex
-	submitter model.Submitter
-	sessp     *engine.Session
+	cl    []context.CancelFunc
+	mtx   sync.Mutex
+	sessp *engine.Session
 }
 
 // NewSession is like NewSessionWithContext but without context. This
