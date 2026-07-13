@@ -21,7 +21,9 @@ list-targets:
 help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
-OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/latest/download/staticlib.tar.gz
+# The ooniprobe-rs release that provides the userauth static library bundle
+USERAUTHVERSION ?= $(shell cat USERAUTHVERSION)
+OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/download/v$(USERAUTHVERSION)/staticlib.tar.gz
 
 userauth:
 	curl -fsSL -o staticlib.tar.gz $(OONIPROBE_RS_STATICLIB_URL)
