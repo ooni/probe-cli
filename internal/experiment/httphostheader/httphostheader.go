@@ -7,7 +7,6 @@ package httphostheader
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -63,7 +62,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			HTTPHost: string(measurement.Input),
 		},
 		Session: sess,
-		Target:  fmt.Sprintf(m.config.TestHelperURL),
+		Target:  m.config.TestHelperURL,
 	}
 	tk, _ := g.Get(ctx)
 	measurement.TestKeys = &TestKeys{

@@ -475,7 +475,7 @@ func Example_oohelperdWithInternetScenario() {
 	})
 
 	// Output:
-	// {"tcp_connect":{"93.184.216.34:443":{"status":true,"failure":null}},"tls_handshake":{"93.184.216.34:443":{"server_name":"www.example.com","status":true,"failure":null}},"quic_handshake":{},"http_request":{"body_length":1533,"discovered_h3_endpoint":"www.example.com:443","failure":null,"title":"Default Web Page","headers":{"Alt-Svc":"h3=\":443\"","Content-Length":"1533","Content-Type":"text/html; charset=utf-8","Date":"Thu, 24 Aug 2023 14:35:29 GMT"},"status_code":200},"http3_request":null,"dns":{"failure":null,"addrs":["93.184.216.34"]},"ip_info":{"93.184.216.34":{"asn":15133,"flags":11}}}
+	// {"tcp_connect":{"93.184.216.34:443":{"status":true,"failure":null}},"tls_handshake":{"93.184.216.34:443":{"server_name":"www.example.com","status":true,"failure":null}},"quic_handshake":{},"http_request":{"body_length":1533,"discovered_h3_endpoint":"www.example.com:443","failure":null,"title":"Default Web Page","headers":{"Alt-Svc":"h3=\":443\"","Content-Length":"1533","Content-Type":"text/html; charset=utf-8","Date":"Thu, 24 Aug 2023 14:35:29 GMT"},"status_code":200},"http3_request":null,"dns":{"failure":null,"addrs":["93.184.216.34"]},"ip_info":{"93.184.216.34":{"asn":0,"flags":11}}}
 }
 
 // This example shows how the [InternetScenario] defines a GeoIP service like Ubuntu's one.
