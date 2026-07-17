@@ -96,14 +96,5 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			Accessible:            false,
 			Blocking:              "dns",
 		},
-		// The probe generates both an :80 and a :443 endpoint for the spoofed
-		// inconsistent address and measures them in parallel with prioritization.
-		// Whether the :443 handshake (to an address serving no TLS) gets recorded
-		// and classified before prioritization concludes is nondeterministic, so
-		// it can add the TLS bit (value 4) to either XBlockingFlags
-		// (AnalysisBlockingFlagTLSBlocking) or XNullNullFlags
-		// (AnalysisFlagNullNullExpectedTLSHandshakeFailure). The verdict itself is
-		// stable, so we assert everything except these two sub-flags.
-		IgnoreTestKeysFields: []string{"XBlockingFlags", "XNullNullFlags"},
 	}
 }

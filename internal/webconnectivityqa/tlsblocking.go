@@ -72,6 +72,5 @@ func tlsBlockingConnectionResetWithInconsistentDNS() *TestCase {
 			Accessible:            false,
 			Blocking:              "dns",
 		},
-		IgnoreTestKeysFields: []string{"XBlockingFlags", "XNullNullFlags"},
 	}
 }

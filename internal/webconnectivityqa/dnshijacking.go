@@ -39,7 +39,6 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 			Accessible:      true,
 			Blocking:        false,
 		},
-		IgnoreTestKeysFields: []string{"XBlockingFlags", "XNullNullFlags"},
 	}
 }
 
@@ -77,7 +76,6 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 			Accessible:      true,
 			Blocking:        false,
 		},
-		IgnoreTestKeysFields: []string{"XBlockingFlags", "XNullNullFlags"},
 	}
 }
 
