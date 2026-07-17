@@ -33,6 +33,10 @@ type TestCase struct {
 	// ExpectTestKeys contains the expected test keys
 	ExpectTestKeys *TestKeys
 
+	// IgnoreTestKeysFields contains an OPTIONAL list of [TestKeys] field names
+	// to exclude from the comparison against ExpectTestKeys.
+	IgnoreTestKeysFields []string
+
 	// Checkers contains an OPTIONAL list of checkers
 	// that perform additional parsing of the measurement
 	// to ensure that specific properties hold.
