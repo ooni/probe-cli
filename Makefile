@@ -97,7 +97,7 @@ CLI/windows: userauth
 #help: The `make android` command builds the oonimkall library for Android
 #help: and compiles miniooni and ooniprobe for android CLI usage.
 .PHONY: android
-android: search/for/java
+android: search/for/java userauth
 	./script/go.bash run ./internal/cmd/buildtool android cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool android cli
 	./script/go.bash run ./internal/cmd/buildtool android gomobile
@@ -105,7 +105,7 @@ android: search/for/java
 #help:
 #help: The `make ios` command builds the oonimkall library for iOS.
 .PHONY: ios
-ios: search/for/zip search/for/xcode
+ios: search/for/zip search/for/xcode userauth
 	./script/go.bash run ./internal/cmd/buildtool ios cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool ios gomobile
 	./MOBILE/ios/make-extra-frameworks
@@ -115,19 +115,19 @@ ios: search/for/zip search/for/xcode
 #help:
 #help: The `make DESKTOP/windows` command builds the oonimkall jar for windows.
 .PHONY: DESKTOP/windows
-DESKTOP/windows: search/for/java
+DESKTOP/windows: search/for/java userauth
 	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
 
 #help:
 #help: The `make DESKTOP/darwin` command builds the oonimkall jar for darwin.
 .PHONY: DESKTOP/darwin
-DESKTOP/darwin: search/for/java
+DESKTOP/darwin: search/for/java userauth
 	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=darwin
 
 #help:
 #help: The `make DESKTOP/linux` command builds the oonimkall jar for linux.
 .PHONY: DESKTOP/linux
-DESKTOP/linux: search/for/java
+DESKTOP/linux: search/for/java userauth
 	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=linux
 
 .PHONY: search/for/java
