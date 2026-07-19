@@ -173,13 +173,6 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
-      - name: Install make
-        run: choco install make -y
-
-      - name: Fetch the userauth staticlib
-        run: make userauth
-        shell: bash
-
       - name: Build the desktop jar
         run: ./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
         shell: bash
