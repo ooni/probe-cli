@@ -7,7 +7,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "windowsbuild"
-      - feat/mobile-semver
     tags:
       - "v*"
   schedule:
