@@ -1,4 +1,4 @@
-//go:build (cgo && linux && !android && (amd64 || arm64 || arm || 386)) || (cgo && darwin && !ios && (amd64 || arm64)) || (cgo && windows && (amd64 || 386))
+//go:build !nouserauth && ((cgo && linux && !android && (amd64 || arm64 || arm || 386)) || (cgo && darwin && !ios && (amd64 || arm64)) || (cgo && windows && (amd64 || 386)))
 
 package userauth
 
