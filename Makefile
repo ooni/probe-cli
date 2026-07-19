@@ -97,7 +97,7 @@ CLI/windows: userauth
 #help: The `make android` command builds the oonimkall library for Android
 #help: and compiles miniooni and ooniprobe for android CLI usage.
 .PHONY: android
-android: search/for/java userauth
+android: search/for/java
 	./script/go.bash run ./internal/cmd/buildtool android cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool android cli
 	./script/go.bash run ./internal/cmd/buildtool android gomobile
@@ -105,7 +105,7 @@ android: search/for/java userauth
 #help:
 #help: The `make ios` command builds the oonimkall library for iOS.
 .PHONY: ios
-ios: search/for/zip search/for/xcode userauth
+ios: search/for/zip search/for/xcode
 	./script/go.bash run ./internal/cmd/buildtool ios cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool ios gomobile
 	./MOBILE/ios/make-extra-frameworks
