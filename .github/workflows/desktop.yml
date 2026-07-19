@@ -6,7 +6,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "desktopbuild"
-      - feat/mobile-semver
     tags:
       - "v*"
   schedule:
