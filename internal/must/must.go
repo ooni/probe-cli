@@ -149,12 +149,15 @@ func ReadFile(filename string) []byte {
 }
 
 // FirstLineBytes takes in input a sequence of bytes and
-// returns in output the first line. This function will
-// call [runtimex.PanicOnError] on failure.
+// returns in output the first line, without its line
+// terminator. We strip a trailing carriage return so that we
+// handle CRLF line endings, which we see on Windows when git
+// checks out files with core.autocrlf enabled. This function
+// will call [runtimex.PanicOnError] on failure.
 func FirstLineBytes(data []byte) []byte {
 	first, _, good := bytes.Cut(data, []byte("\n"))
 	runtimex.Assert(good, "could not find the first line")
-	return first
+	return bytes.TrimSuffix(first, []byte("\r"))
 }
 
 // RunOutput is like [shellx.Output] but calls
