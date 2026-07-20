@@ -103,7 +103,7 @@ func linuxDockerWriteDockerfile(deps buildtoolmodel.Dependencies, dockerArch, go
 		RUN apk update
 		RUN apk upgrade
 		RUN apk add --no-progress gcc git linux-headers musl-dev
-		RUN apk add --no-progress cargo rust cmake ninja make perl g++ clang-dev
+		RUN apk add --no-progress curl tar cargo rust cmake ninja make perl g++ clang-dev
 		RUN adduser -D -h /home/oobuild -G nobody -u %s oobuild
 		ENV HOME=/home/oobuild`, dockerArch, golangDockerImage, uid,
 	))
