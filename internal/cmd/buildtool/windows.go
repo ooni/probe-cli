@@ -97,13 +97,25 @@ func windowsMingwCheck() {
 	windowsMingwCheckFor(windowsMingw386Compiler)
 }
 
+// windowsMingwParseVersion extracts the version from the first line printed by
+// `gcc --version`. Every gcc build tags itself with a parenthesised vendor string
+// and prints the version right afterwards.
+func windowsMingwParseVersion(firstLine string) string {
+	v := strings.Split(firstLine, " ")
+	for idx, tok := range v {
+		if strings.HasSuffix(tok, ")") && idx+1 < len(v) {
+			return v[idx+1]
+		}
+	}
+	log.Fatalf("cannot parse the mingw version from %q", firstLine)
+	return "" // not reached
+}
+
 // windowsMingwCheckFor implements mingwCheck for the given compiler.
 func windowsMingwCheckFor(compiler string) {
 	expected := windowsMingwExpectedVersionGetter()
 	firstLine := string(must.FirstLineBytes(must.RunOutputQuiet(compiler, "--version")))
-	v := strings.Split(firstLine, " ")
-	runtimex.Assert(len(v) >= 3, "expected to see three tokens or more")
-	if got := v[2]; got != expected {
+	if got := windowsMingwParseVersion(firstLine); got != expected {
 		log.Fatalf("expected mingw %s but got %s", expected, got)
 	}
 	log.Infof("using %s %s", compiler, expected)

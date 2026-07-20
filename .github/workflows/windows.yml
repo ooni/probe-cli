@@ -50,7 +50,7 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH="/mingw32/bin:$PATH"
-          make CLI/windows
+          make EXPECTED_MINGW_W64_VERSION="16.1.0" CLI/windows
 
       - uses: actions/upload-artifact@v4
         with:
