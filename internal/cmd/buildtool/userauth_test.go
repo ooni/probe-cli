@@ -89,7 +89,11 @@ func TestUserauthBuildStaticlib(t *testing.T) {
 			Env:  []string{},
 			Argv: []string{"rustup", "target", "add", "i686-pc-windows-gnu"},
 		}, {
-			Env: []string{},
+			Env: []string{
+				"CFLAGS=-mlong-double-64",
+				"CXXFLAGS=-mlong-double-64",
+				"BINDGEN_EXTRA_CLANG_ARGS=-mlong-double-64",
+			},
 			Argv: []string{
 				"cargo", "build", "-p", "ooniprobe-ffi", "--release",
 				"--target", "i686-pc-windows-gnu",

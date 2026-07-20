@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"github.com/spf13/cobra"
 )
 
@@ -80,6 +81,21 @@ func userauthRustTarget(goos, goarch string) string {
 	panic(fmt.Errorf("userauth: unsupported target: %s/%s", goos, goarch))
 }
 
+// userauthEnvp returns the environment for the cargo build.
+func userauthEnvp(goos, goarch string) *shellx.Envp {
+	envp := &shellx.Envp{}
+	// On windows/386 we must force a 64-bit long double. Otherwise bindgen parses the
+	// mingw headers as having a 12-byte `_LONGDOUBLE` while the type it generates is
+	// 8 bytes, and the resulting layout assertion fails to compile with:
+	if goos == "windows" && goarch == "386" {
+		const longDouble = "-mlong-double-64"
+		envp.Append("CFLAGS", longDouble)
+		envp.Append("CXXFLAGS", longDouble)
+		envp.Append("BINDGEN_EXTRA_CLANG_ARGS", longDouble)
+	}
+	return envp
+}
+
 // userauthBuildStaticlib fetches the pinned ooniprobe-rs sources and builds the
 // staticlib for the given GOOS/GOARCH, installing it where ./internal/userauth
 // expects to find it.
@@ -111,7 +127,7 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 	if rustTarget != "" {
 		argv = append(argv, "--target", rustTarget)
 	}
-	must.Run(log.Log, "cargo", argv...)
+	cdepsMustRunWithDefaultConfig(userauthEnvp(goos, goarch), "cargo", argv...)
 
 	// Install the staticlib where ./internal/userauth's cgo LDFLAGS look for it.
 	destdir := filepath.Join(topdir, "internal", "userauth", "lib",
