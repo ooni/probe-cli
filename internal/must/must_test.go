@@ -185,6 +185,14 @@ func TestFirstLineBytes(t *testing.T) {
 	}
 }
 
+func TestFirstLineBytesCRLF(t *testing.T) {
+	data := []byte("antani\r\nmascetti\r\nmelandri\r\n")
+	firstline := FirstLineBytes(data)
+	if string(firstline) != "antani" {
+		t.Fatalf("unexpected result: %q", firstline)
+	}
+}
+
 func TestRunOutput(t *testing.T) {
 	out := RunOutput(model.DiscardLogger, testGolangExe, "version")
 	if len(out) <= 0 {
