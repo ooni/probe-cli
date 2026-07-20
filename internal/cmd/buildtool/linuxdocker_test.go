@@ -58,6 +58,14 @@ func TestLinuxDockerBuildAll(t *testing.T) {
 				"docker", "run", "--platform", "linux/arm64",
 				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
 				"oobuild-arm64-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
+				"linux", "userauth",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"docker", "run", "--platform", "linux/arm64",
+				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
+				"oobuild-arm64-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
 				"linux", "static", "--goarm", "0",
 			},
 		}},
@@ -73,6 +81,14 @@ func TestLinuxDockerBuildAll(t *testing.T) {
 			Argv: []string{
 				"docker", "build", "--platform", "linux/amd64", "-t",
 				"oobuild-amd64-" + taggedImageSuffix, "CLI",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"docker", "run", "--platform", "linux/amd64",
+				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
+				"oobuild-amd64-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
+				"linux", "userauth",
 			},
 		}, {
 			Env: []string{},
@@ -102,6 +118,14 @@ func TestLinuxDockerBuildAll(t *testing.T) {
 				"docker", "run", "--platform", "linux/386",
 				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
 				"oobuild-386-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
+				"linux", "userauth",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"docker", "run", "--platform", "linux/386",
+				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
+				"oobuild-386-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
 				"linux", "static", "--goarm", "0",
 			},
 		}},
@@ -124,6 +148,14 @@ func TestLinuxDockerBuildAll(t *testing.T) {
 				"docker", "run", "--platform", "linux/arm/v7",
 				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
 				"oobuild-armv7-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
+				"linux", "userauth",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"docker", "run", "--platform", "linux/arm/v7",
+				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
+				"oobuild-armv7-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
 				"linux", "static", "--goarm", "7",
 			},
 		}},
@@ -139,6 +171,14 @@ func TestLinuxDockerBuildAll(t *testing.T) {
 			Argv: []string{
 				"docker", "build", "--platform", "linux/arm/v6", "-t",
 				"oobuild-armv6-" + taggedImageSuffix, "CLI",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"docker", "run", "--platform", "linux/arm/v6",
+				"--user", user.Uid, "-v", cwd + ":/ooni", "-w", "/ooni",
+				"oobuild-armv6-" + taggedImageSuffix, "go", "run", "./internal/cmd/buildtool",
+				"linux", "userauth",
 			},
 		}, {
 			Env: []string{},

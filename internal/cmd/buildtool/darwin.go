@@ -14,7 +14,7 @@ import (
 
 // darwinSubcommand returns the darwin [cobra.Command].
 func darwinSubcommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "darwin",
 		Short: "Builds ooniprobe and miniooni for darwin",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -22,6 +22,8 @@ func darwinSubcommand() *cobra.Command {
 		},
 		Args: cobra.NoArgs,
 	}
+	cmd.AddCommand(darwinUserauthSubcommand())
+	return cmd
 }
 
 // darwinBuildAll builds all the packages for darwin.

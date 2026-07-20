@@ -69,8 +69,21 @@ func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 	must.Run(log.Log, "docker", "pull", "--platform", "linux/"+dockerArch, golangDockerImage)
 	must.Run(log.Log, "docker", "build", "--platform", "linux/"+dockerArch, "-t", image, "CLI")
 
-	log.Infof("run the build inside docker")
 	curdir := runtimex.Try1(os.Getwd())
+
+	// Build the userauth staticlib inside the container.
+	log.Infof("build the userauth staticlib inside docker")
+	must.Run(
+		log.Log, "docker", "run",
+		"--platform", "linux/"+dockerArch,
+		"--user", user.Uid,
+		"-v", curdir+":/ooni",
+		"-w", "/ooni",
+		image,
+		"go", "run", "./internal/cmd/buildtool", "linux", "userauth",
+	)
+
+	log.Infof("run the build inside docker")
 
 	must.Run(
 		log.Log, "docker", "run",
@@ -90,6 +103,7 @@ func linuxDockerWriteDockerfile(deps buildtoolmodel.Dependencies, dockerArch, go
 		RUN apk update
 		RUN apk upgrade
 		RUN apk add --no-progress gcc git linux-headers musl-dev
+		RUN apk add --no-progress cargo rust cmake make perl g++
 		RUN adduser -D -h /home/oobuild -G nobody -u %s oobuild
 		ENV HOME=/home/oobuild`, dockerArch, golangDockerImage, uid,
 	))

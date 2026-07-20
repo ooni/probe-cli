@@ -7,6 +7,7 @@ on:
       - "release/**"
       - "fullbuild"
       - "windowsbuild"
+      - feat/cli-userauth
     tags:
       - "v*"
   schedule:
@@ -31,7 +32,7 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y mingw-w64
 
-      - run: make EXPECTED_MINGW_W64_VERSION="10-win32" CLI/windows
+      - run: make USERAUTH_FROM_SOURCE=1 EXPECTED_MINGW_W64_VERSION="10-win32" CLI/windows
 
       - uses: actions/upload-artifact@v4
         with:

@@ -19,7 +19,7 @@ import (
 
 // windowsSubcommand returns the windows sucommand.
 func windowsSubcommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "windows",
 		Short: "Builds ooniprobe and miniooni for windows",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -27,6 +27,8 @@ func windowsSubcommand() *cobra.Command {
 		},
 		Args: cobra.NoArgs,
 	}
+	cmd.AddCommand(windowsUserauthSubcommand())
+	return cmd
 }
 
 // windowsBuildAll is the main function of the windows subcommand.
