@@ -129,6 +129,44 @@ func TestGetMeasurementMeta(t *testing.T) {
 		}
 	})
 
+	t.Run("a measurement UID is sent instead of the report ID", func(t *testing.T) {
+		// create a server that asserts we query by measurement_uid and neither
+		// send report_id nor input
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.URL.Path == "/api/v1/measurement_meta", "invalid URL path")
+			q := r.URL.Query()
+			runtimex.Assert(q.Get("measurement_uid") == "20260721081110.803797_US_webconnectivity_x", "missing measurement_uid")
+			runtimex.Assert(!q.Has("report_id"), "unexpected report_id")
+			runtimex.Assert(!q.Has("input"), "unexpected input")
+			w.Write(must.MarshalJSON(expectMmeta))
+		}))
+		defer srv.Close()
+
+		client := newclient()
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		uidConfig := model.OOAPIMeasurementMetaConfig{
+			MeasurementUID: "20260721081110.803797_US_webconnectivity_x",
+			// these must be ignored in favour of the UID
+			ReportID: "should-be-ignored",
+			Input:    "https://www.example.org",
+			Full:     true,
+		}
+		if _, err := client.GetMeasurementMeta(context.Background(), uidConfig); err != nil {
+			t.Fatal(err)
+		}
+	})
+
 	t.Run("we can use cloudfronting", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
