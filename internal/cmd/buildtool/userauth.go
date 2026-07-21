@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -26,6 +27,9 @@ const (
 
 	// userauthHeaderName is the name of the FFI header we install.
 	userauthHeaderName = "ooniprobe_userauth.h"
+
+	// userauthRustTargetEnv, when set, is the Rust target used to compile the staticlib.
+	userauthRustTargetEnv = "USERAUTH_RUST_TARGET"
 )
 
 // userauthOSDir maps a GOOS to the directory name used by ./internal/userauth.
@@ -62,7 +66,7 @@ func userauthArchDir(goarch string) string {
 func userauthRustTarget(goos, goarch string) string {
 	switch goos {
 	case "linux":
-		return ""
+		return os.Getenv(userauthRustTargetEnv)
 	case "windows":
 		switch goarch {
 		case "amd64":
@@ -86,22 +90,19 @@ func userauthEnvp(goos, goarch string) *shellx.Envp {
 	envp := &shellx.Envp{}
 	// On windows/386 we must force a 64-bit long double. Otherwise bindgen parses the
 	// mingw headers as having a 12-byte `_LONGDOUBLE` while the type it generates is
-	// 8 bytes, and the resulting layout assertion fails to compile with:
+	// 8 bytes, and the resulting layout assertion fails to compile.
 	if goos == "windows" && goarch == "386" {
 		const longDouble = "-mlong-double-64"
 		envp.Append("CFLAGS", longDouble)
 		envp.Append("CXXFLAGS", longDouble)
 		envp.Append("BINDGEN_EXTRA_CLANG_ARGS", longDouble)
 	}
-
-	// The libc crate still defaults to musl 1.1 semantics, where time_t is 32 bits
-	// on 32-bit targets. Alpine ships musl 1.2, which widened time_t to 64 bits and
-	// exposed the wider functions under __*_time64 names.
-	// https://github.com/rust-lang/libc/issues/1848
-	if goos == "linux" && (goarch == "386" || goarch == "arm") {
-		envp.Append("RUST_LIBC_UNSTABLE_MUSL_V1_2_3", "1")
-	}
 	return envp
+}
+
+// userauthArchIs32bit reports whether an install arch dir is 32 bit.
+func userauthArchIs32bit(archDir string) bool {
+	return archDir == "x86" || archDir == "arm"
 }
 
 // userauthBuildStaticlib fetches the pinned ooniprobe-rs sources and builds the
@@ -123,23 +124,32 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 	must.Run(log.Log, "tar", "-xf", "v0.1.5-alpha.tar.gz")
 	_ = deps.MustChdir("ooniprobe-rs-0.1.5-alpha") // must be mockable
 
-	// An empty target means we build for the hosw
 	rustTarget := userauthRustTarget(goos, goarch)
+	archDir := userauthArchDir(goarch)
 	libdir := filepath.Join("target", "release")
 	if rustTarget != "" {
 		must.Run(log.Log, "rustup", "target", "add", rustTarget)
 		libdir = filepath.Join("target", rustTarget, "release")
 	}
 
+	envp := userauthEnvp(goos, goarch)
+	if goos == "linux" && userauthArchIs32bit(archDir) {
+		// The libc crate still defaults to musl 1.1 semantics, where time_t is 32 bits
+		// on 32-bit targets. Alpine ships musl 1.2, which widened time_t to 64 bits and
+		// exposed the wider functions under __*_time64 names.
+		// https://github.com/rust-lang/libc/issues/1848
+		envp.Append("RUST_LIBC_UNSTABLE_MUSL_V1_2_3", "1")
+	}
+
 	argv := []string{"build", "-p", userauthCrate, "--release"}
 	if rustTarget != "" {
 		argv = append(argv, "--target", rustTarget)
 	}
-	cdepsMustRunWithDefaultConfig(userauthEnvp(goos, goarch), "cargo", argv...)
+	cdepsMustRunWithDefaultConfig(envp, "cargo", argv...)
 
 	// Install the staticlib where ./internal/userauth's cgo LDFLAGS look for it.
 	destdir := filepath.Join(topdir, "internal", "userauth", "lib",
-		userauthOSDir(goos), userauthArchDir(goarch))
+		userauthOSDir(goos), archDir)
 	must.Run(log.Log, "mkdir", "-p", destdir)
 	must.Run(log.Log, "cp", filepath.Join(libdir, userauthLibName), destdir)
 

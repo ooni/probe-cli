@@ -78,7 +78,7 @@ CLI/linux-static-armv6:
 #help: ooniprobe and miniooni binaries for linux/arm/v7.
 .PHONY: CLI/linux-static-armv7
 CLI/linux-static-armv7:
-	./script/go.bash run ./internal/cmd/buildtool linux docker armv7
+	./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm --goarm 7
 
 #help:
 #help: The `make CLI/linux-static-arm64` command builds and statically links the

@@ -216,13 +216,17 @@ jobs:
 
   build_linux_cli_armv7:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: armv7
+            rust-target: armv7-unknown-linux-musleabihf
+            musl-prefix: armv7l-linux-musleabihf
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y qemu-user-static
 
       - name: Get GOVERSION content
         id: goversion
@@ -230,24 +234,46 @@ jobs:
       - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-armv7-${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-linux-userauth-${{ matrix.arch }}-${{ steps.goversion.outputs.version }}"
 
-      - uses: actions/cache@v3
+      - name: Setup Rust target
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: GOCACHE
-          key: linux-build-cache-armv7
+          targets: ${{ matrix.rust-target }}
 
-      - run: make CLI/linux-static-armv7
+      - name: Install musl cross toolchain
+        run: |
+          mkdir -p "$HOME/x-tools"
+          curl -fsSL "https://musl.cc/${{ matrix.musl-prefix }}-cross.tgz" | tar -xz -C "$HOME/x-tools"
+          root="$HOME/x-tools/${{ matrix.musl-prefix }}-cross"
+          echo "$root/bin" >> "$GITHUB_PATH"
+          echo "BINDGEN_EXTRA_CLANG_ARGS=--sysroot=$root/${{ matrix.musl-prefix }} --target=${{ matrix.rust-target }}" >> "$GITHUB_ENV"
+
+      - name: Configure cargo linker
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml << EOF
+          [target.${{ matrix.rust-target }}]
+          linker = "${{ matrix.musl-prefix }}-gcc"
+          EOF
+
+      - name: Cross build the CLI
+        run: make CLI/linux-static-armv7
+        env:
+          USERAUTH_FROM_SOURCE: "1"
+          USERAUTH_RUST_TARGET: ${{ matrix.rust-target }}
+          CC: ${{ matrix.musl-prefix }}-gcc
+          CXX: ${{ matrix.musl-prefix }}-g++
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ooniprobe-linux-armv7
-          path: ./CLI/ooniprobe-linux-armv7
+          name: ooniprobe-linux-${{ matrix.arch }}
+          path: ./CLI/ooniprobe-linux-${{ matrix.arch }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: miniooni-linux-armv7
-          path: ./CLI/miniooni-linux-armv7
+          name: miniooni-linux-${{ matrix.arch }}
+          path: ./CLI/miniooni-linux-${{ matrix.arch }}
 
   publish_linux_cli_armv7:
     runs-on: ubuntu-22.04
