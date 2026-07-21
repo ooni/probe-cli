@@ -57,21 +57,21 @@ CLI/darwin: userauth/darwin
 #help: ooniprobe and miniooni binaries for linux/386.
 .PHONY: CLI/linux-static-386
 CLI/linux-static-386:
-	./script/go.bash run ./internal/cmd/buildtool linux docker 386
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch 386
 
 #help:
 #help: The `make CLI/linux-static-amd64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/amd64.
 .PHONY: CLI/linux-static-amd64
 CLI/linux-static-amd64:
-	./script/go.bash run ./internal/cmd/buildtool linux docker amd64
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch amd64
 
 #help:
 #help: The `make CLI/linux-static-armv6` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v6.
 .PHONY: CLI/linux-static-armv6
 CLI/linux-static-armv6:
-	./script/go.bash run ./internal/cmd/buildtool linux docker armv6
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm --goarm 6
 
 #help:
 #help: The `make CLI/linux-static-armv7` command builds and statically links the
@@ -85,7 +85,7 @@ CLI/linux-static-armv7:
 #help: ooniprobe and miniooni binaries for linux/arm64.
 .PHONY: CLI/linux-static-arm64
 CLI/linux-static-arm64:
-	./script/go.bash run ./internal/cmd/buildtool linux docker arm64
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm64
 
 #help:
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
