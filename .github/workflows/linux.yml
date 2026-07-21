@@ -250,7 +250,7 @@ jobs:
       - name: Install musl cross toolchain
         run: |
           mkdir -p "$HOME/x-tools"
-          curl -fsSL "https://musl.cc/${{ matrix.musl-prefix }}-cross.tgz" | tar -xz -C "$HOME/x-tools"
+          curl -fsSL "https://musl.cc.timfish.dev/${{ matrix.musl-prefix }}-cross.tgz" | tar -xz -C "$HOME/x-tools"
           root="$HOME/x-tools/${{ matrix.musl-prefix }}-cross"
           echo "$root/bin" >> "$GITHUB_PATH"
           echo "BINDGEN_EXTRA_CLANG_ARGS=--sysroot=$root/${{ matrix.musl-prefix }} --target=${{ matrix.rust-target }}" >> "$GITHUB_ENV"
