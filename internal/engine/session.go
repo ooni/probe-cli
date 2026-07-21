@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"os"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/userauth"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -462,12 +464,59 @@ func (s *Session) newProbeServicesClient(ctx context.Context) (*probeservices.Cl
 }
 
 // NewSubmitter creates a new submitter instance.
-func (s *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) {
+func (s *Session) NewSubmitter(ctx context.Context, useAuth bool) (model.Submitter, error) {
 	psc, err := s.newProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return probeservices.NewSubmitter(psc, s.Logger()), nil
+
+	// Return the probeservices submitter if the caller chooses to submit
+	// without credentials
+	if !useAuth {
+		return psc, nil
+	}
+
+	// The probe-services client itself submits without a credential; it is
+	// the baseline and the fallback for the credential path.
+	var base model.Submitter = psc
+
+	manifest, err := psc.GetManifest(ctx)
+	if err != nil {
+		s.Logger().Debugf("userauth: manifest unavailable, submitting without credential: %s", err.Error())
+		return base, nil
+	}
+	probeCC, probeASN := s.ProbeCC(), s.ProbeASNString()
+	ageRange, minMeasurementCount, err := probeservices.GetRangesFromPolicy(manifest, probeCC, probeASN)
+	if err != nil {
+		s.Logger().Debug("userauth: no usable submission policy, submitting without credential")
+		return base, nil
+	}
+
+	cred, err := userauth.NewCredentialSubmitter(ctx, userauth.CredentialSubmitterConfig{
+		BaseURL:         psc.BaseURL,
+		ProbeCC:         probeCC,
+		ProbeASN:        probeASN,
+		PublicParams:    manifest.Manifest.PublicParameters,
+		ManifestVersion: manifest.Meta.Version,
+		AgeRange: userauth.ParamRange{
+			Min: ageRange[0],
+			Max: ageRange[1],
+		},
+		MeasurementCountRange: userauth.ParamRange{
+			Min: minMeasurementCount,
+			Max: math.MaxUint32,
+		},
+		Proxy:     s.ProxyURLString(),
+		Store:     userauth.NewCredStore(s.KeyValueStore()),
+		Logger:    s.Logger(),
+		Fallback:  base,
+		UserAgent: s.SoftwareName(),
+	})
+	if err != nil {
+		s.Logger().Debugf("credentials unavailable, submitting without credential: %s", err.Error())
+		return base, nil
+	}
+	return cred, nil
 }
 
 // newOrchestraClient creates a new orchestra client. This client is registered
@@ -559,6 +608,15 @@ func (s *Session) GeoipDB() string {
 // ProxyURL returns the Proxy URL, or nil if not set
 func (s *Session) ProxyURL() *url.URL {
 	return s.proxyURL
+}
+
+// ProxyURLString returns the proxy url as a string
+func (s *Session) ProxyURLString() string {
+	proxyURL := s.ProxyURL()
+	if proxyURL == nil {
+		return ""
+	}
+	return proxyURL.String()
 }
 
 // ResolverASNString returns the resolver ASN as a string

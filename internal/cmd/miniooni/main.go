@@ -35,6 +35,7 @@ type Options struct {
 	MaxRuntime          int64
 	NoJSON              bool
 	NoCollector         bool
+	NoCredentials       bool
 	ProbeServicesURL    string
 	Proxy               string
 	Random              bool
@@ -98,6 +99,13 @@ func main() {
 		"n",
 		false,
 		"do not submit measurements to the OONI collector",
+	)
+
+	flags.BoolVar(
+		&globalOptions.NoCredentials,
+		"no-creds",
+		false,
+		"submit measurements without an anonymous credential",
 	)
 
 	flags.StringVar(

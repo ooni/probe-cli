@@ -484,7 +484,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 		// Note: the convention is that we do not submit experiment results when the
 		// experiment measurement function returns a non-nil error, since such an error
 		// represents a fundamental failure in setting up the experiment
-		sess.MockNewSubmitter = func(ctx context.Context) (model.Submitter, error) {
+		sess.MockNewSubmitter = func(ctx context.Context, useAuth bool) (model.Submitter, error) {
 			subm := &mocks.Submitter{
 				MockSubmit: func(ctx context.Context, m *model.Measurement) (string, error) {
 					panic("should not be called")

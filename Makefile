@@ -21,67 +21,76 @@ list-targets:
 help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
+# The ooniprobe-rs release that provides the userauth static library bundle
+USERAUTHVERSION ?= $(shell cat USERAUTHVERSION)
+OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/download/v$(USERAUTHVERSION)/staticlib.tar.gz
+
+userauth:
+	curl -fsSL -o staticlib.tar.gz $(OONIPROBE_RS_STATICLIB_URL)
+	tar -xzf staticlib.tar.gz -C internal/userauth
+	rm -f staticlib.tar.gz
+
 #help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
-CLI/darwin:
+CLI/darwin: userauth
 	./script/go.bash run ./internal/cmd/buildtool darwin
 
 #help:
 #help: The `make CLI/linux-static-386` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/386.
 .PHONY: CLI/linux-static-386
-CLI/linux-static-386:
+CLI/linux-static-386: userauth
 	./script/go.bash run ./internal/cmd/buildtool linux docker 386
 
 #help:
 #help: The `make CLI/linux-static-amd64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/amd64.
 .PHONY: CLI/linux-static-amd64
-CLI/linux-static-amd64:
+CLI/linux-static-amd64: userauth
 	./script/go.bash run ./internal/cmd/buildtool linux docker amd64
 
 #help:
 #help: The `make CLI/linux-static-armv6` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v6.
 .PHONY: CLI/linux-static-armv6
-CLI/linux-static-armv6:
+CLI/linux-static-armv6: userauth
 	./script/go.bash run ./internal/cmd/buildtool linux docker armv6
 
 #help:
 #help: The `make CLI/linux-static-armv7` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v7.
 .PHONY: CLI/linux-static-armv7
-CLI/linux-static-armv7:
+CLI/linux-static-armv7: userauth
 	./script/go.bash run ./internal/cmd/buildtool linux docker armv7
 
 #help:
 #help: The `make CLI/linux-static-arm64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm64.
 .PHONY: CLI/linux-static-arm64
-CLI/linux-static-arm64:
+CLI/linux-static-arm64: userauth
 	./script/go.bash run ./internal/cmd/buildtool linux docker arm64
 
 #help:
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/miniooni
-CLI/miniooni:
+CLI/miniooni: userauth
 	./script/go.bash run ./internal/cmd/buildtool generic miniooni
 
 #help:
 #help: The `make CLI/ooniprobe` command creates a build of ooniprobe, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/ooniprobe
-CLI/ooniprobe:
+CLI/ooniprobe: userauth
 	./script/go.bash run ./internal/cmd/buildtool generic ooniprobe
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
 #help: command line clients for windows/386 and windows/amd64.
 .PHONY: CLI/windows
-CLI/windows:
+CLI/windows: userauth
 	./script/go.bash run ./internal/cmd/buildtool windows
 
 #help:

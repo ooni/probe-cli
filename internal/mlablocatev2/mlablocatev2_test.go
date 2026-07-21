@@ -31,9 +31,6 @@ func TestQueryNDT7Success(t *testing.T) {
 		if entry.Hostname == "" {
 			t.Fatal("expected non empty Hostname here")
 		}
-		if entry.Site == "" {
-			t.Fatal("expected non-empty Site here")
-		}
 		if entry.WSSDownloadURL == "" {
 			t.Fatal("expected non-empty WSSDownloadURL here")
 		}

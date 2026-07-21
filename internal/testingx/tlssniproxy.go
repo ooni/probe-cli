@@ -100,14 +100,28 @@ func (tp *TLSSNIProxy) handle(clientConn net.Conn) {
 	// make sure we close the client connection
 	defer clientConn.Close()
 
-	// read initial records
+	// Read the ClientHello and extract the SNI.
 	buffer := make([]byte, 1<<17)
-	count := runtimex.Try1(clientConn.Read(buffer))
-	rawRecords := buffer[:count]
+	var (
+		rawRecords []byte
+		sni        string
+	)
+	for {
+		count := runtimex.Try1(clientConn.Read(buffer))
+		rawRecords = append(rawRecords, buffer[:count]...)
 
-	// inspecty the raw records to find the SNI
-	tlsHandshakeMsg, length := runtimex.Try2(netem.ExtractTLSHandshake(rawRecords, []byte{}, 0))
-	sni := runtimex.Try1(netem.ExtractTLServerName(tlsHandshakeMsg[:int(length)]))
+		handshake, complete, err := netem.ReassembleTLSHandshake(rawRecords)
+		runtimex.PanicOnError(err, "netem.ReassembleTLSHandshake failed")
+		if !complete {
+			// bound the buffering so a stalled client cannot make us allocate
+			// without limit while we wait for the rest of the ClientHello
+			runtimex.Assert(len(rawRecords) <= 1<<17, "ClientHello too large to reassemble")
+			continue
+		}
+
+		sni = runtimex.Try1(netem.ExtractTLServerName(handshake))
+		break
+	}
 
 	// connect to the remote host
 	tcpDialer := tp.netx.NewDialerWithResolver(tp.logger, tp.netx.NewStdlibResolver(tp.logger))

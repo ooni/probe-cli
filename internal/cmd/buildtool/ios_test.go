@@ -152,12 +152,12 @@ func TestIOSBuildCdepsZlib(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -206,12 +206,12 @@ func TestIOSBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -260,12 +260,12 @@ func TestIOSBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -361,12 +361,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.6.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -411,12 +411,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.6.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -461,12 +461,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.6.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -560,12 +560,12 @@ func TestIOSBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -743,12 +743,12 @@ func TestIOSBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -926,12 +926,12 @@ func TestIOSBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1154,12 +1154,12 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.22.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.22.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1244,12 +1244,12 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.22.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.22.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1334,12 +1334,12 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.22.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.22.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},

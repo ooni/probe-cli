@@ -143,9 +143,9 @@ func TestCloudfront(t *testing.T) {
 	}
 	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
-			Address: "https://meek.azureedge.net",
+			Address: "https://www.fastly.com",
 			Type:    "cloudfront",
-			Front:   "ajax.aspnetcdn.com",
+			Front:   "github.global.ssl.fastly.net",
 		})
 	if err != nil {
 		t.Fatal(err)

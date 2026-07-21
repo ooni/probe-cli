@@ -26,6 +26,8 @@ func TestNewExperimentMeasurer(t *testing.T) {
 }
 
 func TestSuccess(t *testing.T) {
+	// TODO: update with new TH ip once the tcp-echo test helper is up
+	t.Skip("skip: depends on inactive legacy tcp-echo test helper")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}

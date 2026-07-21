@@ -145,7 +145,7 @@ func Test_newEndpointFromInputString(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(got, tt.want); diff != "" {
-				t.Error(diff)
+				t.Errorf("%s", diff)
 			}
 		})
 	}

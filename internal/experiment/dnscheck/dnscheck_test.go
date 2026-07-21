@@ -167,7 +167,7 @@ func TestMakeResolverURL(t *testing.T) {
 	}
 
 	// test IPv6 URLs are quoted
-	addr = "2001:db8:85a3:8d3:1319:8a2e:370"
+	addr = "2001:db8:85a3:8d3:1319:8a2e:370:7348"
 	resolver = makeResolverURL(&url.URL{Host: "example.com"}, addr)
 	resolverURL, err = url.Parse(resolver)
 	if err != nil {

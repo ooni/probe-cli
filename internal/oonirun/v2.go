@@ -198,6 +198,7 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			MaxRuntime:             config.MaxRuntime,
 			Name:                   nettest.TestName,
 			NoCollector:            config.NoCollector,
+			NoCredentials:          config.NoCredentials,
 			NoJSON:                 config.NoJSON,
 			Random:                 config.Random,
 			ReportFile:             config.ReportFile,

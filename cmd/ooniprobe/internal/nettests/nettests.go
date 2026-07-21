@@ -57,6 +57,9 @@ type Controller struct {
 	// not set, the underlying code defaults to model.RunTypeTimed.
 	RunType model.RunType
 
+	// NoCredentials disables submitting with an anonymous credential.
+	NoCredentials bool
+
 	// numInputs is the total number of inputs
 	numInputs int
 
@@ -139,17 +142,6 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 	log.Debug(color.RedString("status.queued"))
 	log.Debug(color.RedString("status.started"))
 
-	if c.Probe.Config().Sharing.UploadResults {
-		if err := exp.OpenReportContext(context.Background()); err != nil {
-			log.Debugf(
-				"%s: %s", color.RedString("failure.report_create"), err.Error(),
-			)
-		} else {
-			log.Debugf(color.RedString("status.report_create"))
-			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
-		}
-	}
-
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
 	if c.RunType == model.RunTypeTimed && maxRuntime > 0 {
 		log.Debug("disabling maxRuntime when running in the background")
@@ -164,6 +156,16 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 		log.Debug("disabling maxRuntime with user-provided input")
 		maxRuntime = 0
 	}
+
+	var submitter model.Submitter
+	if c.Probe.Config().Sharing.UploadResults {
+		if s, err := c.Session.NewSubmitter(context.Background(), !c.NoCredentials); err != nil {
+			log.WithError(err).Debug("cannot create submitter; measurements will be saved to disk")
+		} else {
+			submitter = s
+		}
+	}
+
 	start := time.Now()
 	c.ntStartTime = start
 	for idx, input := range inputs {
@@ -211,11 +213,8 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 		}
 
 		saveToDisk := true
-		if c.Probe.Config().Sharing.UploadResults {
-			// Implementation note: SubmitMeasurement will fail here if we did fail
-			// to open the report but we still want to continue. There will be a
-			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if _, err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
+		if submitter != nil {
+			if _, err := submitter.Submit(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")

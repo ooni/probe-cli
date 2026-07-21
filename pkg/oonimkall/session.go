@@ -324,7 +324,7 @@ func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasuremen
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	if sess.submitter == nil {
-		submitter, err := sess.sessp.NewSubmitter(ctx.ctx)
+		submitter, err := sess.sessp.NewSubmitter(ctx.ctx, false)
 		if err != nil {
 			return nil, err
 		}
