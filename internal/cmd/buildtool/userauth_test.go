@@ -75,6 +75,69 @@ func TestUserauthBuildStaticlib(t *testing.T) {
 			Argv: cbindgen,
 		}},
 	}, {
+		// On 32-bit musl we must tell the libc crate that time_t is 64 bits,
+		// because alpine ships musl 1.2 while the crate defaults to musl 1.1.
+		name:   "linux/386 asks the libc crate for musl 1.2.3 semantics",
+		goos:   "linux",
+		goarch: "386",
+		expect: []buildtooltest.ExecExpectations{{
+			Env:  []string{},
+			Argv: []string{"curl", "-fsSLO", srcURL},
+		}, {
+			Env:  []string{},
+			Argv: []string{"tar", "-xf", tarball},
+		}, {
+			Env:  []string{"RUST_LIBC_UNSTABLE_MUSL_V1_2_3=1"},
+			Argv: []string{"cargo", "build", "-p", "ooniprobe-ffi", "--release"},
+		}, {
+			Env:  []string{},
+			Argv: []string{"mkdir", "-p", libdir("linux", "x86")},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"cp",
+				filepath.Join("target", "release", "libuniffi_ooniprobe.a"),
+				libdir("linux", "x86"),
+			},
+		}, {
+			Env:  []string{},
+			Argv: []string{"mkdir", "-p", incdir},
+		}, {
+			Env:  []string{},
+			Argv: cbindgen,
+		}},
+	}, {
+		// armv6 and armv7 are both GOARCH=arm and need the same flag.
+		name:   "linux/arm asks the libc crate for musl 1.2.3 semantics",
+		goos:   "linux",
+		goarch: "arm",
+		expect: []buildtooltest.ExecExpectations{{
+			Env:  []string{},
+			Argv: []string{"curl", "-fsSLO", srcURL},
+		}, {
+			Env:  []string{},
+			Argv: []string{"tar", "-xf", tarball},
+		}, {
+			Env:  []string{"RUST_LIBC_UNSTABLE_MUSL_V1_2_3=1"},
+			Argv: []string{"cargo", "build", "-p", "ooniprobe-ffi", "--release"},
+		}, {
+			Env:  []string{},
+			Argv: []string{"mkdir", "-p", libdir("linux", "arm")},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"cp",
+				filepath.Join("target", "release", "libuniffi_ooniprobe.a"),
+				libdir("linux", "arm"),
+			},
+		}, {
+			Env:  []string{},
+			Argv: []string{"mkdir", "-p", incdir},
+		}, {
+			Env:  []string{},
+			Argv: cbindgen,
+		}},
+	}, {
 		// Windows and darwin cross compile, so they must add and pass a target.
 		name:   "windows/386 cross compiles with a rust target",
 		goos:   "windows",

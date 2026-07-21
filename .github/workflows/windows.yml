@@ -39,13 +39,6 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-i686-gcc
 
-      - name: Show the mingw toolchain
-        shell: msys2 {0}
-        run: |
-          export PATH="/mingw32/bin:$PATH"
-          x86_64-w64-mingw32-gcc --version | head -1
-          i686-w64-mingw32-gcc --version | head -1
-
       - name: Build the CLI
         shell: msys2 {0}
         run: |

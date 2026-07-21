@@ -93,6 +93,14 @@ func userauthEnvp(goos, goarch string) *shellx.Envp {
 		envp.Append("CXXFLAGS", longDouble)
 		envp.Append("BINDGEN_EXTRA_CLANG_ARGS", longDouble)
 	}
+
+	// The libc crate still defaults to musl 1.1 semantics, where time_t is 32 bits
+	// on 32-bit targets. Alpine ships musl 1.2, which widened time_t to 64 bits and
+	// exposed the wider functions under __*_time64 names.
+	// https://github.com/rust-lang/libc/issues/1848
+	if goos == "linux" && (goarch == "386" || goarch == "arm") {
+		envp.Append("RUST_LIBC_UNSTABLE_MUSL_V1_2_3", "1")
+	}
 	return envp
 }
 
