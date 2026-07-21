@@ -22,7 +22,6 @@ help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
 # The ooniprobe-rs release that provides the userauth static library bundle
-USERAUTHHOSTOS := $(shell go env GOOS)
 USERAUTHVERSION ?= $(shell cat USERAUTHVERSION)
 OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/download/v$(USERAUTHVERSION)/staticlib.tar.gz
 
@@ -31,9 +30,9 @@ OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/down
 #help: for <os>, which is one of darwin, linux and windows. By default we download
 #help: the prebuilt bundle. Set USERAUTH_FROM_SOURCE=1 to instead build it from the
 #help: pinned ooniprobe-rs sources, which is what we do when publishing.
-userauth/%:
+userauth:
 ifeq ($(USERAUTH_FROM_SOURCE),1)
-	./script/go.bash run ./internal/cmd/buildtool $* userauth
+	./script/go.bash run ./internal/cmd/buildtool $(shell go env GOOS) userauth
 else
 	curl -fsSL -o staticlib.tar.gz $(OONIPROBE_RS_STATICLIB_URL)
 	tar -xzf staticlib.tar.gz -C internal/userauth
@@ -41,15 +40,10 @@ else
 endif
 
 #help:
-#help: The `make userauth` command is a shortcut for `make userauth/<host os>`.
-.PHONY: userauth
-userauth: userauth/$(USERAUTHHOSTOS)
-
-#help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
-CLI/darwin: userauth/darwin
+CLI/darwin: userauth
 	./script/go.bash run ./internal/cmd/buildtool darwin
 
 #help:
@@ -91,21 +85,21 @@ CLI/linux-static-arm64:
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/miniooni
-CLI/miniooni: userauth/$(USERAUTHHOSTOS)
+CLI/miniooni: userauth
 	./script/go.bash run ./internal/cmd/buildtool generic miniooni
 
 #help:
 #help: The `make CLI/ooniprobe` command creates a build of ooniprobe, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/ooniprobe
-CLI/ooniprobe: userauth/$(USERAUTHHOSTOS)
+CLI/ooniprobe: userauth
 	./script/go.bash run ./internal/cmd/buildtool generic ooniprobe
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
 #help: command line clients for windows/386 and windows/amd64.
 .PHONY: CLI/windows
-CLI/windows: userauth/windows
+CLI/windows: userauth
 	./script/go.bash run ./internal/cmd/buildtool windows
 
 #help:

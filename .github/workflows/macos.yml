@@ -29,7 +29,9 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-macos-${{ steps.goversion.outputs.version }}"
 
-      - run: make USERAUTH_FROM_SOURCE=1 CLI/darwin
+      - run: make CLI/darwin
+        env:
+          USERAUTH_FROM_SOURCE: "1" 
 
       - uses: actions/upload-artifact@v4
         with:
