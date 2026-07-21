@@ -115,13 +115,13 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 	restore := cdepsMustChdir(work)
 	defer restore()
 
-	cdepsMustFetch("https://github.com/ooni/ooniprobe-rs/archive/v0.1.4.tar.gz")
+	cdepsMustFetch("https://github.com/ooni/ooniprobe-rs/archive/v0.1.5-alpha.tar.gz")
 	deps.VerifySHA256(
-		"b80f7a85520c83a7412a954356c855b57eb1c72ee9413da43b90b9f8fb5a2a00",
-		"v0.1.4.tar.gz",
+		"4daa527f542211cd92100e49fbeccf9d1f2a0f18698a6bcaf475b725f4850c22",
+		"v0.1.5-alpha.tar.gz",
 	) // must be mockable
-	must.Run(log.Log, "tar", "-xf", "v0.1.4.tar.gz")
-	_ = deps.MustChdir("ooniprobe-rs-0.1.4") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "v0.1.5-alpha.tar.gz")
+	_ = deps.MustChdir("ooniprobe-rs-0.1.5-alpha") // must be mockable
 
 	// An empty target means we build for the hosw
 	rustTarget := userauthRustTarget(goos, goarch)

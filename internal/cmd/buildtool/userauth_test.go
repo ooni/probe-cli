@@ -18,7 +18,7 @@ func TestUserauthBuildStaticlib(t *testing.T) {
 	}
 	incdir := filepath.Join(faketopdir, "internal", "userauth", "lib", "include")
 	header := filepath.Join(incdir, "ooniprobe_userauth.h")
-	tarball := "v0.1.4.tar.gz"
+	tarball := "v0.1.5-alpha.tar.gz"
 	srcURL := "https://github.com/ooni/ooniprobe-rs/archive/" + tarball
 
 	// cbindgen returns the header generation command, which does not vary
