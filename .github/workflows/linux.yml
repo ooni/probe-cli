@@ -241,6 +241,12 @@ jobs:
         with:
           targets: ${{ matrix.rust-target }}
 
+      - name: Cache musl cross toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/x-tools/${{ matrix.musl-prefix }}-cross
+          key: musl-cross-${{ matrix.musl-prefix }}
+
       - name: Install musl cross toolchain
         run: |
           mkdir -p "$HOME/x-tools"
