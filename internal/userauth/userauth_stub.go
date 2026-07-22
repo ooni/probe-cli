@@ -3,9 +3,7 @@
 package userauth
 
 // This file provides pure-Go stubs for builds without cgo (CGO_ENABLED=0) and
-// for builds using the "nouserauth" tag. We use that tag for the musl (alpine)
-// static Linux builds, because the prebuilt staticlib is built against glibc
-// and therefore cannot be linked against musl.
+// for builds using the "nouserauth" tag.
 
 // Register is unavailable without cgo.
 func Register(url, publicParams, manifestVersion, proxy, userAgent string, timeout float32) (string, error) {
