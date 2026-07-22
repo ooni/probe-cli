@@ -13,8 +13,27 @@ on:
     - cron: "17 1 * * *"
 
 jobs:
-  build_linux_cli_386:
+  build_linux_cli:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: "386"
+            rust-target: i686-unknown-linux-musl
+            musl-prefix: i686-linux-musl
+          - arch: amd64
+            rust-target: x86_64-unknown-linux-musl
+            musl-prefix: x86_64-linux-musl
+          - arch: armv6
+            rust-target: arm-unknown-linux-musleabihf
+            musl-prefix: arm-linux-musleabihf
+          - arch: armv7
+            rust-target: armv7-unknown-linux-musleabihf
+            musl-prefix: armv7l-linux-musleabihf
+          - arch: arm64
+            rust-target: aarch64-unknown-linux-musl
+            musl-prefix: aarch64-linux-musl
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,119 +45,79 @@ jobs:
       - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-386-${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-linux-cross-${{ matrix.arch }}-${{ steps.goversion.outputs.version }}"
 
-      - uses: actions/cache@v3
+      - name: Setup Rust target
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: GOCACHE
-          key: linux-build-cache-386
+          targets: ${{ matrix.rust-target }}
 
-      - run: make CLI/linux-static-386
-
-      - uses: actions/upload-artifact@v4
+      - name: Cache musl cross toolchain
+        uses: actions/cache@v4
         with:
-          name: ooniprobe-linux-386
-          path: ./CLI/ooniprobe-linux-386
+          path: ~/x-tools/${{ matrix.musl-prefix }}-cross
+          key: musl-cross-${{ matrix.musl-prefix }}
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: miniooni-linux-386
-          path: ./CLI/miniooni-linux-386
+      - name: Install musl cross toolchain
+        run: |
+          root="$HOME/x-tools/${{ matrix.musl-prefix }}-cross"
+          if [ ! -x "$root/bin/${{ matrix.musl-prefix }}-gcc" ]; then
+            mkdir -p "$HOME/x-tools"
+            curl -fsSL "https://musl.cc.timfish.dev/${{ matrix.musl-prefix }}-cross.tgz" | tar -xz -C "$HOME/x-tools"
+          fi
+          echo "$root/bin" >> "$GITHUB_PATH"
+          echo "BINDGEN_EXTRA_CLANG_ARGS=--sysroot=$root/${{ matrix.musl-prefix }} --target=${{ matrix.rust-target }}" >> "$GITHUB_ENV"
 
-  publish_linux_cli_386:
-    runs-on: ubuntu-22.04
-    needs: build_linux_cli_386
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Configure cargo linker
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml << EOF
+          [target.${{ matrix.rust-target }}]
+          linker = "${{ matrix.musl-prefix }}-gcc"
+          EOF
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: ooniprobe-linux-386
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: miniooni-linux-386
-
-      - run: ./script/ghpublish.bash ooniprobe-linux-386 miniooni-linux-386
+      - name: Cross build the CLI
+        run: make CLI/linux-static-${{ matrix.arch }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build_linux_cli_amd64:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
-        with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-amd64-${{ steps.goversion.outputs.version }}"
-
-      - uses: actions/cache@v3
-        with:
-          path: GOCACHE
-          key: linux-build-cache-amd64
-
-      - run: make CLI/linux-static-amd64
+          USERAUTH_FROM_SOURCE: "1"
+          USERAUTH_RUST_TARGET: ${{ matrix.rust-target }}
+          CC: ${{ matrix.musl-prefix }}-gcc
+          CXX: ${{ matrix.musl-prefix }}-g++
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ooniprobe-linux-amd64
-          path: ./CLI/ooniprobe-linux-amd64
+          name: ooniprobe-linux-${{ matrix.arch }}
+          path: ./CLI/ooniprobe-linux-${{ matrix.arch }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: miniooni-linux-amd64
-          path: ./CLI/miniooni-linux-amd64
+          name: miniooni-linux-${{ matrix.arch }}
+          path: ./CLI/miniooni-linux-${{ matrix.arch }}
 
-  test_linux_cli_amd64:
-    runs-on: ubuntu-22.04
-    needs: build_linux_cli_amd64
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      # Only the amd64 binary runs on this x86_64 runner, so we E2E test just that
+      # one. A failure here fails the amd64 leg and, since publish needs the whole
+      # build matrix, holds back the entire release.
+      - name: Install tor for the E2E tests
+        if: matrix.arch == 'amd64'
+        run: sudo apt-get update -q && sudo apt-get install -y tor
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: ooniprobe-linux-amd64
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: miniooni-linux-amd64
-
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
-        with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-amd64-${{ steps.goversion.outputs.version }}"
-
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y tor
-
-      - run: chmod +x ooniprobe-linux-amd64
-      - run: ./E2E/ooniprobe.bash ./ooniprobe-linux-amd64
+      - name: Run the E2E tests
+        if: matrix.arch == 'amd64'
         shell: bash
+        run: |
+          chmod +x CLI/ooniprobe-linux-amd64 CLI/miniooni-linux-amd64
+          ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-amd64
+          ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
 
-      - run: chmod +x miniooni-linux-amd64
-      - run: ./E2E/miniooni.bash ./miniooni-linux-amd64
-        shell: bash
-
-  publish_linux_cli_amd64:
+  publish_linux_cli:
     runs-on: ubuntu-22.04
-    needs: test_linux_cli_amd64
+    needs: build_linux_cli
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["386", amd64, armv6, armv7, arm64]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -146,185 +125,12 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ooniprobe-linux-amd64
+          name: ooniprobe-linux-${{ matrix.arch }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: miniooni-linux-amd64
+          name: miniooni-linux-${{ matrix.arch }}
 
-      - run: ./script/ghpublish.bash ooniprobe-linux-amd64 miniooni-linux-amd64
+      - run: ./script/ghpublish.bash ooniprobe-linux-${{ matrix.arch }} miniooni-linux-${{ matrix.arch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build_linux_cli_armv6:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y qemu-user-static
-
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
-        with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-armv6-${{ steps.goversion.outputs.version }}"
-
-      - uses: actions/cache@v3
-        with:
-          path: GOCACHE
-          key: linux-build-cache-armv6
-
-      - run: make CLI/linux-static-armv6
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ooniprobe-linux-armv6
-          path: ./CLI/ooniprobe-linux-armv6
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: miniooni-linux-armv6
-          path: ./CLI/miniooni-linux-armv6
-
-  publish_linux_cli_armv6:
-    runs-on: ubuntu-22.04
-    needs: build_linux_cli_armv6
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ooniprobe-linux-armv6
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: miniooni-linux-armv6
-
-      - run: ./script/ghpublish.bash ooniprobe-linux-armv6 miniooni-linux-armv6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build_linux_cli_armv7:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y qemu-user-static
-
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
-        with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-armv7-${{ steps.goversion.outputs.version }}"
-
-      - uses: actions/cache@v3
-        with:
-          path: GOCACHE
-          key: linux-build-cache-armv7
-
-      - run: make CLI/linux-static-armv7
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ooniprobe-linux-armv7
-          path: ./CLI/ooniprobe-linux-armv7
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: miniooni-linux-armv7
-          path: ./CLI/miniooni-linux-armv7
-
-  publish_linux_cli_armv7:
-    runs-on: ubuntu-22.04
-    needs: build_linux_cli_armv7
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ooniprobe-linux-armv7
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: miniooni-linux-armv7
-
-      - run: ./script/ghpublish.bash ooniprobe-linux-armv7 miniooni-linux-armv7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build_linux_cli_arm64:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y qemu-user-static
-
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
-        with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-linux-arm64-${{ steps.goversion.outputs.version }}"
-
-      - uses: actions/cache@v3
-        with:
-          path: GOCACHE
-          key: linux-build-cache-arm64
-
-      - run: make CLI/linux-static-arm64
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ooniprobe-linux-arm64
-          path: ./CLI/ooniprobe-linux-arm64
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: miniooni-linux-arm64
-          path: ./CLI/miniooni-linux-arm64
-
-  publish_linux_cli_arm64:
-    runs-on: ubuntu-22.04
-    needs: build_linux_cli_arm64
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ooniprobe-linux-arm64
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: miniooni-linux-arm64
-
-      - run: ./script/ghpublish.bash ooniprobe-linux-arm64 miniooni-linux-arm64
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-# End of autogenerated file

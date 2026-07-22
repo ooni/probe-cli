@@ -21,27 +21,27 @@ import (
 
 // linuxStaticSubcommand returns the linuxStatic sucommand.
 func linuxStaticSubcommand() *cobra.Command {
-	config := &linuxStaticBuilder{
-		goarm: 0,
-	}
+	config := &linuxStaticBuilder{}
 	cmd := &cobra.Command{
 		Use:   "static",
 		Short: "Builds ooniprobe and miniooni for linux with static linking assuming alpine",
 		Run:   config.main,
 		Args:  cobra.NoArgs,
 	}
+	cmd.Flags().StringVar(&config.goarch, "goarch", runtime.GOARCH, "specifies the target GOARCH")
 	cmd.Flags().Int64Var(&config.goarm, "goarm", 0, "specifies the arm subarchitecture")
 	return cmd
 }
 
 // linuxStaticBuilder is the build configuration.
 type linuxStaticBuilder struct {
-	goarm int64
+	goarch string
+	goarm  int64
 }
 
 // main is the main function of the linuxStatic subcommand.
 func (b *linuxStaticBuilder) main(*cobra.Command, []string) {
-	linuxStaticBuilAll(&buildDeps{}, runtime.GOARCH, b.goarm)
+	linuxStaticBuilAll(&buildDeps{}, b.goarch, b.goarm)
 }
 
 // linuxStaticBuildAll builds all the packages on a linux-static environment.
@@ -53,6 +53,9 @@ func linuxStaticBuilAll(deps buildtoolmodel.Dependencies, goarch string, goarm i
 	// apparently this is not enough to make git happy--why?
 	log.Infof("working around git file ownership checks")
 	must.Run(log.Log, "git", "config", "--global", "--add", "safe.directory", "/ooni")
+
+	// Build the userauth staticlib from source.
+	userauthBuildStaticlib(deps, "linux", goarch)
 
 	products := []*product{productMiniooni, productOoniprobe}
 	cacheprefix := runtimex.Try1(filepath.Abs("GOCACHE"))

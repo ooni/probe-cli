@@ -184,6 +184,26 @@ And `oohelperd` using:
 This command will generate a stripped binary called `oohelperd`
 in the toplevel directory.
 
+### The userauth staticlib
+
+The `ooniprobe` and `miniooni` binaries link a Rust static library
+(`libuniffi_ooniprobe.a`) built from
+[ooniprobe-rs](https://github.com/ooni/ooniprobe-rs). The `make CLI/*` targets
+obtain it through the `userauth` target, which runs the buildtool and by
+**default downloads a prebuilt bundle** from the pinned ooniprobe-rs release.
+
+Set `USERAUTH_FROM_SOURCE=1` to instead **build the staticlib from the pinned
+ooniprobe-rs sources**, for example:
+
+```bash
+make USERAUTH_FROM_SOURCE=1 CLI/ooniprobe
+```
+
+Building from source is what we do when publishing, because the prebuilt bundle is
+glibc-based and cannot link into the musl static Linux builds or the cross-compiled
+Windows/darwin builds. The prebuilt download is faster and is the right default for
+local development.
+
 ## Contributing
 
 Please, see [CONTRIBUTING.md](CONTRIBUTING.md).

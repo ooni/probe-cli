@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_windows_cli:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,16 +22,30 @@ jobs:
 
       - name: Get GOVERSION content
         id: goversion
+        shell: bash
         run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
       - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y mingw-w64
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          install: >-
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-i686-gcc
 
-      - run: make EXPECTED_MINGW_W64_VERSION="10-win32" CLI/windows
+      - name: Build the CLI
+        shell: msys2 {0}
+        run: |
+          export PATH="$PATH:/mingw32/bin"
+          make CLI/windows
+        env:
+          EXPECTED_MINGW_W64_VERSION: "16.1.0"
+          USERAUTH_FROM_SOURCE: "1"
 
       - uses: actions/upload-artifact@v4
         with:
