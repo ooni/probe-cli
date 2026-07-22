@@ -46,7 +46,7 @@ jobs:
           make CLI/windows
         env:
           EXPECTED_MINGW_W64_VERSION: "16.1.0"
-          USERAUTH_FROM_SOURCE: "1" 
+          USERAUTH_FROM_SOURCE: "1"
 
       - uses: actions/upload-artifact@v4
         with:

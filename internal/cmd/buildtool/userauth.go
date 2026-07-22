@@ -88,14 +88,26 @@ func userauthRustTarget(goos, goarch string) string {
 // userauthEnvp returns the environment for the cargo build.
 func userauthEnvp(goos, goarch string) *shellx.Envp {
 	envp := &shellx.Envp{}
-	// On windows/386 we must force a 64-bit long double. Otherwise bindgen parses the
-	// mingw headers as having a 12-byte `_LONGDOUBLE` while the type it generates is
-	// 8 bytes, and the resulting layout assertion fails to compile.
-	if goos == "windows" && goarch == "386" {
-		const longDouble = "-mlong-double-64"
-		envp.Append("CFLAGS", longDouble)
-		envp.Append("CXXFLAGS", longDouble)
-		envp.Append("BINDGEN_EXTRA_CLANG_ARGS", longDouble)
+
+	if goos == "windows" {
+		switch goarch {
+		case "386":
+			envp.Append("CC", windowsMingw386Compiler)
+			envp.Append("CXX", windowsMingw386Cxx)
+
+			// Force a 64-bit long double. Otherwise bindgen parses the mingw headers
+			// as having a 12-byte `_LONGDOUBLE` while the type it generates is 8 bytes, and
+			// the resulting layout assertion fails to compile.
+			const longDouble = "-mlong-double-64"
+			envp.Append("CFLAGS", longDouble)
+			envp.Append("CXXFLAGS", longDouble)
+			envp.Append("BINDGEN_EXTRA_CLANG_ARGS", longDouble)
+		case "amd64":
+			envp.Append("CC", windowsMingwAmd64Compiler)
+			envp.Append("CXX", windowsMingwAmd64Cxx)
+		}
+
+		return envp
 	}
 
 	// The libc crate still defaults to musl 1.1 semantics, where time_t is 32 bits

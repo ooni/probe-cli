@@ -85,11 +85,17 @@ var windowsMingwExpectedVersion = "12.2.0"
 // that overrides the expected mingw version.
 const windowsMingwEnvironmentVariable = "EXPECTED_MINGW_W64_VERSION"
 
-// windowsMingwAmd64Compiler is the amd64 compiler.
+// windowsMingwAmd64Compiler is the amd64 C compiler.
 const windowsMingwAmd64Compiler = "x86_64-w64-mingw32-gcc"
 
-// windowsMingw386Compiler is the 386 compiler.
+// windowsMingw386Compiler is the 386 C compiler.
 const windowsMingw386Compiler = "i686-w64-mingw32-gcc"
+
+// windowsMingwAmd64Cxx is the amd64 C++ compiler.
+const windowsMingwAmd64Cxx = "x86_64-w64-mingw32-g++"
+
+// windowsMingw386Cxx is the 386 C++ compiler.
+const windowsMingw386Cxx = "i686-w64-mingw32-g++"
 
 // windowsMingwCheck checks we're using the correct mingw version.
 func windowsMingwCheck() {
