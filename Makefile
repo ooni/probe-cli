@@ -21,23 +21,13 @@ list-targets:
 help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
-# The ooniprobe-rs release that provides the userauth static library bundle
-USERAUTHVERSION ?= $(shell cat USERAUTHVERSION)
-OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/download/v$(USERAUTHVERSION)/staticlib.tar.gz
-
 #help:
-#help: The `make userauth/<os>` command makes the userauth staticlib available
-#help: for <os>, which is one of darwin, linux and windows. By default we download
-#help: the prebuilt bundle. Set USERAUTH_FROM_SOURCE=1 to instead build it from the
-#help: pinned ooniprobe-rs sources, which is what we do when publishing.
+#help: The `make userauth` command makes the userauth staticlib available for the
+#help: current OS. By default the buildtool downloads the prebuilt bundle; set
+#help: USERAUTH_FROM_SOURCE=1 to instead build it from the pinned ooniprobe-rs
+#help: sources, which is what we do when publishing.
 userauth:
-ifeq ($(USERAUTH_FROM_SOURCE),1)
 	./script/go.bash run ./internal/cmd/buildtool $(shell go env GOOS) userauth
-else
-	curl -fsSL -o staticlib.tar.gz $(OONIPROBE_RS_STATICLIB_URL)
-	tar -xzf staticlib.tar.gz -C internal/userauth
-	rm -f staticlib.tar.gz
-endif
 
 #help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni

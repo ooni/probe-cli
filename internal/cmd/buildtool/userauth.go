@@ -30,6 +30,17 @@ const (
 
 	// userauthRustTargetEnv, when set, is the Rust target used to compile the staticlib.
 	userauthRustTargetEnv = "USERAUTH_RUST_TARGET"
+
+	// userauthVersion is the ooniprobe-rs release we use for BOTH the from-source
+	// build and the prebuilt bundle download.
+	userauthVersion = "0.1.5"
+
+	// userauthSourceSHA256 pins the source tarball for userauthVersion.
+	userauthSourceSHA256 = "629aff29a75592280ec65c51ad2e22520bae89b26cd403b3a7fafe36d808b751"
+
+	// userauthFromSourceEnv, when set to "1", makes the userauth subcommand build the
+	// staticlib from source instead of downloading the prebuilt bundle.
+	userauthFromSourceEnv = "USERAUTH_FROM_SOURCE"
 )
 
 // userauthOSDir maps a GOOS to the directory name used by ./internal/userauth.
@@ -131,13 +142,11 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 	restore := cdepsMustChdir(work)
 	defer restore()
 
-	cdepsMustFetch("https://github.com/ooni/ooniprobe-rs/archive/v0.1.5-alpha.tar.gz")
-	deps.VerifySHA256(
-		"4daa527f542211cd92100e49fbeccf9d1f2a0f18698a6bcaf475b725f4850c22",
-		"v0.1.5-alpha.tar.gz",
-	) // must be mockable
-	must.Run(log.Log, "tar", "-xf", "v0.1.5-alpha.tar.gz")
-	_ = deps.MustChdir("ooniprobe-rs-0.1.5-alpha") // must be mockable
+	tarball := "v" + userauthVersion + ".tar.gz"
+	cdepsMustFetch("https://github.com/ooni/ooniprobe-rs/archive/" + tarball)
+	deps.VerifySHA256(userauthSourceSHA256, tarball) // must be mockable
+	must.Run(log.Log, "tar", "-xf", tarball)
+	_ = deps.MustChdir("ooniprobe-rs-" + userauthVersion) // must be mockable
 
 	rustTarget := userauthRustTarget(goos, goarch)
 	libdir := filepath.Join("target", "release")
@@ -178,6 +187,31 @@ func userauthBuildAll(deps buildtoolmodel.Dependencies, goos string, archs []str
 	}
 }
 
+// userauthFromSource reports whether the userauth subcommand should build the
+// staticlib from source rather than downloading the prebuilt bundle.
+func userauthFromSource() bool {
+	return os.Getenv(userauthFromSourceEnv) == "1"
+}
+
+// userauthDownloadPrebuilt downloads the prebuilt staticlib bundle for the pinned
+// userauthVersion and extracts it where ./internal/userauth expects.
+func userauthDownloadPrebuilt(deps buildtoolmodel.Dependencies) {
+	log.Infof("downloading the prebuilt userauth staticlib bundle v%s", userauthVersion)
+
+	topdir := deps.AbsoluteCurDir() // must be mockable
+	work := cdepsMustMkdirTemp()
+	restore := cdepsMustChdir(work)
+	defer restore()
+
+	cdepsMustFetch("https://github.com/ooni/ooniprobe-rs/releases/download/v" +
+		userauthVersion + "/staticlib.tar.gz")
+
+	// The bundle has lib/ at its root, so extracting into ./internal/userauth lands
+	// the files under ./internal/userauth/lib/<os>/<arch>/ where cgo looks for them.
+	dest := filepath.Join(topdir, "internal", "userauth")
+	must.Run(log.Log, "tar", "-xzf", "staticlib.tar.gz", "-C", dest)
+}
+
 // linuxUserauthSubcommand returns the linux userauth subcommand. We build for the
 // current architecture only.
 func linuxUserauthSubcommand() *cobra.Command {
@@ -185,6 +219,10 @@ func linuxUserauthSubcommand() *cobra.Command {
 		Use:   "userauth",
 		Short: "Builds the userauth staticlib from source for the current linux architecture",
 		Run: func(cmd *cobra.Command, args []string) {
+			if !userauthFromSource() {
+				userauthDownloadPrebuilt(&buildDeps{})
+				return
+			}
 			runtimex.Assert(runtime.GOOS == "linux", "this command requires linux")
 			userauthBuildStaticlib(&buildDeps{}, "linux", runtime.GOARCH)
 		},
@@ -198,6 +236,10 @@ func windowsUserauthSubcommand() *cobra.Command {
 		Use:   "userauth",
 		Short: "Builds the userauth staticlib from source for windows",
 		Run: func(cmd *cobra.Command, args []string) {
+			if !userauthFromSource() {
+				userauthDownloadPrebuilt(&buildDeps{})
+				return
+			}
 			userauthBuildAll(&buildDeps{}, "windows", []string{"386", "amd64"})
 		},
 		Args: cobra.NoArgs,
@@ -210,6 +252,10 @@ func darwinUserauthSubcommand() *cobra.Command {
 		Use:   "userauth",
 		Short: "Builds the userauth staticlib from source for darwin",
 		Run: func(cmd *cobra.Command, args []string) {
+			if !userauthFromSource() {
+				userauthDownloadPrebuilt(&buildDeps{})
+				return
+			}
 			userauthBuildAll(&buildDeps{}, "darwin", []string{"amd64", "arm64"})
 		},
 		Args: cobra.NoArgs,

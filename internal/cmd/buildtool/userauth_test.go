@@ -18,7 +18,7 @@ func TestUserauthBuildStaticlib(t *testing.T) {
 	}
 	incdir := filepath.Join(faketopdir, "internal", "userauth", "lib", "include")
 	header := filepath.Join(incdir, "ooniprobe_userauth.h")
-	tarball := "v0.1.5-alpha.tar.gz"
+	tarball := "v0.1.5.tar.gz"
 	srcURL := "https://github.com/ooni/ooniprobe-rs/archive/" + tarball
 
 	// cbindgen returns the header generation command, which does not vary
@@ -241,5 +241,42 @@ func TestUserauthBuildStaticlib(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestUserauthDownloadPrebuilt(t *testing.T) {
+	faketopdir := (&buildtooltest.DependenciesCallCounter{}).AbsoluteCurDir()
+
+	cc := &buildtooltest.SimpleCommandCollector{}
+	deps := &buildtooltest.DependenciesCallCounter{}
+
+	shellxtesting.WithCustomLibrary(cc, func() {
+		userauthDownloadPrebuilt(deps)
+	})
+
+	// We only resolve the top directory; the download does not verify a SHA256 or
+	// chdir through the mockable dependency.
+	expectCalls := map[string]int{
+		buildtooltest.TagAbsoluteCurDir: 1,
+	}
+	if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
+		t.Fatal(diff)
+	}
+
+	expect := []buildtooltest.ExecExpectations{{
+		Env: []string{},
+		Argv: []string{
+			"curl", "-fsSLO",
+			"https://github.com/ooni/ooniprobe-rs/releases/download/v0.1.5/staticlib.tar.gz",
+		},
+	}, {
+		Env: []string{},
+		Argv: []string{
+			"tar", "-xzf", "staticlib.tar.gz", "-C",
+			filepath.Join(faketopdir, "internal", "userauth"),
+		},
+	}}
+	if err := buildtooltest.CheckManyCommands(cc.Commands, expect); err != nil {
+		t.Fatal(err)
 	}
 }
