@@ -7,7 +7,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "linuxbuild"
-      - fix/cli-userauth
     tags:
       - "v*"
   schedule:

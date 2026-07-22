@@ -7,7 +7,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "windowsbuild"
-      - fix/cli-userauth
     tags:
       - "v*"
   schedule:

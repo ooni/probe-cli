@@ -7,7 +7,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "macosbuild"
-      - fix/cli-userauth
     tags:
       - "v*"
   schedule:
