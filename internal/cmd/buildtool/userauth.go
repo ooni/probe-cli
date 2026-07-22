@@ -97,12 +97,15 @@ func userauthEnvp(goos, goarch string) *shellx.Envp {
 		envp.Append("CXXFLAGS", longDouble)
 		envp.Append("BINDGEN_EXTRA_CLANG_ARGS", longDouble)
 	}
-	return envp
-}
 
-// userauthArchIs32bit reports whether an install arch dir is 32 bit.
-func userauthArchIs32bit(archDir string) bool {
-	return archDir == "x86" || archDir == "arm"
+	// The libc crate still defaults to musl 1.1 semantics, where time_t is 32 bits
+	// on 32-bit targets. Alpine ships musl 1.2, which widened time_t to 64 bits and
+	// exposed the wider functions under __*_time64 names.
+	// https://github.com/rust-lang/libc/issues/1848
+	if goos == "linux" && (goarch == "386" || goarch == "arm") {
+		envp.Append("RUST_LIBC_UNSTABLE_MUSL_V1_2_3", "1")
+	}
+	return envp
 }
 
 // userauthBuildStaticlib fetches the pinned ooniprobe-rs sources and builds the
@@ -125,7 +128,6 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 	_ = deps.MustChdir("ooniprobe-rs-0.1.5-alpha") // must be mockable
 
 	rustTarget := userauthRustTarget(goos, goarch)
-	archDir := userauthArchDir(goarch)
 	libdir := filepath.Join("target", "release")
 	if rustTarget != "" {
 		must.Run(log.Log, "rustup", "target", "add", rustTarget)
@@ -133,14 +135,6 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 	}
 
 	envp := userauthEnvp(goos, goarch)
-	if goos == "linux" && userauthArchIs32bit(archDir) {
-		// The libc crate still defaults to musl 1.1 semantics, where time_t is 32 bits
-		// on 32-bit targets. Alpine ships musl 1.2, which widened time_t to 64 bits and
-		// exposed the wider functions under __*_time64 names.
-		// https://github.com/rust-lang/libc/issues/1848
-		envp.Append("RUST_LIBC_UNSTABLE_MUSL_V1_2_3", "1")
-	}
-
 	argv := []string{"build", "-p", userauthCrate, "--release"}
 	if rustTarget != "" {
 		argv = append(argv, "--target", rustTarget)
@@ -149,7 +143,7 @@ func userauthBuildStaticlib(deps buildtoolmodel.Dependencies, goos, goarch strin
 
 	// Install the staticlib where ./internal/userauth's cgo LDFLAGS look for it.
 	destdir := filepath.Join(topdir, "internal", "userauth", "lib",
-		userauthOSDir(goos), archDir)
+		userauthOSDir(goos), userauthArchDir(goarch))
 	must.Run(log.Log, "mkdir", "-p", destdir)
 	must.Run(log.Log, "cp", filepath.Join(libdir, userauthLibName), destdir)
 
