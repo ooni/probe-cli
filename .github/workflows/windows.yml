@@ -42,7 +42,7 @@ jobs:
       - name: Build the CLI
         shell: msys2 {0}
         run: |
-          export PATH="/mingw32/bin:$PATH"
+          export PATH="$PATH:/mingw32/bin"
           make CLI/windows
         env:
           EXPECTED_MINGW_W64_VERSION: "16.1.0"
