@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Template pom for the iOS supporting libraries (libcrypto, libevent, libssl,
+    libtor, libz). The publish_ios_maven_libs job in .github/workflows/ios.yml
+    substitutes the placeholders below to produce a pom.xml per library.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.ooni</groupId>
-    <artifactId>oonimkall-ios</artifactId>
+    <artifactId>@ARTIFACT_ID@</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
-    <name>oonimkall-ios</name>
-    <description>OONI Probe Library for iOS</description>
+    <name>@ARTIFACT_ID@</name>
+    <description>@DESCRIPTION@</description>
     <url>https://github.com/ooni/probe-cli</url>
 
     <licenses>
         <license>
-            <name>The 3-Clause BSD License</name>
-            <url>https://opensource.org/licenses/BSD-3-Clause</url>
+            <name>@LICENSE_NAME@</name>
+            <url>@LICENSE_URL@</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -39,9 +44,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <ios.xcframework.name>oonimkall.xcframework.zip</ios.xcframework.name>
+        <ios.xcframework.name>@LIB@.xcframework.zip</ios.xcframework.name>
         <project.artifact.file>${project.basedir}/${ios.xcframework.name}</project.artifact.file>
-        <ios.podspec.file>${project.basedir}/oonimkall.podspec</ios.podspec.file>
+        <ios.podspec.file>${project.basedir}/@LIB@.podspec</ios.podspec.file>
     </properties>
 
     <build>

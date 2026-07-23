@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   s.homepage = "https://github.com/ooni/probe-cli"
   s.license = { :type => "GPL" }
   s.source = {
-    :http => "https://repo1.maven.org/maven2/org/ooni/oomimkall-ios/@VERSION@/oonimkall-ios-@VERSION@.zip"
+    :http => "https://repo1.maven.org/maven2/org/ooni/oonimkall-ios/@VERSION@/oonimkall-ios-@VERSION@.zip"
   }
   s.platform = :ios, "9.0"
   s.ios.vendored_frameworks = "oonimkall.xcframework"
