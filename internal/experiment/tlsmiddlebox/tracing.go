@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net"
 	"sort"
 	"sync"
@@ -34,10 +33,35 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 // TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, targetSNI string, trace *CompleteTrace) {
+	// perform a TCP traceroute
+	trace.TCPTraceroute = m.runTraceroute(ctx, index, zeroTime, logger, address, targetSNI)
 	// perform an iterative trace with the control SNI
 	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
 	// perform an iterative trace with the target SNI
 	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
+}
+
+func (m *Measurer) runTraceroute(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string) (tr *IterativeTraceroute) {
+	tr = &IterativeTraceroute{
+		SNI:        sni,
+		Iterations: []*ICMPIteration{},
+	}
+	maxTTL := m.config.maxttl()
+	ticker := time.NewTicker(m.config.delay())
+	wg := new(sync.WaitGroup)
+	for i := int64(1); i <= maxTTL; i++ {
+		wg.Add(1)
+		icmpIteration, err := probeTCP(address, int(i), 3000, wg, logger, index)
+		if err != nil {
+			return
+		}
+		tr.addIterationsTraceroute(icmpIteration)
+
+		<-ticker.C
+	}
+	wg.Wait()
+	return
 }
 
 // startIterativeTrace creates a Trace and calls iterativeTrace
@@ -70,13 +94,10 @@ func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zer
 func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	trace := measurexlite.NewTrace(index, zeroTime)
-
 	// 1. Connect to the target IP
 	// TODO(DecFox, bassosimone): Do we need a trace for this TCP connect?
-	d := NewDialerTTLWrapper(ttl)
-
+	d := NewDialerTTLWrapper()
 	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
@@ -86,40 +107,14 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		return
 	}
 	defer conn.Close()
-
-	tc := conn.(*ttlConn)
-
-	// // 2. start errqueue reader BEFORE handshake
-	// done := make(chan *Hop, 1)
-
-	// go func() {
-	// 	// poll for a short window only
-	// 	deadline := time.NewTimer(800 * time.Millisecond)
-	// 	defer deadline.Stop()
-
-	// 	for {
-	// 		select {
-	// 		case <-ctx.Done():
-	// 			return
-	// 		case <-deadline.C:
-	// 			return
-	// 		default:
-	// 		}
-
-	// 		hop, _ := tc.ReadErrQueue()
-	// 		if hop != nil {
-	// 			select {
-	// 			case done <- hop:
-	// 			default:
-	// 			}
-	// 			return
-	// 		}
-
-	// 		time.Sleep(10 * time.Millisecond)
-	// 	}
-	// }()
-
-
+	// 2. Set the TTL to the passed value
+	err = setConnTTL(conn, ttl)
+	if err != nil {
+		iteration := newIterationFromHandshake(ttl, err, nil, nil)
+		tr.addIterations(iteration)
+		ol.Stop(err)
+		return
+	}
 	// 3. Perform the handshake and extract the SO_ERROR value (if any)
 	// Note: we switch to a uTLS Handshaker if the configured ClientID is non-zero
 	thx := trace.NewTLSHandshakerStdlib(logger)
@@ -130,34 +125,10 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	_, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
 	soErr := extractSoError(conn)
-
-	hop, err := tc.ReadErrQueue()
-	if err != nil {
-		fmt.Println("errqueue error:", err)
-	}
-
-	if hop != nil {
-		fmt.Printf("got hop: %+v\n", hop)
-	}
-
 	// 4. reset the TTL value to ensure that conn closes successfully
 	// Note: Do not check for errors here
 	_ = setConnTTL(conn, 64)
-
-	// // 5. wait for ICMP messages
-	// var hop *Hop
-	// select {
-	// 	case hop = <-done:
-	// 	case <-time.After(100 * time.Millisecond):
-	// }
-
 	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
-
-	// if hop != nil {
-	// 	fmt.Printf("TTL=%d ICMP=%s type=%d code=%d\n",
-	// 		ttl, hop.Addr, hop.Type, hop.Code,
-	// 	)
-	// }
 	tr.addIterations(iteration)
 }
 
