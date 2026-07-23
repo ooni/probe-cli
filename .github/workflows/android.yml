@@ -7,7 +7,7 @@ on:
       - "release/**"
       - "fullbuild"
       - "androidbuild"
-      - "feat/mobile-semver"
+      - feat/mobile-semver
     tags:
       - "v*"
   schedule:
