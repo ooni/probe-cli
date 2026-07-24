@@ -7,7 +7,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "iosbuild"
-      - feat/mobile-semver
     tags:
       - "v*"
   schedule:
