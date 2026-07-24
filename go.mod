@@ -15,14 +15,14 @@ require (
 	github.com/cretz/bine v0.2.0
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/dop251/goja_nodejs v0.0.0-20240418154818-2aae10d4cbcf
-	github.com/fatih/color v1.18.0
+	github.com/fatih/color v1.19.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hexops/gotextdiff v1.0.3
-	github.com/mattn/go-colorable v0.1.14
+	github.com/mattn/go-colorable v0.1.15
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/miekg/dns v1.1.72
 	github.com/mitchellh/go-wordwrap v1.0.1
@@ -38,10 +38,10 @@ require (
 	github.com/quic-go/quic-go v0.43.1
 	github.com/rogpeppe/go-internal v1.15.0
 	github.com/rubenv/sql-migrate v1.7.1
-	github.com/schollz/progressbar/v3 v3.14.2
-	github.com/spf13/cobra v1.8.1
+	github.com/schollz/progressbar/v3 v3.19.1
+	github.com/spf13/cobra v1.10.2
 	github.com/tailscale/hujson v0.0.0-20221223112325-20486734a56a
-	github.com/upper/db/v4 v4.9.0
+	github.com/upper/db/v4 v4.10.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20231012084234-c3e2d44b1033
 	gitlab.com/yawning/utls.git v0.0.12-1
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
@@ -123,7 +123,7 @@ require (
 	github.com/klauspost/reedsolomon v1.12.0 // indirect
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
 	github.com/marusama/semaphore v0.0.0-20171214154724-565ffd8e868a // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.5.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
@@ -167,7 +167,7 @@ require (
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
 	github.com/shadowsocks/go-shadowsocks2 v0.1.5 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/tailscale/goupnp v1.0.1-0.20210804011211-c64d0f06ea05 // indirect
