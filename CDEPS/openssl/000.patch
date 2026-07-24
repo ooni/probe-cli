@@ -1,10 +1,10 @@
 diff --git a/crypto/comp/c_zlib.c b/crypto/comp/c_zlib.c
-index 0fbab8f014..0dc8ff53d4 100644
+index c90c7b0..3df40ef 100644
 --- a/crypto/comp/c_zlib.c
 +++ b/crypto/comp/c_zlib.c
 @@ -26,6 +26,10 @@ COMP_METHOD *COMP_zlib(void);
  
- # include <zlib.h>
+ #include <zlib.h>
  
 +#ifndef ZLIB_OONI
 +# error "We're not including the correct zlib.h file"

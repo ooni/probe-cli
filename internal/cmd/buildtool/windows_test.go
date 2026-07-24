@@ -154,3 +154,29 @@ func TestWindowsBuildAll(t *testing.T) {
 		})
 	}
 }
+
+func TestWindowsMingwParseVersion(t *testing.T) {
+	// Different vendors print different banners, so make sure we cope with
+	// every flavour of mingw-w64 we build with.
+	for _, tc := range []struct {
+		name, firstLine, expect string
+	}{{
+		name:      "msys2",
+		firstLine: "x86_64-w64-mingw32-gcc.exe (Rev5, Built by MSYS2 project) 16.1.0",
+		expect:    "16.1.0",
+	}, {
+		name:      "debian",
+		firstLine: "x86_64-w64-mingw32-gcc (GCC) 10-win32 20220324",
+		expect:    "10-win32",
+	}, {
+		name:      "homebrew",
+		firstLine: "x86_64-w64-mingw32-gcc (GCC) 15.1.0",
+		expect:    "15.1.0",
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := windowsMingwParseVersion(tc.firstLine); got != tc.expect {
+				t.Fatalf("got %q, expected %q", got, tc.expect)
+			}
+		})
+	}
+}

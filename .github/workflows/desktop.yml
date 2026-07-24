@@ -61,30 +61,25 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: oonimkall-linux.jar
-          path: MULTIPLATFORM/linux
-
-      - name: Prepare JARs for Maven
-        run: |
-          mv MULTIPLATFORM/linux/oonimkall.jar MULTIPLATFORM/oonimkall-linux.jar
+          path: maven/desktop
 
       - name: Publish to Maven Central
+        working-directory: maven/desktop
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            BASE_VERSION="${GITHUB_REF_NAME#v}"
+            VERSION="${GITHUB_REF_NAME#v}"
           else
             SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
-            BASE_VERSION="${SHORT_SHA}"
+            VERSION="${SHORT_SHA}"
           fi
-          
-          PLATFORM="linux"
-          JAR_NAME="oonimkall-linux.jar"
-          VERSION="${BASE_VERSION}-${PLATFORM}"
-          
-          echo "Deploying $PLATFORM version $VERSION..."
-          
-          mvn -f MULTIPLATFORM/pom.xml versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
-          mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-desktop --batch-mode -DskipTests -Ddesktop.jar.name=${JAR_NAME}
-          
+
+          ARTIFACT_ID="oonimkall-linux"
+
+          echo "Deploying $ARTIFACT_ID version $VERSION..."
+
+          sed -i "s|ARTIFACT_ID|${ARTIFACT_ID}|g" pom.xml
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+          mvn clean deploy -Ddesktop.jar.name=$(ls *.jar | xargs basename) --batch-mode -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
@@ -137,30 +132,25 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: oonimkall-darwin.jar
-          path: MULTIPLATFORM/darwin
-
-      - name: Prepare JARs for Maven
-        run: |
-          mv MULTIPLATFORM/darwin/oonimkall.jar MULTIPLATFORM/oonimkall-darwin.jar
+          path: maven/desktop
 
       - name: Publish to Maven Central
+        working-directory: maven/desktop
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            BASE_VERSION="${GITHUB_REF_NAME#v}"
+            VERSION="${GITHUB_REF_NAME#v}"
           else
             SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
-            BASE_VERSION="${SHORT_SHA}"
+            VERSION="${SHORT_SHA}"
           fi
-          
-          PLATFORM="darwin"
-          JAR_NAME="oonimkall-darwin.jar"
-          VERSION="${BASE_VERSION}-${PLATFORM}"
-          
-          echo "Deploying $PLATFORM version $VERSION..."
-          
-          mvn -f MULTIPLATFORM/pom.xml versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
-          mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-desktop --batch-mode -DskipTests -Ddesktop.jar.name=${JAR_NAME}
-          
+
+          ARTIFACT_ID="oonimkall-darwin"
+
+          echo "Deploying $ARTIFACT_ID version $VERSION..."
+
+          sed -i "s|ARTIFACT_ID|${ARTIFACT_ID}|g" pom.xml
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+          mvn clean deploy -Ddesktop.jar.name=$(ls *.jar | xargs basename) --batch-mode -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
@@ -182,17 +172,9 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
-      - name: Install oomobile
-        run: |
-          go install github.com/ooni/oomobile/cmd/gomobile@latest
-          go install github.com/ooni/oomobile/cmd/gobind@latest
-          go get github.com/ooni/oomobile/bind@latest
-
-      - name: Init oomobile
-        run: gomobile init
-
-      - name: Run bind
-        run: gomobile bind -target java/amd64 -o DESKTOP/oonimkall.jar ./pkg/oonimkall
+      - name: Build the desktop jar
+        run: ./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
+        shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
@@ -223,30 +205,25 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: oonimkall-windows.jar
-          path: MULTIPLATFORM/windows
-
-      - name: Prepare JARs for Maven
-        run: |
-          mv MULTIPLATFORM/windows/oonimkall.jar MULTIPLATFORM/oonimkall-windows.jar
+          path: maven/desktop
 
       - name: Publish to Maven Central
+        working-directory: maven/desktop
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            BASE_VERSION="${GITHUB_REF_NAME#v}"
+            VERSION="${GITHUB_REF_NAME#v}"
           else
             SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
-            BASE_VERSION="${SHORT_SHA}"
+            VERSION="${SHORT_SHA}"
           fi
-          
-          PLATFORM="windows"
-          JAR_NAME="oonimkall-windows.jar"
-          VERSION="${BASE_VERSION}-${PLATFORM}"
-          
-          echo "Deploying $PLATFORM version $VERSION..."
-          
-          mvn -f MULTIPLATFORM/pom.xml versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
-          mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-desktop --batch-mode -DskipTests -Ddesktop.jar.name=${JAR_NAME}
-          
+
+          ARTIFACT_ID="oonimkall-windows"
+
+          echo "Deploying $ARTIFACT_ID version $VERSION..."
+
+          sed -i "s|ARTIFACT_ID|${ARTIFACT_ID}|g" pom.xml
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+          mvn clean deploy -Ddesktop.jar.name=$(ls *.jar | xargs basename) --batch-mode -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}

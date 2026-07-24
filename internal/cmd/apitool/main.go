@@ -57,6 +57,7 @@ var (
 	input    = flag.String("input", "", "Input of the measurement")
 	mode     = flag.String("mode", "", "One of: check, meta, raw")
 	reportid = flag.String("report-id", "", "Report ID of the measurement")
+	measuid  = flag.String("measurement-uid", "", "Measurement UID (used instead of -report-id when set)")
 )
 
 var logmap = map[bool]log.Level{
@@ -99,9 +100,10 @@ func pprint(opaque interface{}) {
 
 func mmeta(c probeservices.Client, full bool) *model.OOAPIMeasurementMeta {
 	config := model.OOAPIMeasurementMetaConfig{
-		ReportID: *reportid,
-		Full:     full,
-		Input:    *input,
+		ReportID:       *reportid,
+		MeasurementUID: *measuid,
+		Full:           full,
+		Input:          *input,
 	}
 	ctx := context.Background()
 	m, err := c.GetMeasurementMeta(ctx, config)

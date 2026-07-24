@@ -21,14 +21,13 @@ list-targets:
 help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
-# The ooniprobe-rs release that provides the userauth static library bundle
-USERAUTHVERSION ?= $(shell cat USERAUTHVERSION)
-OONIPROBE_RS_STATICLIB_URL := https://github.com/ooni/ooniprobe-rs/releases/download/v$(USERAUTHVERSION)/staticlib.tar.gz
-
+#help:
+#help: The `make userauth` command makes the userauth staticlib available for the
+#help: current OS. By default the buildtool downloads the prebuilt bundle; set
+#help: USERAUTH_FROM_SOURCE=1 to instead build it from the pinned ooniprobe-rs
+#help: sources, which is what we do when publishing.
 userauth:
-	curl -fsSL -o staticlib.tar.gz $(OONIPROBE_RS_STATICLIB_URL)
-	tar -xzf staticlib.tar.gz -C internal/userauth
-	rm -f staticlib.tar.gz
+	./script/go.bash run ./internal/cmd/buildtool $(shell go env GOOS) userauth
 
 #help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
@@ -41,36 +40,36 @@ CLI/darwin: userauth
 #help: The `make CLI/linux-static-386` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/386.
 .PHONY: CLI/linux-static-386
-CLI/linux-static-386: userauth
-	./script/go.bash run ./internal/cmd/buildtool linux docker 386
+CLI/linux-static-386:
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch 386
 
 #help:
 #help: The `make CLI/linux-static-amd64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/amd64.
 .PHONY: CLI/linux-static-amd64
-CLI/linux-static-amd64: userauth
-	./script/go.bash run ./internal/cmd/buildtool linux docker amd64
+CLI/linux-static-amd64:
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch amd64
 
 #help:
 #help: The `make CLI/linux-static-armv6` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v6.
 .PHONY: CLI/linux-static-armv6
-CLI/linux-static-armv6: userauth
-	./script/go.bash run ./internal/cmd/buildtool linux docker armv6
+CLI/linux-static-armv6:
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm --goarm 6
 
 #help:
 #help: The `make CLI/linux-static-armv7` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v7.
 .PHONY: CLI/linux-static-armv7
-CLI/linux-static-armv7: userauth
-	./script/go.bash run ./internal/cmd/buildtool linux docker armv7
+CLI/linux-static-armv7:
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm --goarm 7
 
 #help:
 #help: The `make CLI/linux-static-arm64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm64.
 .PHONY: CLI/linux-static-arm64
-CLI/linux-static-arm64: userauth
-	./script/go.bash run ./internal/cmd/buildtool linux docker arm64
+CLI/linux-static-arm64:
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm64
 
 #help:
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
