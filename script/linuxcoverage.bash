@@ -7,12 +7,15 @@
 
 set -euxo pipefail
 
-# obtain the full path of the go executable
-go=$(which go)
+# Use the pinned toolchain (see GOVERSION) to vendor.
+./script/go.bash mod vendor
 
-# populate the vendor directory so we don't need the network in `go test`
-go mod vendor
+# Resolve the absolute path of the pinned go binary.
+go=$HOME/sdk/go$(cat GOVERSION)/bin/go
+if [[ ! -x $go ]]; then
+	echo "FATAL: expected the pinned go toolchain at $go" 1>&2
+	exit 1
+fi
 
 # run tests using a different network namespace
-sudo unshare --net ./script/linuxcoveragerun.bash $go
-
+sudo unshare --net ./script/linuxcoveragerun.bash "$go"
