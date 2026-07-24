@@ -6,6 +6,8 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
+	"unsafe"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -38,6 +40,14 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 		return nil, err
 	}
 
+	timestampFlags := unix.SOF_TIMESTAMPING_TX_SOFTWARE |
+		unix.SOF_TIMESTAMPING_RX_SOFTWARE |
+		unix.SOF_TIMESTAMPING_SOFTWARE
+
+	if err := unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_TIMESTAMPING, timestampFlags); err != nil {
+		return nil, err
+	}
+
 	ip := net.ParseIP(host).To4()
 	if ip == nil {
 		return nil, fmt.Errorf("invalid IPv4 address")
@@ -50,6 +60,11 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 		Port: port,
 		Addr: addr,
 	}
+
+	var txTime *time.Time
+
+	txTimeVal := time.Now()
+	txTime = &txTimeVal
 
 	err = unix.Connect(fd, sa)
 	if err != nil && err != unix.EINPROGRESS {
@@ -71,76 +86,98 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 	if n == 0 {
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s TIMEOUT", index, ttl, address)
 		ol.Stop(nil)
-		return nil, nil
+		return nil, nil //change this
 	}
-
-	//fmt.Printf("revents = %#x\n", pfds[0].Revents)
 
 	if pfds[0].Revents&unix.POLLERR != 0 {
 
 		buf := make([]byte, 64)
 		oob := make([]byte, 512)
 
-		_, oobn, _, _, err := unix.Recvmsg(fd, buf, oob, unix.MSG_ERRQUEUE)
-		//fmt.Printf("Recvmsg: n=%d oob=%d flags=%#x err=%v\n", n, oobn, flags, err)
+		var data []byte
+		var rxTime *time.Time
+		var eeType byte
+		var eeCode byte
+		var ip net.IP
 
-		if err == nil {
+		for {
+			_, oobn, _, _, err := unix.Recvmsg(fd, buf, oob, unix.MSG_ERRQUEUE)
+
+			if err == unix.EAGAIN {
+				break
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
 			cms, err := unix.ParseSocketControlMessage(oob[:oobn])
 			if err != nil {
 				return nil, err
 			}
 
-			//fmt.Printf("received %d control messages\n", len(cms))
-
 			for _, cm := range cms {
-				if cm.Header.Level != unix.IPPROTO_IP ||
-					cm.Header.Type != unix.IP_RECVERR {
-					continue
-				}
 
-				data := cm.Data
-
-				if len(data) < 16 {
-					continue
-				}
-
-				// struct sock_extended_err
-				// ee_errno := binary.LittleEndian.Uint32(data[0:4])
-				// ee_origin := data[4]
-				ee_type := data[5]
-				ee_code := data[6]
-
-				// fmt.Printf("errno  = %d\n", ee_errno)
-				// fmt.Printf("origin = %d\n", ee_origin)
-				// fmt.Printf("type   = %d\n", ee_type)
-				// fmt.Printf("code   = %d\n", ee_code)
-
-				// offender sockaddr_in follows sock_extended_err
-				if len(data) >= 24 {
-					family := binary.LittleEndian.Uint16(data[16:18])
-
-					if family == unix.AF_INET {
-						ip := net.IP(data[20:24])
-						ii := &ICMPIteration{
-							TTL: ttl,
-							ICMPError: &model.ArchivalICMPErrorMessage{
-								Timeout: "no",
-								SrcIP:   ip.String(),
-								Type:    int(ee_type),
-								Code:    int(ee_code),
-							},
-						}
-						ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s Router %s", index, ttl, address, ip.String())
-						ol.Stop(err)
-						// fmt.Printf("offender = %s\n", ip.String())
-						return ii, nil
+				switch {
+				case cm.Header.Level == unix.SOL_SOCKET &&
+					cm.Header.Type == unix.SO_TIMESTAMPING:
+					var ts [3]unix.Timespec
+					if len(cm.Data) >= int(unsafe.Sizeof([3]unix.Timespec{})) {
+						ts = *(*[3]unix.Timespec)(unsafe.Pointer(&cm.Data[0]))
 					}
+
+					if ts[0].Sec != 0 {
+						t := time.Unix(ts[0].Sec, ts[0].Nsec)
+						rxTime = &t
+					}
+
+				case cm.Header.Level == unix.IPPROTO_IP &&
+					cm.Header.Type == unix.IP_RECVERR:
+					data = cm.Data
+
+					if len(data) < 16 {
+						continue
+					}
+
+					eeType = data[5]
+					eeCode = data[6]
+
+					if len(data) >= 24 {
+						family := binary.LittleEndian.Uint16(data[16:18])
+
+						if family == unix.AF_INET {
+							ip = net.IP(data[20:24])
+						}
+					}
+
 				}
 			}
 		}
 
-		return nil, nil
+		var t0, t float64
 
+		if txTime != nil {
+			t0 = float64(txTime.UnixMilli())
+		}
+
+		if rxTime != nil {
+			t = float64(rxTime.UnixMilli())
+		}
+
+		ii := &ICMPIteration{
+			TTL: ttl,
+			ICMPError: &model.ArchivalICMPErrorMessage{
+				Timeout: "no",
+				SrcIP:   ip.String(),
+				Type:    int(eeType),
+				Code:    int(eeCode),
+				T0:      t0,
+				T:       t,
+			},
+		}
+		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s Router %s", index, ttl, address, ip.String())
+		ol.Stop(err)
+		return ii, nil
 	}
 
 	if pfds[0].Revents&unix.POLLOUT != 0 {
