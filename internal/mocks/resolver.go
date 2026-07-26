@@ -14,6 +14,7 @@ type Resolver struct {
 	MockAddress              func() string
 	MockCloseIdleConnections func()
 	MockLookupHTTPS          func(ctx context.Context, domain string) (*model.HTTPSSvc, error)
+	MockLookupSVCB           func(ctx context.Context, domain string) ([]*model.SVCB, error)
 	MockLookupNS             func(ctx context.Context, domain string) ([]*net.NS, error)
 }
 
@@ -40,6 +41,11 @@ func (r *Resolver) CloseIdleConnections() {
 // LookupHTTPS calls MockLookupHTTPS.
 func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return r.MockLookupHTTPS(ctx, domain)
+}
+
+// LookupSVCB calls MockLookupSVCB.
+func (r *Resolver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	return r.MockLookupSVCB(ctx, domain)
 }
 
 // LookupNS calls MockLookupNS.

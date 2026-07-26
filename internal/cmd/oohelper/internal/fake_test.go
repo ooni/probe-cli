@@ -56,6 +56,10 @@ func (c FakeResolver) LookupHTTPS(ctx context.Context, domain string) (*model.HT
 	return nil, errors.New("not implemented")
 }
 
+func (c FakeResolver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (c FakeResolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
 	return nil, errors.New("not implemented")
 }

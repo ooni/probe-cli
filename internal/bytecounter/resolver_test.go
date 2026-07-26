@@ -122,6 +122,84 @@ func TestMaybeWrapSystemResolver(t *testing.T) {
 		})
 	})
 
+	t.Run("LookupSVCB works as intended", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expected := []*model.SVCB{
+				{Priority: 1, TargetName: "target1"},
+				{Priority: 2, TargetName: "target2"},
+				{Priority: 3, TargetName: "target3"},
+			}
+			underlying := &mocks.Resolver{
+				MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+					return expected, nil
+				},
+			}
+			counter := New()
+			reso := MaybeWrapSystemResolver(underlying, counter)
+			got, err := reso.LookupSVCB(context.Background(), "dns.google")
+			if err != nil {
+				t.Fatal("unexpected error", err)
+			}
+			if len(got) != 3 {
+				t.Fatal("invalid result")
+			}
+			if nsent := counter.BytesSent(); nsent != 10 {
+				t.Fatal("unexpected nsent", nsent)
+			}
+			if nrecv := counter.BytesReceived(); nrecv != 256 {
+				t.Fatal("unexpected nrecv")
+			}
+		})
+
+		t.Run("on non-DNS failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			underlying := &mocks.Resolver{
+				MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+					return nil, expected
+				},
+			}
+			counter := New()
+			reso := MaybeWrapSystemResolver(underlying, counter)
+			got, err := reso.LookupSVCB(context.Background(), "dns.google")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected error", err)
+			}
+			if got != nil {
+				t.Fatal("invalid result")
+			}
+			if nsent := counter.BytesSent(); nsent != 10 {
+				t.Fatal("unexpected nsent", nsent)
+			}
+			if nrecv := counter.BytesReceived(); nrecv != 0 {
+				t.Fatal("unexpected nrecv")
+			}
+		})
+
+		t.Run("on DNS failure", func(t *testing.T) {
+			expected := errors.New(netxlite.FailureDNSNXDOMAINError)
+			underlying := &mocks.Resolver{
+				MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+					return nil, expected
+				},
+			}
+			counter := New()
+			reso := MaybeWrapSystemResolver(underlying, counter)
+			got, err := reso.LookupSVCB(context.Background(), "dns.google")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected error", err)
+			}
+			if got != nil {
+				t.Fatal("invalid result")
+			}
+			if nsent := counter.BytesSent(); nsent != 10 {
+				t.Fatal("unexpected nsent", nsent)
+			}
+			if nrecv := counter.BytesReceived(); nrecv != 128 {
+				t.Fatal("unexpected nrecv")
+			}
+		})
+	})
+
 	t.Run("LookupNS works as intended", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
 			underlying := &mocks.Resolver{

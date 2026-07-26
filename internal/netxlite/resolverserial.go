@@ -94,6 +94,17 @@ func (r *SerialResolver) LookupHTTPS(
 	return response.DecodeHTTPS()
 }
 
+func (r *SerialResolver) LookupSVCB(
+	ctx context.Context, hostname string) ([]*model.SVCB, error) {
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeSVCB, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return response.DecodeSVCB()
+}
+
 func (r *SerialResolver) lookupHostWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	// QUIRK: retrying has been there since the beginning so we need to
