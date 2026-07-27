@@ -343,8 +343,11 @@ type OOAPILoginAuth struct {
 
 // OOAPIMeasurementMetaConfig contains configuration for GetMeasurementMeta.
 type OOAPIMeasurementMetaConfig struct {
-	// ReportID is the mandatory report ID.
+	// ReportID is the report ID. It is mandatory unless MeasurementUID is set.
 	ReportID string
+
+	// MeasurementUID is the measurement uid.
+	MeasurementUID string
 
 	// Full indicates whether we also want the full measurement body.
 	Full bool

@@ -87,7 +87,8 @@ func oomobileBuild(config *gomobileConfig) {
 	for _, entry := range config.extraFlags {
 		argv.Append(entry)
 	}
-	tags := []string{}
+
+	tags := []string{"nouserauth"}
 	if config.deps.LibtorEnabled() {
 		tags = append(tags, "ooni_libtor")
 	}

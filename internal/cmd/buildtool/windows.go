@@ -19,7 +19,7 @@ import (
 
 // windowsSubcommand returns the windows sucommand.
 func windowsSubcommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "windows",
 		Short: "Builds ooniprobe and miniooni for windows",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -27,6 +27,8 @@ func windowsSubcommand() *cobra.Command {
 		},
 		Args: cobra.NoArgs,
 	}
+	cmd.AddCommand(windowsUserauthSubcommand())
+	return cmd
 }
 
 // windowsBuildAll is the main function of the windows subcommand.
@@ -83,11 +85,17 @@ var windowsMingwExpectedVersion = "12.2.0"
 // that overrides the expected mingw version.
 const windowsMingwEnvironmentVariable = "EXPECTED_MINGW_W64_VERSION"
 
-// windowsMingwAmd64Compiler is the amd64 compiler.
+// windowsMingwAmd64Compiler is the amd64 C compiler.
 const windowsMingwAmd64Compiler = "x86_64-w64-mingw32-gcc"
 
-// windowsMingw386Compiler is the 386 compiler.
+// windowsMingw386Compiler is the 386 C compiler.
 const windowsMingw386Compiler = "i686-w64-mingw32-gcc"
+
+// windowsMingwAmd64Cxx is the amd64 C++ compiler.
+const windowsMingwAmd64Cxx = "x86_64-w64-mingw32-g++"
+
+// windowsMingw386Cxx is the 386 C++ compiler.
+const windowsMingw386Cxx = "i686-w64-mingw32-g++"
 
 // windowsMingwCheck checks we're using the correct mingw version.
 func windowsMingwCheck() {
@@ -95,13 +103,25 @@ func windowsMingwCheck() {
 	windowsMingwCheckFor(windowsMingw386Compiler)
 }
 
+// windowsMingwParseVersion extracts the version from the first line printed by
+// `gcc --version`. Every gcc build tags itself with a parenthesised vendor string
+// and prints the version right afterwards.
+func windowsMingwParseVersion(firstLine string) string {
+	v := strings.Split(firstLine, " ")
+	for idx, tok := range v {
+		if strings.HasSuffix(tok, ")") && idx+1 < len(v) {
+			return v[idx+1]
+		}
+	}
+	log.Fatalf("cannot parse the mingw version from %q", firstLine)
+	return "" // not reached
+}
+
 // windowsMingwCheckFor implements mingwCheck for the given compiler.
 func windowsMingwCheckFor(compiler string) {
 	expected := windowsMingwExpectedVersionGetter()
 	firstLine := string(must.FirstLineBytes(must.RunOutputQuiet(compiler, "--version")))
-	v := strings.Split(firstLine, " ")
-	runtimex.Assert(len(v) >= 3, "expected to see three tokens or more")
-	if got := v[2]; got != expected {
+	if got := windowsMingwParseVersion(firstLine); got != expected {
 		log.Fatalf("expected mingw %s but got %s", expected, got)
 	}
 	log.Infof("using %s %s", compiler, expected)

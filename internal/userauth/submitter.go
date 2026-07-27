@@ -170,5 +170,7 @@ func (cs *CredentialSubmitter) Submit(ctx context.Context, m *model.Measurement)
 		cs.logger.Warnf("userauth: credential submission failed, falling back to collector: %s", err.Error())
 		return cs.fallback.Submit(ctx, m)
 	}
+
+	m.MeasurementUID = uid
 	return uid, nil
 }

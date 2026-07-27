@@ -72,7 +72,7 @@ builds use the latest commit of the `master` branch.
 To setup development for this repository you need Go >= 1.15. The
 `./script/go.bash` script will automatically download the expected
 version of Go mentioned in the [GOVERSION](GOVERSION) file (i.e.,
-go1.22.3) and use it for building.
+go1.26.5) and use it for building.
 
 You can also bypass `./script/go.bash` and build ooniprobe manually using
 `go build ...` but, in such a case, note that:
@@ -146,10 +146,10 @@ using the correct version of Go. Running this script as follows:
 Is equivalent to running these commands:
 
 ```bash
-go install -v golang.org/dl/go1.24.12@latest
-$HOME/go/bin/go1.24.12 download
+go install -v golang.org/dl/go1.26.5@latest
+$HOME/go/bin/go1.26.5 download
 export GOTOOLCHAIN=local
-$HOME/sdk/go1.24.12/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
+$HOME/sdk/go1.26.5/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
 ```
 
 ### Common build targets
@@ -183,6 +183,26 @@ And `oohelperd` using:
 
 This command will generate a stripped binary called `oohelperd`
 in the toplevel directory.
+
+### The userauth staticlib
+
+The `ooniprobe` and `miniooni` binaries link a Rust static library
+(`libuniffi_ooniprobe.a`) built from
+[ooniprobe-rs](https://github.com/ooni/ooniprobe-rs). The `make CLI/*` targets
+obtain it through the `userauth` target, which runs the buildtool and by
+**default downloads a prebuilt bundle** from the pinned ooniprobe-rs release.
+
+Set `USERAUTH_FROM_SOURCE=1` to instead **build the staticlib from the pinned
+ooniprobe-rs sources**, for example:
+
+```bash
+make USERAUTH_FROM_SOURCE=1 CLI/ooniprobe
+```
+
+Building from source is what we do when publishing, because the prebuilt bundle is
+glibc-based and cannot link into the musl static Linux builds or the cross-compiled
+Windows/darwin builds. The prebuilt download is faster and is the right default for
+local development.
 
 ## Contributing
 

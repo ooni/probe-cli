@@ -1,4 +1,4 @@
-//go:build (cgo && linux && !android && (amd64 || arm64 || arm || 386)) || (cgo && darwin && !ios && (amd64 || arm64)) || (cgo && windows && (amd64 || 386))
+//go:build !nouserauth && ((cgo && linux && !android && (amd64 || arm64 || arm || 386)) || (cgo && darwin && !ios && (amd64 || arm64)) || (cgo && windows && (amd64 || 386)))
 
 package userauth
 
@@ -9,8 +9,8 @@ package userauth
 // #cgo linux,386 LDFLAGS: -L${SRCDIR}/lib/linux/x86 -luniffi_ooniprobe -ldl -lm -lpthread
 // #cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/lib/macos/x86_64 -luniffi_ooniprobe -framework CoreFoundation -framework Security
 // #cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/lib/macos/aarch64 -luniffi_ooniprobe -framework CoreFoundation -framework Security
-// #cgo windows,amd64 LDFLAGS: -L${SRCDIR}/lib/windows/x86_64 -luniffi_ooniprobe -lws2_32 -luserenv -lbcrypt
-// #cgo windows,386 LDFLAGS: -L${SRCDIR}/lib/windows/x86 -luniffi_ooniprobe -lws2_32 -luserenv -lbcrypt
+// #cgo windows,amd64 LDFLAGS: -L${SRCDIR}/lib/windows/x86_64 -luniffi_ooniprobe -lws2_32 -luserenv -lbcrypt -lntdll
+// #cgo windows,386 LDFLAGS: -L${SRCDIR}/lib/windows/x86 -luniffi_ooniprobe -lws2_32 -luserenv -lbcrypt -lntdll
 // #include <stdlib.h>
 // #include "ooniprobe_userauth.h"
 import "C"

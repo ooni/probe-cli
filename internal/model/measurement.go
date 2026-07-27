@@ -124,6 +124,9 @@ type Measurement struct {
 	// ReportID contains the report ID.
 	ReportID string `json:"report_id,omitempty"`
 
+	// MeasurementUID contains the measurement UID.
+	MeasurementUID string `json:"measurement_uid,omitempty"`
+
 	// ResolverASN is the ASN of the resolver
 	ResolverASN string `json:"resolver_asn"`
 
