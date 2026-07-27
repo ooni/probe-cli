@@ -1,8 +1,18 @@
 # builder
+FROM rust:1.88-bookworm AS ruststage
 FROM golang:1.26 AS builder
+
+COPY --from=ruststage /usr/local/cargo /usr/local/cargo
+COPY --from=ruststage /usr/local/rustup /usr/local/rustup
+ENV PATH="/usr/local/cargo/bin:${PATH}"
+RUN rustup default stable
 RUN apt update && apt install -y --no-install-recommends \
     build-essential \
     gcc \
+    cmake \
+    clang \
+    libclang-dev \
+    pkg-config  \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -10,6 +20,8 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
 
+ENV USERAUTH_FROM_SOURCE=1
+RUN make userauth
 ENV GOBIN=/go/bin
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
@@ -19,7 +31,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 	go install -v -ldflags '-s -w' ./internal/cmd/scheduler
 
 # runtime - minimal Debian slim
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
