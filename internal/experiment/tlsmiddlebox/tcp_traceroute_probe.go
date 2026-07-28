@@ -14,6 +14,21 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
+	if len(buf) < 8 {
+		return nil, fmt.Errorf("tcp quote too short")
+	}
+
+	quotedPacket := &model.ArchivalICMPQuotation{
+		Protocol:  6,
+		SrcPort:   int(binary.BigEndian.Uint16(buf[0:2])),
+		DstPort:   int(binary.BigEndian.Uint16(buf[2:4])),
+		TCPSeqNum: binary.BigEndian.Uint32(buf[4:8]),
+	}
+
+	return quotedPacket, nil
+}
+
 func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, index int64) (*ICMPIteration, error) {
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
@@ -86,7 +101,13 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 	if n == 0 {
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s TIMEOUT", index, ttl, address)
 		ol.Stop(nil)
-		return nil, nil //change this
+		ii_timeout := &ICMPIteration{
+			TTL: ttl,
+			ICMPError: &model.ArchivalICMPErrorMessage{
+				Timeout: "yes",
+			},
+		}
+		return ii_timeout, nil
 	}
 
 	if pfds[0].Revents&unix.POLLERR != 0 {
@@ -99,15 +120,25 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 		var eeType byte
 		var eeCode byte
 		var ip net.IP
+		var quotedPacket *model.ArchivalICMPQuotation
 
 		for {
-			_, oobn, _, _, err := unix.Recvmsg(fd, buf, oob, unix.MSG_ERRQUEUE)
+			n, oobn, _, _, err := unix.Recvmsg(fd, buf, oob, unix.MSG_ERRQUEUE)
 
 			if err == unix.EAGAIN {
 				break
 			}
 
 			if err != nil {
+				return nil, err
+			}
+
+			quoted := buf[:n]
+
+			quotedPacket, err = parseQuotedPacket(quoted)
+
+			if err != nil {
+				fmt.Println("quote parse failed:", err)
 				return nil, err
 			}
 
@@ -152,6 +183,7 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 
 				}
 			}
+
 		}
 
 		var t0, t float64
@@ -175,6 +207,10 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 				T:       t,
 			},
 		}
+		if quotedPacket != nil && err == nil {
+			ii.ICMPError.Quote = *quotedPacket
+		}
+
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s Router %s", index, ttl, address, ip.String())
 		ol.Stop(err)
 		return ii, nil
@@ -189,9 +225,23 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 		if soerr == 0 {
 			ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s CONNECTED", index, ttl, address)
 			ol.Stop(nil)
+			ii_connected := &ICMPIteration{
+				TTL: ttl,
+				ICMPError: &model.ArchivalICMPErrorMessage{
+					Connected: "yes",
+				},
+			}
+			return ii_connected, nil
 		} else {
 			ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s SO_ERROR %v", index, ttl, address, unix.Errno(soerr))
 			ol.Stop(nil)
+			ii_error := &ICMPIteration{
+				TTL: ttl,
+				ICMPError: &model.ArchivalICMPErrorMessage{
+					Error: unix.Errno(soerr).Error(),
+				},
+			}
+			return ii_error, nil
 		}
 	}
 
