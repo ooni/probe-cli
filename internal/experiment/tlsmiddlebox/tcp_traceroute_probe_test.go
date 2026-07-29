@@ -51,6 +51,19 @@ func TestProbeTCP(t *testing.T) {
 	ttl := 2
 	index := int64(1)
 
+	t.Run("invalid address and port format", func(t *testing.T) {
+		wg.Add(1)
+		address := "1.2.3.4"
+		ii, err := probeTCP(address, ttl, 3000, wg, model.DiscardLogger, index)
+		if ii != nil {
+			t.Fatalf("expected nil, got %T", ii)
+		}
+
+		if err.Error() != "address 1.2.3.4: missing port in address" {
+			t.Fatalf("expected 'address 1.2.3.4: missing port in address', got %s", err.Error())
+		}
+	})
+
 	t.Run("invalid IPv4 address", func(t *testing.T) {
 		wg.Add(1)
 		address := "298.125.34.4:443"
