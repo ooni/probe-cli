@@ -33,7 +33,15 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
 
+	if err != nil {
+		return nil, err
+	}
+
 	port, err := strconv.Atoi(portString)
+
+	if err != nil {
+		return nil, err
+	}
 
 	fd, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, unix.IPPROTO_TCP)
 
@@ -148,6 +156,9 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 			}
 
 			for _, cm := range cms {
+
+				fmt.Printf("n=%d\n", n)
+				fmt.Printf("buf=%x\n", buf[:n])
 
 				switch {
 				case cm.Header.Level == unix.SOL_SOCKET &&
