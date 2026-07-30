@@ -15,7 +15,7 @@ import (
 type QUICDialer struct {
 	// MockDialContext allows mocking DialContext.
 	MockDialContext func(ctx context.Context, address string,
-		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
+		tlsConfig *tls.Config, quicConfig *quic.Config) (model.QUICConn, error)
 
 	// MockCloseIdleConnections allows mocking CloseIdleConnections.
 	MockCloseIdleConnections func()
@@ -25,7 +25,7 @@ var _ model.QUICDialer = &QUICDialer{}
 
 // DialContext calls MockDialContext.
 func (qcd *QUICDialer) DialContext(ctx context.Context, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (model.QUICConn, error) {
 	return qcd.MockDialContext(ctx, address, tlsConfig, quicConfig)
 }
 
@@ -34,101 +34,47 @@ func (qcd *QUICDialer) CloseIdleConnections() {
 	qcd.MockCloseIdleConnections()
 }
 
-// QUICEarlyConnection is a mockable quic.EarlyConnection.
-type QUICEarlyConnection struct {
-	MockAcceptStream      func(context.Context) (quic.Stream, error)
-	MockAcceptUniStream   func(context.Context) (quic.ReceiveStream, error)
-	MockOpenStream        func() (quic.Stream, error)
-	MockOpenStreamSync    func(ctx context.Context) (quic.Stream, error)
-	MockOpenUniStream     func() (quic.SendStream, error)
-	MockOpenUniStreamSync func(ctx context.Context) (quic.SendStream, error)
+// QUICConn is a mockable model.QUICConn.
+type QUICConn struct {
+	MockCloseWithError    func(code quic.ApplicationErrorCode, reason string) error
+	MockHandshakeComplete func() <-chan struct{}
+	MockConnectionState   func() quic.ConnectionState
 	MockLocalAddr         func() net.Addr
 	MockRemoteAddr        func() net.Addr
-	MockCloseWithError    func(code quic.ApplicationErrorCode, reason string) error
 	MockContext           func() context.Context
-	MockConnectionState   func() quic.ConnectionState
-	MockHandshakeComplete func() <-chan struct{}
-	MockNextConnection    func() quic.Connection
-	MockSendDatagram      func(b []byte) error
-	MockReceiveDatagram   func(ctx context.Context) ([]byte, error)
 }
 
-var _ quic.EarlyConnection = &QUICEarlyConnection{}
-
-// AcceptStream calls MockAcceptStream.
-func (s *QUICEarlyConnection) AcceptStream(ctx context.Context) (quic.Stream, error) {
-	return s.MockAcceptStream(ctx)
-}
-
-// AcceptUniStream calls MockAcceptUniStream.
-func (s *QUICEarlyConnection) AcceptUniStream(ctx context.Context) (quic.ReceiveStream, error) {
-	return s.MockAcceptUniStream(ctx)
-}
-
-// OpenStream calls MockOpenStream.
-func (s *QUICEarlyConnection) OpenStream() (quic.Stream, error) {
-	return s.MockOpenStream()
-}
-
-// OpenStreamSync calls MockOpenStreamSync.
-func (s *QUICEarlyConnection) OpenStreamSync(ctx context.Context) (quic.Stream, error) {
-	return s.MockOpenStreamSync(ctx)
-}
-
-// OpenUniStream calls MockOpenUniStream.
-func (s *QUICEarlyConnection) OpenUniStream() (quic.SendStream, error) {
-	return s.MockOpenUniStream()
-}
-
-// OpenUniStreamSync calls MockOpenUniStreamSync.
-func (s *QUICEarlyConnection) OpenUniStreamSync(ctx context.Context) (quic.SendStream, error) {
-	return s.MockOpenUniStreamSync(ctx)
-}
-
-// LocalAddr class MockLocalAddr.
-func (c *QUICEarlyConnection) LocalAddr() net.Addr {
-	return c.MockLocalAddr()
-}
-
-// RemoteAddr calls MockRemoteAddr.
-func (c *QUICEarlyConnection) RemoteAddr() net.Addr {
-	return c.MockRemoteAddr()
-}
+var _ model.QUICConn = &QUICConn{}
 
 // CloseWithError calls MockCloseWithError.
-func (c *QUICEarlyConnection) CloseWithError(
+func (c *QUICConn) CloseWithError(
 	code quic.ApplicationErrorCode, reason string) error {
 	return c.MockCloseWithError(code, reason)
 }
 
-// Context calls MockContext.
-func (s *QUICEarlyConnection) Context() context.Context {
-	return s.MockContext()
+// HandshakeComplete calls MockHandshakeComplete.
+func (c *QUICConn) HandshakeComplete() <-chan struct{} {
+	return c.MockHandshakeComplete()
 }
 
 // ConnectionState calls MockConnectionState.
-func (s *QUICEarlyConnection) ConnectionState() quic.ConnectionState {
-	return s.MockConnectionState()
+func (c *QUICConn) ConnectionState() quic.ConnectionState {
+	return c.MockConnectionState()
 }
 
-// HandshakeComplete calls MockHandshakeComplete.
-func (s *QUICEarlyConnection) HandshakeComplete() <-chan struct{} {
-	return s.MockHandshakeComplete()
+// LocalAddr calls MockLocalAddr.
+func (c *QUICConn) LocalAddr() net.Addr {
+	return c.MockLocalAddr()
 }
 
-// NextConnection calls MockNextConnection.
-func (s *QUICEarlyConnection) NextConnection() quic.Connection {
-	return s.MockNextConnection()
+// RemoteAddr calls MockRemoteAddr.
+func (c *QUICConn) RemoteAddr() net.Addr {
+	return c.MockRemoteAddr()
 }
 
-// SendDatagram calls MockSendDatagram.
-func (s *QUICEarlyConnection) SendDatagram(b []byte) error {
-	return s.MockSendDatagram(b)
-}
-
-// ReceiveDatagram calls MockReceiveDatagram.
-func (s *QUICEarlyConnection) ReceiveDatagram(ctx context.Context) ([]byte, error) {
-	return s.MockReceiveDatagram(ctx)
+// Context calls MockContext.
+func (c *QUICConn) Context() context.Context {
+	return c.MockContext()
 }
 
 // UDPLikeConn is an UDP conn used by QUIC.

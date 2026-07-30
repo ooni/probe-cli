@@ -102,7 +102,7 @@ func verifyTypeChainForHTTP3(t *testing.T, txp model.HTTPTransport,
 			t.Fatal("invalid resolver")
 		}
 	}
-	h3 := h3txp.child.(*http3.RoundTripper)
+	h3 := h3txp.child.(*http3.Transport)
 	if h3.Dial == nil {
 		t.Fatal("invalid Dial")
 	}
