@@ -34,7 +34,7 @@ func closeableConnWithErr(err error) io.Closer {
 
 func closeableQUICConnWithErr(err error) io.Closer {
 	return &quicCloserConn{
-		&mocks.QUICEarlyConnection{
+		&mocks.QUICConn{
 			MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
 				return err
 			},

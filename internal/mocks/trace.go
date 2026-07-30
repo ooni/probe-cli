@@ -37,7 +37,7 @@ type Trace struct {
 
 	MockOnQUICHandshakeStart func(now time.Time, remoteAddrs string, config *quic.Config)
 
-	MockOnQUICHandshakeDone func(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+	MockOnQUICHandshakeDone func(started time.Time, remoteAddr string, qconn model.QUICConn,
 		config *tls.Config, err error, finished time.Time)
 }
 
@@ -83,7 +83,7 @@ func (t *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *q
 	t.MockOnQUICHandshakeStart(now, remoteAddr, config)
 }
 
-func (t *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+func (t *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn model.QUICConn,
 	config *tls.Config, err error, finished time.Time) {
 	t.MockOnQUICHandshakeDone(started, remoteAddr, qconn, config, err, finished)
 }

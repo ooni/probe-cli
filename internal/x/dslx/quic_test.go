@@ -24,7 +24,7 @@ Test cases:
 func TestQUICHandshake(t *testing.T) {
 	t.Run("Apply quicHandshakeFunc", func(t *testing.T) {
 		wasClosed := false
-		plainConn := &mocks.QUICEarlyConnection{
+		plainConn := &mocks.QUICConn{
 			MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
 				wasClosed = true
 				return nil
@@ -36,14 +36,14 @@ func TestQUICHandshake(t *testing.T) {
 
 		eofDialer := &mocks.QUICDialer{
 			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
-				quicConfig *quic.Config) (quic.EarlyConnection, error) {
+				quicConfig *quic.Config) (model.QUICConn, error) {
 				return nil, io.EOF
 			},
 		}
 
 		goodDialer := &mocks.QUICDialer{
 			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
-				quicConfig *quic.Config) (quic.EarlyConnection, error) {
+				quicConfig *quic.Config) (model.QUICConn, error) {
 				return plainConn, nil
 			},
 		}
@@ -52,7 +52,7 @@ func TestQUICHandshake(t *testing.T) {
 			dialer     model.QUICDialer
 			sni        string
 			tags       []string
-			expectConn quic.EarlyConnection
+			expectConn model.QUICConn
 			expectErr  error
 			closed     bool
 		}{

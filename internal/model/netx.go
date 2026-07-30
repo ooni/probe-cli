@@ -246,6 +246,33 @@ type QUICDialerWrapper interface {
 	WrapQUICDialer(qd QUICDialer) QUICDialer
 }
 
+// QUICConn is the interface representing a *quic.Conn compatible QUIC
+// connection.
+type QUICConn interface {
+	// CloseWithError closes the connection using the given application
+	// error code and reason string.
+	CloseWithError(code quic.ApplicationErrorCode, reason string) error
+
+	// HandshakeComplete returns a channel that is closed when the QUIC
+	// handshake completes.
+	HandshakeComplete() <-chan struct{}
+
+	// ConnectionState returns the state of the QUIC connection.
+	ConnectionState() quic.ConnectionState
+
+	// LocalAddr returns the local address.
+	LocalAddr() net.Addr
+
+	// RemoteAddr returns the address of the peer.
+	RemoteAddr() net.Addr
+
+	// Context returns a context that is cancelled when the connection is closed.
+	Context() context.Context
+}
+
+// Ensures that a [*quic.Conn] implements the [QUICConn] interface.
+var _ QUICConn = &quic.Conn{}
+
 // QUICDialer dials QUIC sessions.
 type QUICDialer interface {
 	// DialContext establishes a new QUIC session using the given
@@ -262,7 +289,7 @@ type QUICDialer interface {
 	//
 	// Typically, you want to pass `&quic.Config{}` as quicConfig.
 	DialContext(ctx context.Context, address string,
-		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
+		tlsConfig *tls.Config, quicConfig *quic.Config) (QUICConn, error)
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
@@ -522,7 +549,7 @@ type Trace interface {
 	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
 	//
 	// - qconn is the QUIC connection we receive after the handshake: either
-	// a valid quic.EarlyConnection or nil;
+	// a valid QUICConn or nil;
 	//
 	// - config is the non-nil TLS config we are using;
 	//
@@ -532,7 +559,7 @@ type Trace interface {
 	//
 	// The error passed to this function will always be wrapped such that the
 	// string returned by Error is an OONI error.
-	OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+	OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn QUICConn,
 		config *tls.Config, err error, finished time.Time)
 }
 

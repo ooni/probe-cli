@@ -38,7 +38,7 @@ var _ model.QUICDialer = &quicDialerTrace{}
 // DialContext implements model.QUICDialer.DialContext.
 func (qdx *quicDialerTrace) DialContext(ctx context.Context,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
-	quic.EarlyConnection, error) {
+	model.QUICConn, error) {
 	// TODO(https://github.com/ooni/probe/issues/2665)
 	return qdx.qd.DialContext(netxlite.ContextWithTrace(ctx, qdx.tx), address, tlsConfig, quicConfig)
 }
@@ -59,7 +59,7 @@ func (tx *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *
 }
 
 // OnQUICHandshakeDone implements model.Trace.OnQUICHandshakeDone
-func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn model.QUICConn,
 	config *tls.Config, err error, finished time.Time) {
 	t := finished.Sub(tx.ZeroTime())
 
@@ -112,8 +112,8 @@ func (tx *Trace) FirstQUICHandshakeOrNil() *model.ArchivalTLSOrQUICHandshakeResu
 	return ev[0]
 }
 
-// MaybeCloseQUICConn is a convenience function for closing a [quic.EarlyConnection] when it is not nil.
-func MaybeCloseQUICConn(conn quic.EarlyConnection) (err error) {
+// MaybeCloseQUICConn is a convenience function for closing a [model.QUICConn] when it is not nil.
+func MaybeCloseQUICConn(conn model.QUICConn) (err error) {
 	if conn != nil {
 		err = conn.CloseWithError(0, "")
 	}

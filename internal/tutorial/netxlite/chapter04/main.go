@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/quic-go/quic-go"
 )
@@ -91,7 +92,7 @@ func main() {
 //
 // ```Go
 func dialQUIC(ctx context.Context, address string,
-	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
+	config *tls.Config) (model.QUICConn, tls.ConnectionState, error) {
 	netx := &netxlite.Netx{}
 	ql := netx.NewUDPListener()
 	d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
