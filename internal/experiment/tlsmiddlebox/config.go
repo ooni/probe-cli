@@ -27,7 +27,7 @@ type Config struct {
 	TestHelper string `ooni:"testhelper URL to use for tracing"`
 
 	// ClientId is the client fingerprint to use
-	ClientId int `ooni:"ClientHello fingerprint to use"`
+	ClientId int64 `ooni:"ClientHello fingerprint to use"`
 }
 
 func (c Config) resolverURL() string {
@@ -73,7 +73,7 @@ func (c Config) testhelper(address string) (URL *url.URL, err error) {
 
 func (c Config) clientid() int {
 	if c.ClientId > 0 {
-		return c.ClientId
+		return int(c.ClientId)
 	}
 	return 0
 }

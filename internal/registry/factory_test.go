@@ -1115,3 +1115,29 @@ func TestExperimentConfigIsAlwaysAPointerToStruct(t *testing.T) {
 		})
 	}
 }
+
+// This test is important because SetOptionAny can only set fields whose
+// kind is int64, bool, or string: any config field exposed as an option
+// through the `ooni` tag must use one of these kinds, otherwise it is
+// impossible to set it with `miniooni -O` and similar interfaces
+func TestExperimentOptionsAreAlwaysSettable(t *testing.T) {
+	for name, ffunc := range AllExperiments {
+		t.Run(name, func(t *testing.T) {
+			factory := ffunc()
+			valueinfo := reflect.ValueOf(factory.config).Elem()
+			typeinfo := valueinfo.Type()
+			for i := 0; i < typeinfo.NumField(); i++ {
+				field := typeinfo.Field(i)
+				if !field.IsExported() || field.Tag.Get("ooni") == "" {
+					continue
+				}
+				switch kind := field.Type.Kind(); kind {
+				case reflect.Int64, reflect.Bool, reflect.String:
+					// nothing
+				default:
+					t.Fatalf("field %s has kind %s, which SetOptionAny cannot set", field.Name, kind)
+				}
+			}
+		})
+	}
+}
