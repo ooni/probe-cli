@@ -86,6 +86,33 @@ func TestMeasurer_input_failure(t *testing.T) {
 		}
 	})
 
+	t.Run("with invalid ClientId", func(t *testing.T) {
+		m := NewExperimentMeasurer()
+		meas := &model.Measurement{
+			Input: model.MeasurementInput("tlstrace://example.com"),
+		}
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: meas,
+			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					ClientId: 5, // we only know fingerprints between 1 and 4
+				},
+				URL: "tlstrace://example.com",
+			},
+		}
+		err := m.Run(context.Background(), args)
+		if !errors.Is(err, errInvalidClientId) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
 	t.Run("with local listener and successful outcome", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
