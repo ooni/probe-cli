@@ -34,7 +34,7 @@ func TestWindowsBuildAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-windows-386.exe",
+				"-ldflags", "-s -w -extldflags=-static", "-o", "CLI/miniooni-windows-386.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -46,7 +46,7 @@ func TestWindowsBuildAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-386.exe",
+				"-ldflags", "-s -w -extldflags=-static", "-o", "CLI/ooniprobe-windows-386.exe",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -58,7 +58,7 @@ func TestWindowsBuildAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-windows-amd64.exe",
+				"-ldflags", "-s -w -extldflags=-static", "-o", "CLI/miniooni-windows-amd64.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -70,7 +70,7 @@ func TestWindowsBuildAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-amd64.exe",
+				"-ldflags", "-s -w -extldflags=-static", "-o", "CLI/ooniprobe-windows-amd64.exe",
 				"./cmd/ooniprobe",
 			},
 		}},
@@ -85,7 +85,7 @@ func TestWindowsBuildAll(t *testing.T) {
 				"GOOS=windows",
 			},
 			Argv: []string{
-				"go", "build", "-ldflags", "-s -w", "-o", "CLI/miniooni-windows-386.exe",
+				"go", "build", "-ldflags", "-s -w -extldflags=-static", "-o", "CLI/miniooni-windows-386.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -96,7 +96,7 @@ func TestWindowsBuildAll(t *testing.T) {
 				"GOOS=windows",
 			},
 			Argv: []string{
-				"go", "build", "-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-386.exe",
+				"go", "build", "-ldflags", "-s -w -extldflags=-static", "-o", "CLI/ooniprobe-windows-386.exe",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -107,7 +107,7 @@ func TestWindowsBuildAll(t *testing.T) {
 				"GOOS=windows",
 			},
 			Argv: []string{
-				"go", "build", "-ldflags", "-s -w", "-o", "CLI/miniooni-windows-amd64.exe",
+				"go", "build", "-ldflags", "-s -w -extldflags=-static", "-o", "CLI/miniooni-windows-amd64.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -118,7 +118,7 @@ func TestWindowsBuildAll(t *testing.T) {
 				"GOOS=windows",
 			},
 			Argv: []string{
-				"go", "build", "-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-amd64.exe",
+				"go", "build", "-ldflags", "-s -w -extldflags=-static", "-o", "CLI/ooniprobe-windows-amd64.exe",
 				"./cmd/ooniprobe",
 			},
 		}},
