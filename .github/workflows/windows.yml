@@ -7,6 +7,7 @@ on:
       - "release/**"
       - "fullbuild"
       - "windowsbuild"
+      - fix/windows-static-build
     tags:
       - "v*"
   schedule:

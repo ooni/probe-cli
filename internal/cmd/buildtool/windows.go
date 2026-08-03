@@ -55,7 +55,7 @@ func windowsBuildPackage(deps buildtoolmodel.Dependencies, goarch string, produc
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 
-	argv.Append("-ldflags", "-s -w")
+	argv.Append("-ldflags", "-s -w -extldflags=-static")
 	argv.Append("-o", product.DestinationPath("windows", goarch))
 	argv.Append(product.Pkg)
 
