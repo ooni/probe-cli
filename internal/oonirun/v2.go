@@ -104,6 +104,29 @@ type V2NettestInputExtra struct {
 	CategoryCode string `json:"category_code,omitempty"`
 }
 
+// v2EngineDescriptorRequest is the request body for the OONI Run v2
+// engine-descriptor endpoint.
+type v2EngineDescriptorRequest struct {
+	// IsCharging indicates whether the probe is charging.
+	IsCharging bool `json:"is_charging"`
+
+	// RunType is either "timed" or "manual".
+	RunType string `json:"run_type"`
+
+	// ProbeCC is the probe country code.
+	ProbeCC string `json:"probe_cc"`
+
+	// ProbeASN is the probe ASN (e.g., "AS1234").
+	ProbeASN string `json:"probe_asn"`
+
+	// NetworkType is the probe network type (e.g., "wifi").
+	NetworkType string `json:"network_type"`
+
+	// WebsiteCategoryCodes filters the website targets by category code. An
+	// empty slice lets the backend use its default set of categories.
+	WebsiteCategoryCodes []string `json:"website_category_codes"`
+}
+
 // v2NettestInputsExtraToOOAPIURLInfo converts the OONI Run v2 inputs_extra
 // metadata into the index-aligned [model.OOAPIURLInfo] slice.
 func v2NettestInputsExtraToOOAPIURLInfo(inputsExtra []V2NettestInputExtra) []model.OOAPIURLInfo {
@@ -115,6 +138,34 @@ func v2NettestInputsExtraToOOAPIURLInfo(inputsExtra []V2NettestInputExtra) []mod
 		out = append(out, model.OOAPIURLInfo{CategoryCode: entry.CategoryCode})
 	}
 	return out
+}
+
+// isV2EngineDescriptorURL returns whether the URL points to an OONI Run v2
+// engine-descriptor endpoint,
+func isV2EngineDescriptorURL(URL string) bool {
+	return strings.Contains(URL, "/oonirun/links/") && strings.Contains(URL, "/engine-descriptor/")
+}
+
+// getV2EngineDescriptor POSTs the probe context to an OONI Run v2 engine-descriptor
+// URL and returns the resulting descriptor.
+func getV2EngineDescriptor(ctx context.Context, config *LinkConfig,
+	client model.HTTPClient, logger model.Logger, URL string) (*V2Descriptor, error) {
+	request := &v2EngineDescriptorRequest{
+		IsCharging:           true,
+		RunType:              string(model.RunTypeManual),
+		ProbeCC:              config.ProbeCC,
+		ProbeASN:             config.ProbeASN,
+		WebsiteCategoryCodes: []string{},
+	}
+	return httpclientx.PostJSON[*v2EngineDescriptorRequest, *V2Descriptor](
+		ctx,
+		httpclientx.NewEndpoint(URL),
+		request,
+		&httpclientx.Config{
+			Client:    client,
+			Logger:    logger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
 }
 
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
@@ -188,9 +239,15 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // - ctx is the context for deadline/cancellation;
 //
+// - config is the link config providing the probe context for the POST branch;
+//
 // - client is the HTTPClient to use;
 //
-// - URL is the URL from which to download/update the OONIRun v2Descriptor.
+// - logger is the logger to use;
+//
+// - URL is the URL from which to download/update the OONIRun v2Descriptor;
+//
+// - auth is the OPTIONAL bearer token used for the static-descriptor GET.
 //
 // Return values:
 //
@@ -200,11 +257,22 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // - err is the error that occurred, or nil in case of success.
 func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
-	ctx context.Context, client model.HTTPClient, logger model.Logger,
+	ctx context.Context, config *LinkConfig, client model.HTTPClient, logger model.Logger,
 	URL, auth string) (oldValue, newValue *V2Descriptor, err error) {
 	oldValue = cache.Entries[URL]
-	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, logger, URL, auth)
+	newValue, err = v2FetchDescriptor(ctx, config, client, logger, URL, auth)
 	return
+}
+
+// v2FetchDescriptor fetches a v2Descriptor from the given URL. It switches on
+// the URL shape: an OONI Run v2 engine-descriptor URL is a POST request with the
+// probe context, while any other URL is a GET request.
+func v2FetchDescriptor(ctx context.Context, config *LinkConfig,
+	client model.HTTPClient, logger model.Logger, URL, auth string) (*V2Descriptor, error) {
+	if isV2EngineDescriptorURL(URL) {
+		return getV2EngineDescriptor(ctx, config, client, logger, URL)
+	}
+	return getV2DescriptorFromHTTPSURL(ctx, client, logger, URL, auth)
 }
 
 // Update updates the given cache entry and writes back onto the disk.
@@ -330,7 +398,7 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 	if err != nil {
 		logger.Warnf("oonirun: failed to retrieve auth token: %v", err)
 	}
-	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, logger, URL, auth)
+	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, config, clnt, logger, URL, auth)
 	if err != nil {
 		return err
 	}
