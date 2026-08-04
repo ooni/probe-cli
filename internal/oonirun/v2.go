@@ -32,6 +32,10 @@ var (
 	// v2CountFailedExperiments countes the number of failed experiments
 	// and is useful when testing this package
 	v2CountFailedExperiments = &atomic.Int64{}
+
+	// v2CountSkippedNettests counts the number of nettests we skipped because
+	// they were disabled for the current run type, which is useful for testing.
+	v2CountSkippedNettests = &atomic.Int64{}
 )
 
 // V2Descriptor describes a list of nettests to run together.
@@ -47,6 +51,14 @@ type V2Descriptor struct {
 
 	// Nettests contains the list of nettests to run.
 	Nettests []V2Nettest `json:"nettests"`
+
+	// Revision is the OPTIONAL revision of this descriptor as assigned by the
+	// OONI Run backend.
+	Revision string `json:"revision"`
+
+	// DateCreated is the OPTIONAL creation timestamp of this revision as
+	// assigned by the OONI Run backend.
+	DateCreated string `json:"date_created"`
 }
 
 // V2Nettest specifies how a nettest should run.
@@ -54,14 +66,42 @@ type V2Nettest struct {
 	// Inputs contains inputs for the experiment.
 	Inputs []string `json:"inputs"`
 
+	// InputsExtra contains OPTIONAL per-input metadata parallel to Inputs. When
+	// present, its length SHOULD match the length of Inputs.
+	InputsExtra []V2NettestInputExtra `json:"inputs_extra"`
+
+	// TargetsName OPTIONALLY names a predefined target list that the OONI Run
+	// backend generates dynamically.
+	TargetsName string `json:"targets_name"`
+
 	// Options contains the experiment options. Any option name starting with
 	// `Safe` will be available for the experiment run, but omitted from
 	// the serialized Measurement that the experiment builder will submit
 	// to the OONI backend.
+	//
+	// Deprecated: OONI Run v2.1 removes this field from the spec in favour of
+	// inputs_extra/targets_name.
+	// See here: https://github.com/ooni/spec/blob/master/backends/bk-005-ooni-run-v2.md
 	Options json.RawMessage `json:"options"`
+
+	// IsBackgroundRunEnabled OPTIONALLY indicates whether this nettest runs as
+	// part of background/autoruns. A nil value defaults to true.
+	IsBackgroundRunEnabled *bool `json:"is_background_run_enabled"`
+
+	// IsManualRunEnabled OPTIONALLY indicates whether this nettest runs as part
+	// of a manual run. A nil value defaults to true.
+	IsManualRunEnabled *bool `json:"is_manual_run_enabled"`
 
 	// TestName contains the nettest name.
 	TestName string `json:"test_name"`
+}
+
+// V2NettestInputExtra contains OPTIONAL per-input metadata attached to an entry
+// of [V2Nettest.Inputs].
+type V2NettestInputExtra struct {
+	// CategoryCode is the OPTIONAL category code for the corresponding input
+	// (e.g., "NEWS", "HUMR"). It maps to [model.OOAPIURLInfo.CategoryCode].
+	CategoryCode string `json:"category_code,omitempty"`
 }
 
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
