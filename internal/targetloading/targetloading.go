@@ -101,6 +101,11 @@ type Loader struct {
 	// to the resulting input list if possible.
 	StaticInputs []string
 
+	// StaticInputsExtra contains optional richer-input metadata index-aligned
+	// with StaticInputs. Only the category code is honored; the country code
+	// stays at its default value.
+	StaticInputsExtra []model.OOAPIURLInfo
+
 	// SourceFiles contains optional files to read input
 	// from. Each file should contain a single input string
 	// per line. We will fail if any file is unreadable
@@ -258,8 +263,14 @@ func (il *Loader) loadLocal() ([]model.ExperimentTarget, error) {
 		return nil, err
 	}
 	var targets []model.ExperimentTarget
-	for _, input := range inputs {
-		targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
+	for idx, input := range inputs {
+		target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input)
+		if idx < len(il.StaticInputs) && idx < len(il.StaticInputsExtra) {
+			if cat := il.StaticInputsExtra[idx].CategoryCode; cat != "" {
+				target.CategoryCode = cat
+			}
+		}
+		targets = append(targets, target)
 	}
 	return targets, nil
 }

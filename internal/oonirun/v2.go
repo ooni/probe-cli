@@ -104,6 +104,19 @@ type V2NettestInputExtra struct {
 	CategoryCode string `json:"category_code,omitempty"`
 }
 
+// v2NettestInputsExtraToOOAPIURLInfo converts the OONI Run v2 inputs_extra
+// metadata into the index-aligned [model.OOAPIURLInfo] slice.
+func v2NettestInputsExtraToOOAPIURLInfo(inputsExtra []V2NettestInputExtra) []model.OOAPIURLInfo {
+	if len(inputsExtra) <= 0 {
+		return nil
+	}
+	out := make([]model.OOAPIURLInfo, 0, len(inputsExtra))
+	for _, entry := range inputsExtra {
+		out = append(out, model.OOAPIURLInfo{CategoryCode: entry.CategoryCode})
+	}
+	return out
+}
+
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
 // a static URL (e.g., from a GitHub repo or from a Gist).
 func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
@@ -234,6 +247,7 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			ExtraOptions:           make(map[string]any),
 			InitialOptions:         nettest.Options,
 			Inputs:                 nettest.Inputs,
+			InputsExtra:            v2NettestInputsExtraToOOAPIURLInfo(nettest.InputsExtra),
 			InputFilePaths:         nil,
 			MaxRuntime:             config.MaxRuntime,
 			Name:                   nettest.TestName,

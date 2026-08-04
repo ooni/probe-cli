@@ -50,13 +50,14 @@ type Session = model.ExperimentTargetLoaderSession
 func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
 	// Construct the default loader used in the non-richer input case.
 	loader := &targetloading.Loader{
-		CheckInConfig:  config.CheckInConfig, // OPTIONAL
-		ExperimentName: b.canonicalName,
-		InputPolicy:    b.inputPolicy,
-		Logger:         config.Session.Logger(),
-		Session:        config.Session,
-		StaticInputs:   config.StaticInputs,
-		SourceFiles:    config.SourceFiles,
+		CheckInConfig:     config.CheckInConfig, // OPTIONAL
+		ExperimentName:    b.canonicalName,
+		InputPolicy:       b.inputPolicy,
+		Logger:            config.Session.Logger(),
+		Session:           config.Session,
+		StaticInputs:      config.StaticInputs,
+		StaticInputsExtra: config.StaticInputsExtra,
+		SourceFiles:       config.SourceFiles,
 	}
 
 	// If an experiment implements richer input, it will use its custom loader

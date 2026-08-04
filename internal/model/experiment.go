@@ -279,6 +279,12 @@ type ExperimentTargetLoaderConfig struct {
 	// to the resulting input list if possible.
 	StaticInputs []string
 
+	// StaticInputsExtra contains OPTIONAL richer-input metadata index-aligned
+	// with StaticInputs. When set, len(StaticInputsExtra) SHOULD equal
+	// len(StaticInputs). Only the category code is honored; the country code
+	// stays at its default value.
+	StaticInputsExtra []OOAPIURLInfo
+
 	// SourceFiles contains OPTIONAL files to read input
 	// from. Each file should contain a single input string
 	// per line. We will fail if any file is unreadable
