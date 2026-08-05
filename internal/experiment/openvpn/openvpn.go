@@ -17,7 +17,7 @@ import (
 
 const (
 	testName        = "openvpn"
-	testVersion     = "0.1.6"
+	testVersion     = "0.1.7"
 	openVPNProtocol = "openvpn"
 )
 
@@ -32,14 +32,14 @@ var (
 // miniooni's -O flag to find them and set them.
 // TODO(ainghazal): do pass Auth, Cipher and Compress to OpenVPN config options.
 type Config struct {
-	Auth        string `ooni:"OpenVPN authentication to use"`
-	Cipher      string `ooni:"OpenVPN cipher to use"`
-	Compress    string `ooni:"OpenVPN compression to use"`
-	Provider    string `ooni:"VPN provider"`
-	Obfuscation string `ooni:"Obfuscation to use (obfs4, none)"`
-	SafeKey     string `ooni:"key to connect to the OpenVPN endpoint"`
-	SafeCert    string `ooni:"cert to connect to the OpenVPN endpoint"`
-	SafeCA      string `ooni:"ca to connect to the OpenVPN endpoint"`
+	Auth        string `json:"auth,omitempty" ooni:"OpenVPN authentication to use"`
+	Cipher      string `json:"cipher,omitempty" ooni:"OpenVPN cipher to use"`
+	Compress    string `json:"compress,omitempty" ooni:"OpenVPN compression to use"`
+	Provider    string `json:"provider,omitempty" ooni:"VPN provider"`
+	Obfuscation string `json:"obfuscation,omitempty" ooni:"Obfuscation to use (obfs4, none)"`
+	SafeKey     string `json:"safe_key,omitempty" ooni:"key to connect to the OpenVPN endpoint"`
+	SafeCert    string `json:"safe_cert,omitempty" ooni:"cert to connect to the OpenVPN endpoint"`
+	SafeCA      string `json:"safe_ca,omitempty" ooni:"ca to connect to the OpenVPN endpoint"`
 }
 
 // TestKeys contains the experiment's result.
