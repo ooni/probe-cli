@@ -155,6 +155,7 @@ func getV2EngineDescriptor(ctx context.Context, config *LinkConfig,
 		RunType:              string(model.RunTypeManual),
 		ProbeCC:              config.ProbeCC,
 		ProbeASN:             config.ProbeASN,
+		NetworkType:          "wifi",
 		WebsiteCategoryCodes: []string{},
 	}
 	return httpclientx.PostJSON[*v2EngineDescriptorRequest, *V2Descriptor](
