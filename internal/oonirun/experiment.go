@@ -39,10 +39,9 @@ type Experiment struct {
 	// Inputs contains the OPTIONAL experiment Inputs
 	Inputs []string
 
-	// InputsExtra contains OPTIONAL richer-input metadata index-aligned with
-	// Inputs (e.g., OONI Run v2.1 per-input category codes). When set, its
-	// length SHOULD match the length of Inputs.
-	InputsExtra []model.OOAPIURLInfo
+	// InputsExtra contains OPTIONAL opaque per-input richer-input config index-aligned
+	// with Inputs. When set, its length SHOULD match the length of Inputs.
+	InputsExtra []json.RawMessage
 
 	// InputFilePaths contains OPTIONAL files to read inputs from.
 	InputFilePaths []string
@@ -239,10 +238,10 @@ func (ed *Experiment) newTargetLoader(builder model.ExperimentBuilder) targetLoa
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,
 		},
-		StaticInputs:      ed.Inputs,
-		StaticInputsExtra: ed.InputsExtra,
-		SourceFiles:       ed.InputFilePaths,
-		Session:           ed.Session,
+		StaticInputs:       ed.Inputs,
+		StaticInputsConfig: ed.InputsExtra,
+		SourceFiles:        ed.InputFilePaths,
+		Session:            ed.Session,
 	})
 }
 

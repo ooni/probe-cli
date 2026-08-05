@@ -845,9 +845,9 @@ func TestV2MeasureEngineDescriptor(t *testing.T) {
 			Revision: "7",
 			Nettests: []V2Nettest{{
 				Inputs: []string{"https://example.com/"},
-				InputsExtra: []V2NettestInputExtra{{
-					CategoryCode: "NEWS",
-				}},
+				InputsExtra: []json.RawMessage{
+					json.RawMessage(`{"category_code":"NEWS"}`),
+				},
 				Options: json.RawMessage(`{
 					"SleepTime": 10000000
 				}`),

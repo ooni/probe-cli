@@ -2,6 +2,7 @@ package targetloading
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
@@ -146,64 +147,34 @@ func TestTargetLoaderInputOptionalWithInput(t *testing.T) {
 	}
 }
 
-func TestTargetLoaderStaticInputsExtra(t *testing.T) {
-	t.Run("category codes are propagated but country codes are ignored", func(t *testing.T) {
-		il := &Loader{
-			StaticInputs: []string{"https://www.google.com/", "https://ooni.org/"},
-			StaticInputsExtra: []model.OOAPIURLInfo{
-				{CategoryCode: "SRCH"},
-				{CategoryCode: "HUMR", CountryCode: "IT"},
-			},
-			InputPolicy: model.InputOptional,
-		}
-		out, err := il.Load(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		expect := []model.ExperimentTarget{
-			&model.OOAPIURLInfo{
-				CountryCode:  model.DefaultCountryCode,
-				CategoryCode: "SRCH",
-				URL:          "https://www.google.com/",
-			},
-			&model.OOAPIURLInfo{
-				CountryCode:  model.DefaultCountryCode,
-				CategoryCode: "HUMR",
-				URL:          "https://ooni.org/",
-			},
-		}
-		if diff := cmp.Diff(expect, out); diff != "" {
-			t.Fatal(diff)
-		}
-	})
-
-	t.Run("source-file inputs keep the default category and a shorter extra slice falls back", func(t *testing.T) {
-		il := &Loader{
-			StaticInputs: []string{"https://www.google.com/"},
-			StaticInputsExtra: []model.OOAPIURLInfo{
-				{CategoryCode: "SRCH"},
-			},
-			SourceFiles: []string{"testdata/loader1.txt"},
-			InputPolicy: model.InputOptional,
-		}
-		out, err := il.Load(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(out) < 2 {
-			t.Fatal("expected the static input plus at least one file input")
-		}
-		// the first entry is the static input and must carry its category code
-		if out[0].Input() != "https://www.google.com/" || out[0].Category() != "SRCH" {
-			t.Fatal("static input did not get its category code", out[0])
-		}
-		// every subsequent entry comes from the source file and must be default category
-		for _, e := range out[1:] {
-			if e.Category() != model.DefaultCategoryCode {
-				t.Fatal("source-file input should have the default category", e)
-			}
-		}
-	})
+func TestTargetLoaderIgnoresStaticInputsConfig(t *testing.T) {
+	il := &Loader{
+		StaticInputs: []string{"https://www.google.com/", "https://ooni.org/"},
+		StaticInputsConfig: []json.RawMessage{
+			json.RawMessage(`{"category_code":"SRCH"}`),
+			json.RawMessage(`{"category_code":"HUMR","country_code":"IT"}`),
+		},
+		InputPolicy: model.InputOptional,
+	}
+	out, err := il.Load(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := []model.ExperimentTarget{
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.google.com/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://ooni.org/",
+		},
+	}
+	if diff := cmp.Diff(expect, out); diff != "" {
+		t.Fatal(diff)
+	}
 }
 
 func TestTargetLoaderInputOptionalNonexistentFile(t *testing.T) {

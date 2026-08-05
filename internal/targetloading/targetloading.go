@@ -4,6 +4,7 @@ package targetloading
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -101,10 +102,10 @@ type Loader struct {
 	// to the resulting input list if possible.
 	StaticInputs []string
 
-	// StaticInputsExtra contains optional richer-input metadata index-aligned
-	// with StaticInputs. Only the category code is honored; the country code
-	// stays at its default value.
-	StaticInputsExtra []model.OOAPIURLInfo
+	// StaticInputsConfig contains optional opaque per-input richer-input config
+	// index-aligned with StaticInputs; richer-input experiments overlay the raw
+	// JSON onto their per-input config.
+	StaticInputsConfig []json.RawMessage
 
 	// SourceFiles contains optional files to read input
 	// from. Each file should contain a single input string
@@ -263,16 +264,24 @@ func (il *Loader) loadLocal() ([]model.ExperimentTarget, error) {
 		return nil, err
 	}
 	var targets []model.ExperimentTarget
-	for idx, input := range inputs {
-		target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input)
-		if idx < len(il.StaticInputs) && idx < len(il.StaticInputsExtra) {
-			if cat := il.StaticInputsExtra[idx].CategoryCode; cat != "" {
-				target.CategoryCode = cat
-			}
-		}
-		targets = append(targets, target)
+	for _, input := range inputs {
+		targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 	}
 	return targets, nil
+}
+
+// PerInputConfig returns a copy of base with the per-input richer-input config
+// overlaid on top.
+func PerInputConfig[T any](loader *Loader, base *T, idx int) *T {
+	config := *base
+	if idx < len(loader.StaticInputs) && idx < len(loader.StaticInputsConfig) {
+		if raw := loader.StaticInputsConfig[idx]; len(raw) > 0 {
+			if err := json.Unmarshal(raw, &config); err != nil {
+				loader.logger().Warnf("targetloading: cannot parse inputs_extra: %s", err.Error())
+			}
+		}
+	}
+	return &config
 }
 
 // openFunc is the type of the function to open a file.

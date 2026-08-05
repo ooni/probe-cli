@@ -66,9 +66,9 @@ type V2Nettest struct {
 	// Inputs contains inputs for the experiment.
 	Inputs []string `json:"inputs"`
 
-	// InputsExtra contains OPTIONAL per-input metadata parallel to Inputs. When
-	// present, its length SHOULD match the length of Inputs.
-	InputsExtra []V2NettestInputExtra `json:"inputs_extra"`
+	// InputsExtra contains OPTIONAL opaque per-input richer-input config parallel
+	// to Inputs. When present, its length SHOULD match the length of Inputs.
+	InputsExtra []json.RawMessage `json:"inputs_extra"`
 
 	// TargetsName OPTIONALLY names a predefined target list that the OONI Run
 	// backend generates dynamically.
@@ -96,14 +96,6 @@ type V2Nettest struct {
 	TestName string `json:"test_name"`
 }
 
-// V2NettestInputExtra contains OPTIONAL per-input metadata attached to an entry
-// of [V2Nettest.Inputs].
-type V2NettestInputExtra struct {
-	// CategoryCode is the OPTIONAL category code for the corresponding input
-	// (e.g., "NEWS", "HUMR"). It maps to [model.OOAPIURLInfo.CategoryCode].
-	CategoryCode string `json:"category_code,omitempty"`
-}
-
 // v2EngineDescriptorRequest is the request body for the OONI Run v2
 // engine-descriptor endpoint.
 type v2EngineDescriptorRequest struct {
@@ -125,19 +117,6 @@ type v2EngineDescriptorRequest struct {
 	// WebsiteCategoryCodes filters the website targets by category code. An
 	// empty slice lets the backend use its default set of categories.
 	WebsiteCategoryCodes []string `json:"website_category_codes"`
-}
-
-// v2NettestInputsExtraToOOAPIURLInfo converts the OONI Run v2 inputs_extra
-// metadata into the index-aligned [model.OOAPIURLInfo] slice.
-func v2NettestInputsExtraToOOAPIURLInfo(inputsExtra []V2NettestInputExtra) []model.OOAPIURLInfo {
-	if len(inputsExtra) <= 0 {
-		return nil
-	}
-	out := make([]model.OOAPIURLInfo, 0, len(inputsExtra))
-	for _, entry := range inputsExtra {
-		out = append(out, model.OOAPIURLInfo{CategoryCode: entry.CategoryCode})
-	}
-	return out
 }
 
 // isV2EngineDescriptorURL returns whether the URL points to an OONI Run v2
@@ -316,7 +295,7 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			ExtraOptions:           make(map[string]any),
 			InitialOptions:         nettest.Options,
 			Inputs:                 nettest.Inputs,
-			InputsExtra:            v2NettestInputsExtraToOOAPIURLInfo(nettest.InputsExtra),
+			InputsExtra:            nettest.InputsExtra,
 			InputFilePaths:         nil,
 			MaxRuntime:             config.MaxRuntime,
 			Name:                   nettest.TestName,
