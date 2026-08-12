@@ -200,9 +200,10 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			// TODO(https://github.com/ooni/probe/issues/2766): to correctly load Web Connectivity targets
 			// here we need to honour the relevant check-in settings.
 		},
-		Session:      sess,
-		StaticInputs: r.settings.Inputs,
-		SourceFiles:  []string{},
+		Session:            sess,
+		StaticInputs:       r.settings.Inputs,
+		StaticInputsConfig: r.settings.InputsExtra,
+		SourceFiles:        []string{},
 	})
 	loadCtx, loadCancel := context.WithTimeout(rootCtx, 30*time.Second)
 	defer loadCancel()
