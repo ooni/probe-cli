@@ -31,7 +31,7 @@ func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
 	return quotedPacket, nil
 }
 
-func tracerouteTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, index int64) (*ICMPIteration, error) {
+func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger) (*ICMPIteration, error) {
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
 
@@ -202,11 +202,13 @@ func tracerouteTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, l
 		var t0, t float64
 
 		if txTime != nil {
-			t0 = float64(txTime.UnixMilli())
+			// t0 = float64(txTime.UnixMilli())
+			t0 = txTime.Sub(zeroTime).Seconds()
 		}
 
 		if rxTime != nil {
-			t = float64(rxTime.UnixMilli())
+			//t = float64(rxTime.UnixMilli())
+			t = rxTime.Sub(zeroTime).Seconds()
 		}
 
 		ii := &ICMPIteration{

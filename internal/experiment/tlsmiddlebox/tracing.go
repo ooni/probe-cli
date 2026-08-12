@@ -34,14 +34,14 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, targetSNI string, trace *CompleteTrace) {
 	// perform a TCP traceroute
-	trace.TCPTraceroute = m.runTraceroute(ctx, index, zeroTime, logger, address, targetSNI)
+	trace.TCPTraceroute = m.runTraceroute(index, zeroTime, logger, address, targetSNI)
 	// perform an iterative trace with the control SNI
 	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
 	// perform an iterative trace with the target SNI
 	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
 }
 
-func (m *Measurer) runTraceroute(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+func (m *Measurer) runTraceroute(index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string) (tr *IterativeTraceroute) {
 	tr = &IterativeTraceroute{
 		SNI:        sni,
@@ -52,7 +52,7 @@ func (m *Measurer) runTraceroute(ctx context.Context, index int64, zeroTime time
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		icmpIteration, err := tracerouteTCP(address, int(i), 3000, wg, logger, index)
+		icmpIteration, err := tracerouteTCP(index, zeroTime, address, int(i), 3000, wg, logger)
 		if err != nil {
 			return
 		}
