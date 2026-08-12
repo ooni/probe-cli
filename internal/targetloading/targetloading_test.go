@@ -2,6 +2,7 @@ package targetloading
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
@@ -142,6 +143,36 @@ func TestTargetLoaderInputOptionalWithInput(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(out, expect); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestTargetLoaderIgnoresStaticInputsConfig(t *testing.T) {
+	il := &Loader{
+		StaticInputs: []string{"https://www.google.com/", "https://ooni.org/"},
+		StaticInputsConfig: []json.RawMessage{
+			json.RawMessage(`{"category_code":"SRCH"}`),
+			json.RawMessage(`{"category_code":"HUMR","country_code":"IT"}`),
+		},
+		InputPolicy: model.InputOptional,
+	}
+	out, err := il.Load(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := []model.ExperimentTarget{
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.google.com/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://ooni.org/",
+		},
+	}
+	if diff := cmp.Diff(expect, out); diff != "" {
 		t.Fatal(diff)
 	}
 }

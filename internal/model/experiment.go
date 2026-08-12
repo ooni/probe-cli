@@ -279,6 +279,11 @@ type ExperimentTargetLoaderConfig struct {
 	// to the resulting input list if possible.
 	StaticInputs []string
 
+	// StaticInputsConfig contains OPTIONAL opaque per-input richer-input config
+	// index-aligned with StaticInputs. When set, len(StaticInputsConfig) SHOULD
+	// equal len(StaticInputs).
+	StaticInputsConfig []json.RawMessage
+
 	// SourceFiles contains OPTIONAL files to read input
 	// from. Each file should contain a single input string
 	// per line. We will fail if any file is unreadable

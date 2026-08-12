@@ -2,6 +2,7 @@ package openvpn
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -126,6 +127,47 @@ func TestTargetLoaderLoad(t *testing.T) {
 						SafeCA:   "aa",
 						SafeCert: "bb",
 						SafeKey:  "cc",
+					},
+				},
+			},
+		},
+
+		{
+			name: "per-input inputs_extra overlays the experiment-wide config",
+			options: &Config{
+				SafeCA:   "aa",
+				Provider: "base",
+			},
+			loader: &targetloading.Loader{
+				ExperimentName: "openvpn",
+				InputPolicy:    model.InputOrQueryBackend,
+				Logger:         model.DiscardLogger,
+				Session:        &mocks.Session{},
+				StaticInputs: []string{
+					"openvpn://a.corp/1.1.1.1",
+					"openvpn://b.corp/2.2.2.2",
+				},
+				StaticInputsConfig: []json.RawMessage{
+					// overrides the provider for the first input only
+					json.RawMessage(`{"provider":"riseupvpn"}`),
+					// empty config: the second input keeps the wide config
+					json.RawMessage(`{}`),
+				},
+			},
+			expectErr: nil,
+			expectTargets: []model.ExperimentTarget{
+				&Target{
+					URL: "openvpn://a.corp/1.1.1.1",
+					Config: &Config{
+						SafeCA:   "aa",
+						Provider: "riseupvpn",
+					},
+				},
+				&Target{
+					URL: "openvpn://b.corp/2.2.2.2",
+					Config: &Config{
+						SafeCA:   "aa",
+						Provider: "base",
 					},
 				},
 			},
