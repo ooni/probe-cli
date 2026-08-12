@@ -52,7 +52,7 @@ func (m *Measurer) runTraceroute(ctx context.Context, index int64, zeroTime time
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		icmpIteration, err := probeTCP(address, int(i), 3000, wg, logger, index)
+		icmpIteration, err := tracerouteTCP(address, int(i), 3000, wg, logger, index)
 		if err != nil {
 			return
 		}

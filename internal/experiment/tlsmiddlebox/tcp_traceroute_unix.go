@@ -1,3 +1,5 @@
+//go:build aix || darwin || dragonfly || freebsd || (js && wasm) || linux || nacl || netbsd || openbsd || solaris
+
 package tlsmiddlebox
 
 import (
@@ -29,7 +31,7 @@ func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
 	return quotedPacket, nil
 }
 
-func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, index int64) (*ICMPIteration, error) {
+func tracerouteTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, index int64) (*ICMPIteration, error) {
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
 
@@ -157,8 +159,8 @@ func probeTCP(address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger
 
 			for _, cm := range cms {
 
-				fmt.Printf("n=%d\n", n)
-				fmt.Printf("buf=%x\n", buf[:n])
+				// fmt.Printf("n=%d\n", n)
+				// fmt.Printf("buf=%x\n", buf[:n])
 
 				switch {
 				case cm.Header.Level == unix.SOL_SOCKET &&
