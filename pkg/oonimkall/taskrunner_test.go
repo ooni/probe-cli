@@ -2,6 +2,7 @@ package oonimkall
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -397,6 +398,40 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusEnd, Count: 1},
 		}
 		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("passes inputs_extra to the target loader as StaticInputsConfig", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+
+		// configure per-input richer-input config on the settings
+		inputsExtra := []json.RawMessage{
+			json.RawMessage(`{"provider":"riseupvpn"}`),
+		}
+		runner.settings.Inputs = []string{"openvpn://x.corp/1.1.1.1"}
+		runner.settings.InputsExtra = inputsExtra
+
+		fake := fakeSuccessfulDeps()
+
+		// capture the loader config and short-circuit by failing the load
+		var gotConfig *model.ExperimentTargetLoaderConfig
+		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+			gotConfig = config
+			return &mocks.ExperimentTargetLoader{
+				MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+					return nil, errors.New("stop here")
+				},
+			}
+		}
+		runner.newSession = fake.NewSession
+
+		_ = runAndCollect(runner, emitter)
+
+		if gotConfig == nil {
+			t.Fatal("the target loader was never created")
+		}
+		if diff := cmp.Diff(inputsExtra, gotConfig.StaticInputsConfig); diff != "" {
+			t.Fatal(diff)
+		}
 	})
 
 	t.Run("with failure opening report", func(t *testing.T) {
