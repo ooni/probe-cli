@@ -24,7 +24,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		return filepath.Join(faketopdir, "internal", "userauth", "lib", "linux", archDir)
 	}
 	userauthInc := filepath.Join(faketopdir, "internal", "userauth", "lib", "include")
-	tarball := "v0.1.5.tar.gz"
+	tarball := "v0.1.6.tar.gz"
 	srcURL := "https://github.com/ooni/ooniprobe-rs/archive/" + tarball
 
 	// userauthExpect returns the userauth build commands for one arch dir.
