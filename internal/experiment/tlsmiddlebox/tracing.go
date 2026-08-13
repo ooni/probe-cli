@@ -33,10 +33,35 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 // TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, targetSNI string, trace *CompleteTrace) {
+	// perform a TCP traceroute
+	trace.TCPTraceroute = m.runTraceroute(ctx, index, zeroTime, logger, address, targetSNI)
 	// perform an iterative trace with the control SNI
 	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
 	// perform an iterative trace with the target SNI
 	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
+}
+
+func (m *Measurer) runTraceroute(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string) (tr *IterativeTraceroute) {
+	tr = &IterativeTraceroute{
+		SNI:        sni,
+		Iterations: []*ICMPIteration{},
+	}
+	maxTTL := m.config.maxttl()
+	ticker := time.NewTicker(m.config.delay())
+	wg := new(sync.WaitGroup)
+	for i := int64(1); i <= maxTTL; i++ {
+		wg.Add(1)
+		icmpIteration, err := tracerouteTCP(address, int(i), 3000, wg, logger, index)
+		if err != nil {
+			return
+		}
+		tr.addIterationsTraceroute(icmpIteration)
+
+		<-ticker.C
+	}
+	wg.Wait()
+	return
 }
 
 // startIterativeTrace creates a Trace and calls iterativeTrace
