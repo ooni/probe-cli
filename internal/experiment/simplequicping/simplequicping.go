@@ -17,6 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/quic-go/quic-go"
 )
 
@@ -28,16 +29,16 @@ const (
 // Config contains the experiment configuration.
 type Config struct {
 	// ALPN allows to specify which ALPN or ALPNs to send.
-	ALPN string `ooni:"space separated list of ALPNs to use"`
+	ALPN string `json:"alpn,omitempty" ooni:"space separated list of ALPNs to use"`
 
 	// Delay is the delay between each repetition (in milliseconds).
-	Delay int64 `ooni:"number of milliseconds to wait before sending each ping"`
+	Delay int64 `json:"delay,omitempty" ooni:"number of milliseconds to wait before sending each ping"`
 
 	// Repetitions is the number of repetitions for each ping.
-	Repetitions int64 `ooni:"number of times to repeat the measurement"`
+	Repetitions int64 `json:"repetitions,omitempty" ooni:"number of times to repeat the measurement"`
 
 	// SNI is the SNI value to use.
-	SNI string `ooni:"the SNI value to use"`
+	SNI string `json:"sni,omitempty" ooni:"the SNI value to use"`
 }
 
 func (c *Config) alpn() string {
@@ -84,9 +85,7 @@ type SinglePing struct {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config Config
-}
+type Measurer struct{}
 
 // ExperimentName implements ExperimentMeasurer.ExperiExperimentName.
 func (m *Measurer) ExperimentName() string {
@@ -99,6 +98,12 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+
 	// errNoInputProvided indicates you didn't provide any input
 	errNoInputProvided = errors.New("not input provided")
 
@@ -118,10 +123,20 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
-	if measurement.Input == "" {
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config, input := target.Config, target.URL
+
+	if input == "" {
 		return errNoInputProvided
 	}
-	parsed, err := url.Parse(string(measurement.Input))
+	parsed, err := url.Parse(input)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
 	}
@@ -134,32 +149,32 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	out := make(chan *SinglePing)
-	go m.simpleQUICPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, out)
-	for len(tk.Pings) < int(m.config.repetitions()) {
+	go m.simpleQUICPingLoop(ctx, config, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, out)
+	for len(tk.Pings) < int(config.repetitions()) {
 		tk.Pings = append(tk.Pings, <-out)
 	}
 	return nil // return nil so we always submit the measurement
 }
 
 // simpleQUICPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) simpleQUICPingLoop(ctx context.Context, zeroTime time.Time,
+func (m *Measurer) simpleQUICPingLoop(ctx context.Context, config *Config, zeroTime time.Time,
 	logger model.Logger, address string, out chan<- *SinglePing) {
-	ticker := time.NewTicker(m.config.delay())
+	ticker := time.NewTicker(config.delay())
 	defer ticker.Stop()
-	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.simpleQUICPingAsync(ctx, i, zeroTime, logger, address, out)
+	for i := int64(0); i < config.repetitions(); i++ {
+		go m.simpleQUICPingAsync(ctx, config, i, zeroTime, logger, address, out)
 		<-ticker.C
 	}
 }
 
 // simpleQUICPingAsync performs a QUIC ping and emits the result onto the out channel.
-func (m *Measurer) simpleQUICPingAsync(ctx context.Context, index int64,
+func (m *Measurer) simpleQUICPingAsync(ctx context.Context, config *Config, index int64,
 	zeroTime time.Time, logger model.Logger, address string, out chan<- *SinglePing) {
-	out <- m.quicHandshake(ctx, index, zeroTime, logger, address)
+	out <- m.quicHandshake(ctx, config, index, zeroTime, logger, address)
 }
 
 // quicHandshake performs a QUIC handshake and returns the results of these operations to the caller.
-func (m *Measurer) quicHandshake(ctx context.Context, index int64,
+func (m *Measurer) quicHandshake(ctx context.Context, config *Config, index int64,
 	zeroTime time.Time, logger model.Logger, address string) *SinglePing {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -168,8 +183,8 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 		NetworkEvents: []*model.ArchivalNetworkEvent{},
 		QUICHandshake: nil,
 	}
-	sni := m.config.sni(address)
-	alpn := strings.Split(m.config.alpn(), " ")
+	sni := config.sni(address)
+	alpn := strings.Split(config.alpn(), " ")
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := logx.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
 	netx := &netxlite.Netx{}
@@ -192,6 +207,6 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }
