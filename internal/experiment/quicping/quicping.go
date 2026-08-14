@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/legacymodel"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // A connectionID in QUIC
@@ -36,13 +37,21 @@ const (
 	testVersion = "0.1.1"
 )
 
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+)
+
 // Config contains the experiment configuration.
 type Config struct {
 	// Repetitions is the number of repetitions for each ping.
-	Repetitions int64 `ooni:"number of times to repeat the measurement"`
+	Repetitions int64 `json:"repetitions,omitempty" ooni:"number of times to repeat the measurement"`
 
 	// Port is the port to test.
-	Port int64 `ooni:"port is the port to test"`
+	Port int64 `json:"port,omitempty" ooni:"port is the port to test"`
 
 	// netListenUDP allows mocking the real net.ListenUDP call
 	netListenUDP func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
@@ -109,9 +118,7 @@ func makeResponse(resp *responseInfo) *SinglePingResponse {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config Config
-}
+type Measurer struct{}
 
 // ExperimentName implements ExperimentMeasurer.ExperimentName.
 func (m *Measurer) ExperimentName() string {
@@ -151,6 +158,7 @@ type responseInfo struct {
 // sender sends a ping requests to the target hosts every second
 func (m *Measurer) sender(
 	ctx context.Context,
+	config *Config,
 	pconn model.UDPLikeConn,
 	destAddr *net.UDPAddr,
 	out chan<- requestInfo,
@@ -160,7 +168,7 @@ func (m *Measurer) sender(
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	for i := int64(0); i < m.config.repetitions(); i++ {
+	for i := int64(0); i < config.repetitions(); i++ {
 		select {
 		case <-ctx.Done():
 			return // user aborted or timeout expired
@@ -227,7 +235,17 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
-	host := string(measurement.Input)
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config := target.Config
+
+	host := target.URL
 	var port = ""
 	// allow URL input
 	if u, err := url.ParseRequestURI(host); err == nil {
@@ -236,14 +254,14 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 	var service string
 	if port == "" {
-		port = m.config.port()
+		port = config.port()
 	}
 	service = net.JoinHostPort(host, port)
 	udpAddr, err := net.ResolveUDPAddr("udp", service)
 	if err != nil {
 		return err
 	}
-	rep := m.config.repetitions()
+	rep := config.repetitions()
 	tk := &TestKeys{
 		Domain:      host,
 		Repetitions: rep,
@@ -251,7 +269,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement.TestKeys = tk
 
 	// create UDP socket
-	pconn, err := m.config.doListenUDP("udp", &net.UDPAddr{})
+	pconn, err := config.doListenUDP("udp", &net.UDPAddr{})
 	if err != nil {
 		return err
 	}
@@ -268,7 +286,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	pingMap := make(map[string]*pingInfo)
 
 	// start sender and receiver goroutines
-	go m.sender(ctx, pconn, udpAddr, sendInfoChan, sess, measurement)
+	go m.sender(ctx, config, pconn, udpAddr, sendInfoChan, sess, measurement)
 	go m.receiver(ctx, pconn, recvInfoChan, sess, measurement)
 L:
 	for {
@@ -344,6 +362,6 @@ L:
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }

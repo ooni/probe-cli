@@ -14,14 +14,13 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return quicping.NewExperimentMeasurer(
-					*config.(*quicping.Config),
-				)
+				return quicping.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &quicping.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputStrictlyRequired,
+			newLoader:        quicping.NewLoader,
 		}
 	}
 }
