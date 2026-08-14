@@ -23,7 +23,7 @@ import (
 
 const (
 	testName    = "simplequicping"
-	testVersion = "0.2.1"
+	testVersion = "0.2.2"
 )
 
 // Config contains the experiment configuration.

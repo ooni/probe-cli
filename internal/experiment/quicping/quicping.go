@@ -34,7 +34,7 @@ const (
 
 const (
 	testName    = "quicping"
-	testVersion = "0.1.1"
+	testVersion = "0.1.2"
 )
 
 var (

@@ -18,7 +18,7 @@ import (
 
 const (
 	testName    = "tcpping"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 )
 
 // Config contains the experiment configuration.

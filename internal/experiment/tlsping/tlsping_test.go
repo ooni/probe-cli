@@ -48,7 +48,7 @@ func TestMeasurerRun(t *testing.T) {
 		if m.ExperimentName() != "tlsping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.2.1" {
+		if m.ExperimentVersion() != "0.2.2" {
 			t.Fatal("invalid experiment version")
 		}
 
