@@ -14,14 +14,13 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return echcheck.NewExperimentMeasurer(
-					*config.(*echcheck.Config),
-				)
+				return echcheck.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &echcheck.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOptional,
+			newLoader:        echcheck.NewLoader,
 		}
 	}
 }
