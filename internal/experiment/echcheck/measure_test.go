@@ -12,11 +12,11 @@ import (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "echcheck" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.3.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -49,11 +49,12 @@ func TestMeasurerMeasureWithCancelledContext(t *testing.T) {
 		cancel() // immediately cancel the context
 
 		// create measurer
-		measurer := NewExperimentMeasurer(Config{})
+		measurer := NewExperimentMeasurer()
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 			Measurement: &model.Measurement{},
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+			Target:      &Target{Config: &Config{}, URL: ""},
 		}
 
 		// run measurement
@@ -74,14 +75,13 @@ func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
 	defer env.Close()
 
 	// create measurer
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	args := &model.ExperimentArgs{
-		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
-		Measurement: &model.Measurement{
-			// leading space to test url.Parse failure
-			Input: " https://crypto.cloudflare.com/cdn-cgi/trace",
-		},
-		Session: &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+		Measurement: &model.Measurement{},
+		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		// leading space to test url.Parse failure
+		Target: &Target{Config: &Config{}, URL: " https://crypto.cloudflare.com/cdn-cgi/trace"},
 	}
 	// run measurement
 	err := measurer.Run(context.Background(), args)
@@ -100,12 +100,13 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 	}
 
 	// create measurer
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	msrmnt := &model.Measurement{}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		Measurement: msrmnt,
 		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		Target:      &Target{Config: &Config{}, URL: ""},
 	}
 
 	// run measurement
