@@ -13,15 +13,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "echcheck"
-	testVersion = "0.3.0"
+	testVersion = "0.3.1"
 	defaultURL  = "https://cloudflare-ech.com/cdn-cgi/trace"
 )
 
 var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+
 	// errInputIsNotAnURL indicates that input is not an URL
 	errInputIsNotAnURL = errors.New("input is not an URL")
 
@@ -38,9 +45,7 @@ type TestKeys struct {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config Config
-}
+type Measurer struct{}
 
 // ExperimentName implements ExperimentMeasurer.ExperiExperimentName.
 func (m *Measurer) ExperimentName() string {
@@ -58,10 +63,21 @@ func (m *Measurer) Run(
 	args *model.ExperimentArgs,
 ) error {
 
-	if args.Measurement.Input == "" {
-		args.Measurement.Input = defaultURL
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
 	}
-	parsed, err := url.Parse(string(args.Measurement.Input))
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config, input := target.Config, target.URL
+
+	if input == "" {
+		input = defaultURL
+		args.Measurement.Input = model.MeasurementInput(input)
+	}
+	parsed, err := url.Parse(input)
 	if err != nil {
 		return errInputIsNotAnURL
 	}
@@ -70,9 +86,9 @@ func (m *Measurer) Run(
 	}
 
 	// DNS Lookups for Address and HTTPS RR
-	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookups[%s] %s", m.config.resolverURL(), parsed.Host)
+	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookups[%s] %s", config.resolverURL(), parsed.Host)
 	trace := measurexlite.NewTrace(0, args.Measurement.MeasurementStartTimeSaved)
-	resolver := trace.NewParallelDNSOverHTTPSResolver(args.Session.Logger(), m.config.resolverURL())
+	resolver := trace.NewParallelDNSOverHTTPSResolver(args.Session.Logger(), config.resolverURL())
 	// We dial the alias, even when there are hints in the HTTPS record.
 	addrs, addrsErr := resolver.LookupHost(ctx, parsed.Hostname())
 	// Port prefixing per:
@@ -167,6 +183,6 @@ func (m *Measurer) Run(
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }
