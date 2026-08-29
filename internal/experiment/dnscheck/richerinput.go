@@ -194,6 +194,27 @@ var defaultInput = []model.ExperimentTarget{
 		URL:    "https://dns.switch.ch/dns-query",
 		Config: &Config{},
 	},
+	&Target{
+		URL:    "https://root-key-sentinel-is-ta-38696.d2a8n3.rootcanary.net",
+		Config: &Config{},
+	},
+	&Target{
+		URL:    "https://root-key-sentinel-not-ta-38696.d2a8n3.rootcanary.net",
+		Config: &Config{},
+	},
+	&Target{
+		URL:    "https://root-key-sentinel-not-ta-20326.d2a8n3.rootcanary.net",
+		Config: &Config{},
+	},
+
+	&Target{
+		URL:    "https://root-key-sentinel-is-ta-20326.d2a8n3.rootcanary.net",
+		Config: &Config{},
+	},
+	&Target{
+		URL:    "https://bogus.d2a8n1.rootcanary.net",
+		Config: &Config{},
+	},
 }
 
 // extendedInput is an extended input target list for dnscheck.
