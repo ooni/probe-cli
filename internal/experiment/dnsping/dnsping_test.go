@@ -51,9 +51,7 @@ func TestMeasurer_run(t *testing.T) {
 			t.Fatal("invalid experiment version")
 		}
 		ctx := context.Background()
-		meas := &model.Measurement{
-			Input: model.MeasurementInput(input),
-		}
+		meas := &model.Measurement{}
 		sess := &mocks.Session{
 			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}

@@ -28,7 +28,6 @@ func TestNewExperimentMeasurer(t *testing.T) {
 func TestInvalidHost(t *testing.T) {
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("a.a.a.a")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -57,7 +56,6 @@ func TestURLInput(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("https://google.com/")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -87,7 +85,6 @@ func TestSuccess(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -134,7 +131,6 @@ func TestWithCancelledContext(t *testing.T) {
 
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -165,7 +161,6 @@ func TestListenFails(t *testing.T) {
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -216,7 +211,6 @@ func TestWriteFails(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -281,7 +275,6 @@ func TestReadFails(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -324,7 +317,6 @@ func TestNoResponse(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("ooni.org")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),

@@ -20,22 +20,23 @@ const (
 )
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "stunreachability" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.4.0" {
+	if measurer.ExperimentVersion() != "0.4.1" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
 
 func TestRunWithoutInput(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     &mockable.Session{},
+		Target:      &Target{Config: &Config{}, URL: ""},
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, errStunMissingInput) {
@@ -44,13 +45,13 @@ func TestRunWithoutInput(t *testing.T) {
 }
 
 func TestRunWithInvalidURL(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("\t") // <- invalid URL
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     &mockable.Session{},
+		Target:      &Target{Config: &Config{}, URL: "\t"}, // <- invalid URL
 	}
 	err := measurer.Run(context.Background(), args)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
@@ -59,13 +60,13 @@ func TestRunWithInvalidURL(t *testing.T) {
 }
 
 func TestRunWithNoPort(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("stun://stun.ekiga.net")
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     &mockable.Session{},
+		Target:      &Target{Config: &Config{}, URL: "stun://stun.ekiga.net"},
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, errStunMissingPortInURL) {
@@ -74,13 +75,13 @@ func TestRunWithNoPort(t *testing.T) {
 }
 
 func TestRunWithUnsupportedURLScheme(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("https://stun.ekiga.net:3478")
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     &mockable.Session{},
+		Target:      &Target{Config: &Config{}, URL: "https://stun.ekiga.net:3478"},
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, errUnsupportedURLScheme) {
@@ -93,15 +94,15 @@ func TestRunWithInput(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
+		Target: &Target{Config: &Config{}, URL: defaultInput},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -125,15 +126,15 @@ func TestRunWithInput(t *testing.T) {
 func TestCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail everything
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
+		Target: &Target{Config: &Config{}, URL: defaultInput},
 	}
 	err := measurer.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit
@@ -164,15 +165,15 @@ func TestNewClientFailure(t *testing.T) {
 	config.newClient = func(conn stun.Connection, options ...stun.ClientOption) (*stun.Client, error) {
 		return nil, expected
 	}
-	measurer := NewExperimentMeasurer(*config)
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
+		Target: &Target{Config: config, URL: defaultInput},
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, nil) { // nil because we want to submit
@@ -200,15 +201,15 @@ func TestStartFailure(t *testing.T) {
 		conn := &FakeConn{WriteError: expected}
 		return conn, nil
 	}
-	measurer := NewExperimentMeasurer(*config)
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
+		Target: &Target{Config: config, URL: defaultInput},
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, nil) { // nil because we want to submit
@@ -240,15 +241,15 @@ func TestReadFailure(t *testing.T) {
 		conn := &FakeConn{ReadError: expected}
 		return conn, nil
 	}
-	measurer := NewExperimentMeasurer(*config)
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
+		Target: &Target{Config: config, URL: defaultInput},
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, nil) { // nil because we want to submit
