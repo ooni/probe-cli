@@ -11,11 +11,20 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "psiphon"
-	testVersion = "0.6.0"
+	testVersion = "0.6.1"
+)
+
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Config contains the experiment's configuration.
@@ -30,7 +39,6 @@ type TestKeys struct {
 // Measurer is the psiphon measurer.
 type Measurer struct {
 	BeforeGetHook func(g urlgetter.Getter)
-	Config        Config
 }
 
 // ExperimentName returns the experiment name
@@ -70,6 +78,15 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 	const maxruntime = 300
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, maxruntime*time.Second)
 	var (
 		wg     sync.WaitGroup
@@ -79,14 +96,14 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	go m.printprogress(ctx, &wg, maxruntime, callbacks)
 	config.Tunnel = "psiphon" // force to use psiphon tunnel
 	urlgetter.RegisterExtensions(measurement)
-	target := "https://www.google.com/humans.txt"
-	if measurement.Input != "" {
-		target = string(measurement.Input)
+	targetURL := "https://www.google.com/humans.txt"
+	if target.URL != "" {
+		targetURL = target.URL
 	}
 	g := urlgetter.Getter{
 		Config:  config,
 		Session: sess,
-		Target:  target,
+		Target:  targetURL,
 	}
 	if m.BeforeGetHook != nil {
 		m.BeforeGetHook(g)
@@ -102,8 +119,8 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{Config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }
 
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
