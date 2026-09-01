@@ -43,15 +43,11 @@ func TestMeasurer_run(t *testing.T) {
 
 	// runHelper is an helper function to run this set of tests.
 	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		m := NewExperimentMeasurer(Config{
-			Domains:     "example.com",
-			Delay:       1, // millisecond
-			Repetitions: expectedPings,
-		})
+		m := NewExperimentMeasurer()
 		if m.ExperimentName() != "dnsping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.4.0" {
+		if m.ExperimentVersion() != "0.4.1" {
 			t.Fatal("invalid experiment version")
 		}
 		ctx := context.Background()
@@ -66,6 +62,14 @@ func TestMeasurer_run(t *testing.T) {
 			Callbacks:   callbacks,
 			Measurement: meas,
 			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					Domains:     "example.com",
+					Delay:       1,
+					Repetitions: expectedPings,
+				},
+				URL: input,
+			},
 		}
 		err := m.Run(ctx, args)
 		return meas, m, err
