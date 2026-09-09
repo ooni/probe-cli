@@ -69,6 +69,9 @@ func handshake(ctx context.Context, isGrease bool, startTime time.Time, address 
 	ol1.Stop(err)
 	tk.TCPConnects = append(tk.TCPConnects, trace.TCPConnects()...)
 	tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...)
+	if err != nil {
+		return tk
+	}
 
 	ol2 := logx.NewOperationLogger(logger, "echcheck: DialTLS%s", d)
 	start := time.Now()

@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -155,6 +156,43 @@ func TestHandshake(t *testing.T) {
 			}
 			result := <-ch
 			test.want(t, testConfig, result)
+		})
+	}
+}
+
+func TestHandshakeTCPConnectFailure(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := l.Addr().String()
+	l.Close()
+
+	parsed := &url.URL{Scheme: "https", Host: address}
+	for _, sendGrease := range []bool{false, true} {
+		t.Run(fmt.Sprintf("grease=%v", sendGrease), func(t *testing.T) {
+			ecl := []byte{}
+			if sendGrease {
+				grease, err := generateGreaseyECHConfigList(rand.Reader, parsed.Hostname())
+				if err != nil {
+					t.Fatal(err)
+				}
+				ecl = grease
+			}
+			ch, err := startHandshake(context.Background(), ecl, sendGrease, time.Now(), address, parsed, model.DiscardLogger, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result := <-ch
+			if len(result.TCPConnects) != 1 {
+				t.Fatal("expected exactly one TCPConnect, got: ", len(result.TCPConnects))
+			}
+			if result.TCPConnects[0].Status.Failure == nil {
+				t.Fatal("expected the TCPConnect to carry a failure")
+			}
+			if len(result.TLSHandshakes) != 0 {
+				t.Fatal("expected no TLS handshake without a connection, got: ", len(result.TLSHandshakes))
+			}
 		})
 	}
 }
