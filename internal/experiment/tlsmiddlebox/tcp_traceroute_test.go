@@ -5,6 +5,7 @@ package tlsmiddlebox
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -56,7 +57,8 @@ func TestProbeTCP(t *testing.T) {
 	t.Run("invalid address and port format", func(t *testing.T) {
 		wg.Add(1)
 		address := "1.2.3.4"
-		ii, err := probeTCP(address, ttl, 3000, wg, model.DiscardLogger, index)
+		zeroTime := time.Now()
+		ii, err := tracerouteTCP(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe")
 		if ii != nil {
 			t.Fatalf("expected nil, got %T", ii)
 		}
@@ -69,7 +71,8 @@ func TestProbeTCP(t *testing.T) {
 	t.Run("invalid IPv4 address", func(t *testing.T) {
 		wg.Add(1)
 		address := "298.125.34.4:443"
-		ii, err := probeTCP(address, ttl, 3000, wg, model.DiscardLogger, index)
+		zeroTime := time.Now()
+		ii, err := tracerouteTCP(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe")
 		if ii != nil {
 			t.Fatalf("expected nil, got %T", ii)
 		}
@@ -83,7 +86,8 @@ func TestProbeTCP(t *testing.T) {
 	t.Run("invalid port number", func(t *testing.T) {
 		wg.Add(1)
 		address := "298.125.34.4:spot"
-		ii, err := probeTCP(address, ttl, 3000, wg, model.DiscardLogger, index)
+		zeroTime := time.Now()
+		ii, err := tracerouteTCP(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe")
 		if ii != nil {
 			t.Fatalf("expected nil, got %T", ii)
 		}

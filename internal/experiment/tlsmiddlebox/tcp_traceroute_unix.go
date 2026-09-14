@@ -222,6 +222,7 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 
 			for _, cm := range cms {
 
+				// Prints the raw quote
 				// fmt.Printf("n=%d\n", n)
 				// fmt.Printf("buf=%x\n", buf[:n])
 
@@ -265,12 +266,10 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 		var t0, t float64
 
 		if txTime != nil {
-			// t0 = float64(txTime.UnixMilli())
 			t0 = txTime.Sub(zeroTime).Seconds()
 		}
 
 		if rxTime != nil {
-			//t = float64(rxTime.UnixMilli())
 			t = rxTime.Sub(zeroTime).Seconds()
 		}
 
