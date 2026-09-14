@@ -52,7 +52,7 @@ func (m *Measurer) runTraceroute(index int64, zeroTime time.Time, logger model.L
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		icmpIteration, err := tracerouteTCP(index, zeroTime, address, int(i), 3000, wg, logger)
+		icmpIteration, err := tracerouteTCP(index, zeroTime, address, int(i), 3000, wg, logger, m.config.PrivacyMode)
 		if err != nil {
 			return
 		}

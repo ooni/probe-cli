@@ -11,27 +11,85 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/ooni/probe-assets/assets"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/oschwald/maxminddb-golang"
 	"golang.org/x/sys/unix"
 )
+
+// LookupASN maps [ip] to an AS number and an AS organization name.
+func LookupASN(ip string, dbPath string) (asn uint, org string, err error) {
+	asn, org = model.DefaultProbeASN, model.DefaultProbeNetworkName
+	var db *maxminddb.Reader
+	if dbPath == "" {
+		db, err = maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+		runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	} else {
+		db, err = maxminddb.Open(dbPath)
+		runtimex.PanicOnError(err, fmt.Sprintf("cannot load geoip2 database from path %s", dbPath))
+	}
+	defer db.Close()
+	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
+	if err != nil {
+		return
+	}
+	asn = record.AutonomousSystemNumber
+	if record.AutonomousSystemOrganization != "" {
+		org = record.AutonomousSystemOrganization
+	}
+	return
+}
+
+// LookupCC maps [ip] to a country code.
+func LookupCC(ip string, dbPath string) (cc string, err error) {
+	cc = model.DefaultProbeCC
+	var db *maxminddb.Reader
+	if dbPath == "" {
+		db, err = maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+		runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	} else {
+		db, err = maxminddb.Open(dbPath)
+		runtimex.PanicOnError(err, fmt.Sprintf("cannot load geoip2 database from path %s", dbPath))
+	}
+	defer db.Close()
+	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
+	if err != nil {
+		return
+	}
+	// With MaxMind DB we used record.RegisteredCountry.IsoCode but that does
+	// not seem to work with the db-ip.com database. The record is empty, at
+	// least for my own IP address in Italy. --Simone (2020-02-25)
+	if record.Country.IsoCode != "" {
+		cc = record.Country.IsoCode
+	}
+	return
+}
 
 func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
 	if len(buf) < 8 {
 		return nil, fmt.Errorf("tcp quote too short")
 	}
 
+	var remainingPayload []byte
+
+	if len(buf) > 8 {
+		remainingPayload = buf[8:]
+	}
+
 	quotedPacket := &model.ArchivalICMPQuotation{
-		Protocol:  6,
-		SrcPort:   int(binary.BigEndian.Uint16(buf[0:2])),
-		DstPort:   int(binary.BigEndian.Uint16(buf[2:4])),
-		TCPSeqNum: binary.BigEndian.Uint32(buf[4:8]),
+		Protocol:         6,
+		SrcPort:          int(binary.BigEndian.Uint16(buf[0:2])),
+		DstPort:          int(binary.BigEndian.Uint16(buf[2:4])),
+		TCPSeqNum:        binary.BigEndian.Uint32(buf[4:8]),
+		RemainingPayload: remainingPayload,
 	}
 
 	return quotedPacket, nil
 }
 
-func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger) (*ICMPIteration, error) {
+func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, privacyMode string) (*ICMPIteration, error) {
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
 
@@ -104,6 +162,9 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 	}
 
 	n, err := unix.Poll(pfds, timeoutMS)
+	pollEndTimeVal := time.Now()
+	pollEndTime := &pollEndTimeVal
+
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +172,12 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 	if n == 0 {
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s TIMEOUT", index, ttl, address)
 		ol.Stop(nil)
+		pollEndTimeFromStart := pollEndTime.Sub(zeroTime).Seconds()
 		ii_timeout := &ICMPIteration{
 			TTL: ttl,
 			ICMPError: &model.ArchivalICMPErrorMessage{
 				Timeout: "yes",
+				T:       pollEndTimeFromStart,
 			},
 		}
 		return ii_timeout, nil
@@ -211,17 +274,45 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 			t = rxTime.Sub(zeroTime).Seconds()
 		}
 
-		ii := &ICMPIteration{
-			TTL: ttl,
-			ICMPError: &model.ArchivalICMPErrorMessage{
-				Timeout: "no",
-				SrcIP:   ip.String(),
-				Type:    int(eeType),
-				Code:    int(eeCode),
-				T0:      t0,
-				T:       t,
-			},
+		var ii *ICMPIteration
+		var asn uint
+		var org, country_code string
+
+		asn, org, err = LookupASN(ip.String(), "")
+		country_code, err = LookupCC(ip.String(), "")
+
+		if privacyMode == "unsafe" {
+			ip_network := ip.Mask(net.CIDRMask(24, 32))
+
+			ii = &ICMPIteration{
+				TTL: ttl,
+				ICMPError: &model.ArchivalICMPErrorMessage{
+					Timeout:          "no",
+					SrcIPPrefix:      ip_network.String() + "/24",
+					SrcIPCountryCode: country_code,
+					SrcIPASN:         asn,
+					SrcIPASNOrg:      org,
+					Type:             int(eeType),
+					Code:             int(eeCode),
+					T0:               t0,
+					T:                t,
+				},
+			}
+		} else {
+			ii = &ICMPIteration{
+				TTL: ttl,
+				ICMPError: &model.ArchivalICMPErrorMessage{
+					Timeout:          "no",
+					SrcIPCountryCode: country_code,
+					SrcIPASN:         asn,
+					SrcIPASNOrg:      org,
+					Type:             int(eeType),
+					Code:             int(eeCode),
+					T0:               t0,
+				},
+			}
 		}
+
 		if quotedPacket != nil && err == nil {
 			ii.ICMPError.Quote = *quotedPacket
 		}
