@@ -14,14 +14,13 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return httphostheader.NewExperimentMeasurer(
-					*config.(*httphostheader.Config),
-				)
+				return httphostheader.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &httphostheader.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrQueryBackend,
+			newLoader:        httphostheader.NewLoader,
 		}
 	}
 }
