@@ -17,23 +17,22 @@ const (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "http_host_header" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.3.1" {
 		t.Fatal("unexpected version")
 	}
 }
 
 func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{
-		TestHelperURL: "http://www.google.com",
-	})
+	measurer := NewExperimentMeasurer()
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: &model.Measurement{},
 		Session:     newsession(),
+		Target:      &Target{Config: &Config{TestHelperURL: "http://www.google.com"}, URL: ""},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err == nil || err.Error() != "experiment requires input" {
@@ -42,12 +41,13 @@ func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
 }
 
 func TestMeasurerMeasureNoTestHelper(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
-	measurement := &model.Measurement{Input: "x.org"}
+	measurer := NewExperimentMeasurer()
+	measurement := &model.Measurement{}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     newsession(),
+		Target:      &Target{Config: &Config{}, URL: "x.org"},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -62,16 +62,13 @@ func TestRunnerHTTPSetHostHeader(t *testing.T) {
 		w.WriteHeader(200)
 	}))
 	defer server.Close()
-	measurer := NewExperimentMeasurer(Config{
-		TestHelperURL: server.URL,
-	})
-	measurement := &model.Measurement{
-		Input: "x.org",
-	}
+	measurer := NewExperimentMeasurer()
+	measurement := &model.Measurement{}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     newsession(),
+		Target:      &Target{Config: &Config{TestHelperURL: server.URL}, URL: "x.org"},
 	}
 	err := measurer.Run(context.Background(), args)
 	if host != "x.org" {

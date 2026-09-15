@@ -16,20 +16,29 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "sni_blocking"
-	testVersion = "0.3.0"
+	testVersion = "0.3.1"
+)
+
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Config contains the experiment config.
 type Config struct {
 	// ControlSNI is the SNI to be used for the control.
-	ControlSNI string
+	ControlSNI string `json:"control_sni,omitempty"`
 
 	// TestHelperAddress is the address of the test helper.
-	TestHelperAddress string
+	TestHelperAddress string `json:"test_helper_address,omitempty"`
 }
 
 // Subresult contains the keys of a single measurement
@@ -89,9 +98,8 @@ func (tk *TestKeys) classify() string {
 
 // Measurer performs the measurement.
 type Measurer struct {
-	cache  map[string]Subresult
-	config Config
-	mu     sync.Mutex
+	cache map[string]Subresult
+	mu    sync.Mutex
 }
 
 // ExperimentName implements ExperimentMeasurer.ExperiExperimentName.
@@ -173,14 +181,14 @@ func (m *Measurer) measureonewithcache(
 
 func (m *Measurer) startall(
 	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, inputs []string,
+	measurement *model.Measurement, inputs []string, testHelperAddress string,
 ) <-chan Subresult {
 	outputs := make(chan Subresult, len(inputs))
 	for _, input := range inputs {
 		go m.measureonewithcache(
 			ctx, outputs, sess,
 			measurement.MeasurementStartTimeSaved,
-			input, m.config.TestHelperAddress,
+			input, testHelperAddress,
 		)
 	}
 	return outputs
@@ -237,20 +245,31 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
+
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config, input := target.Config, target.URL
+
 	m.mu.Lock()
 	if m.cache == nil {
 		m.cache = make(map[string]Subresult)
 	}
 	m.mu.Unlock()
-	if m.config.ControlSNI == "" {
-		m.config.ControlSNI = "example.org"
+	if config.ControlSNI == "" {
+		config.ControlSNI = "example.org"
 	}
-	if measurement.Input == "" {
+	if input == "" {
 		return errors.New("experiment requires measurement.Input")
 	}
-	if m.config.TestHelperAddress == "" {
-		m.config.TestHelperAddress = net.JoinHostPort(
-			m.config.ControlSNI, "443",
+	if config.TestHelperAddress == "" {
+		config.TestHelperAddress = net.JoinHostPort(
+			config.ControlSNI, "443",
 		)
 	}
 	urlgetter.RegisterExtensions(measurement)
@@ -259,27 +278,27 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// or to make sure that the classify logic is robust to that.
 	//
 	// See https://github.com/ooni/probe-engine/issues/392.
-	maybeParsed, err := maybeURLToSNI(measurement.Input)
+	maybeParsed, err := maybeURLToSNI(model.MeasurementInput(input))
 	if err != nil {
 		return err
 	}
 	measurement.Input = maybeParsed
-	inputs := []string{m.config.ControlSNI}
-	if string(measurement.Input) != m.config.ControlSNI {
+	inputs := []string{config.ControlSNI}
+	if string(measurement.Input) != config.ControlSNI {
 		inputs = append(inputs, string(measurement.Input))
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second*time.Duration(len(inputs)))
 	defer cancel()
-	outputs := m.startall(ctx, sess, measurement, inputs)
+	outputs := m.startall(ctx, sess, measurement, inputs, config.TestHelperAddress)
 	measurement.TestKeys = processall(
-		outputs, measurement, callbacks, inputs, sess, m.config.ControlSNI,
+		outputs, measurement, callbacks, inputs, sess, config.ControlSNI,
 	)
 	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }
 
 func asString(failure *string) (result string) {
