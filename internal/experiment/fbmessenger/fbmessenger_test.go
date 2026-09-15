@@ -42,7 +42,7 @@ var (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+	measurer := fbmessenger.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "facebook_messenger" {
 		t.Fatal("unexpected name")
 	}
@@ -96,7 +96,7 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
@@ -105,6 +105,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
@@ -161,7 +162,7 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // so we fail immediately
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
@@ -171,6 +172,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
@@ -237,7 +239,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
@@ -246,6 +248,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
@@ -304,7 +307,7 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithAddr(env.ISPResolverConfig(), "10.10.34.35")
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
@@ -313,6 +316,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
