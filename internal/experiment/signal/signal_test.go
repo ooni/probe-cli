@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := signal.NewExperimentMeasurer(signal.Config{})
+	measurer := signal.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "signal" {
 		t.Fatal("unexpected name")
 	}
@@ -28,7 +28,7 @@ func TestGood(t *testing.T) {
 	}
 	t.Skip("https://github.com/ooni/probe/issues/2636")
 
-	measurer := signal.NewExperimentMeasurer(signal.Config{})
+	measurer := signal.NewExperimentMeasurer()
 	measurement := new(model.Measurement)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -36,6 +36,7 @@ func TestGood(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		Target: &signal.Target{Config: &signal.Config{}},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -97,9 +98,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestBadSignalCA(t *testing.T) {
-	measurer := signal.NewExperimentMeasurer(signal.Config{
-		SignalCA: "INVALIDCA",
-	})
+	measurer := signal.NewExperimentMeasurer()
 	measurement := new(model.Measurement)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -107,6 +106,7 @@ func TestBadSignalCA(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		Target: &signal.Target{Config: &signal.Config{SignalCA: "INVALIDCA"}},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err.Error() != "AppendCertsFromPEM failed" {
