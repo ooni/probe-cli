@@ -19,7 +19,7 @@ import (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+	measurer := telegram.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "telegram" {
 		t.Fatal("unexpected name")
 	}
@@ -315,12 +315,13 @@ func TestMeasurerRun(t *testing.T) {
 		defer env.Close()
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -375,12 +376,13 @@ func TestMeasurerRun(t *testing.T) {
 		env.ISPResolverConfig().AddRecord("web.telegram.org", "web.telegram.org", "10.10.34.35")
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -435,12 +437,13 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -472,12 +475,13 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
