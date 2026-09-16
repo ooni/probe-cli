@@ -164,7 +164,7 @@ func TestTrace(t *testing.T) {
 	t.Run("OnQUICHandshakeDone", func(t *testing.T) {
 		var called bool
 		tx := &Trace{
-			MockOnQUICHandshakeDone: func(started time.Time, remoteAddr string, qconn quic.EarlyConnection, config *tls.Config, err error, finished time.Time) {
+			MockOnQUICHandshakeDone: func(started time.Time, remoteAddr string, qconn model.QUICConn, config *tls.Config, err error, finished time.Time) {
 				called = true
 			},
 		}

@@ -39,6 +39,10 @@ type Experiment struct {
 	// Inputs contains the OPTIONAL experiment Inputs
 	Inputs []string
 
+	// InputsExtra contains OPTIONAL opaque per-input richer-input config index-aligned
+	// with Inputs. When set, its length SHOULD match the length of Inputs.
+	InputsExtra []json.RawMessage
+
 	// InputFilePaths contains OPTIONAL files to read inputs from.
 	InputFilePaths []string
 
@@ -50,6 +54,10 @@ type Experiment struct {
 
 	// NoCollector OPTIONALLY indicates we should not be using any collector.
 	NoCollector bool
+
+	// NoCredentials OPTIONALLY indicates we should submit without an anonymous
+	// credential (i.e. anonymously).
+	NoCredentials bool
 
 	// NoJSON OPTIONALLY indicates we don't want to save measurements to a JSON file.
 	NoJSON bool
@@ -202,6 +210,9 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (model.Submitter, error)
 		Enabled: !ed.NoCollector,
 		Session: ed.Session,
 		Logger:  ed.Session.Logger(),
+		// oonirun is only used by the miniooni CLI, which submits with a
+		// credential by default; oonimkall does not go through oonirun.
+		UseAuth: !ed.NoCredentials,
 	})
 }
 
@@ -227,9 +238,10 @@ func (ed *Experiment) newTargetLoader(builder model.ExperimentBuilder) targetLoa
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,
 		},
-		StaticInputs: ed.Inputs,
-		SourceFiles:  ed.InputFilePaths,
-		Session:      ed.Session,
+		StaticInputs:       ed.Inputs,
+		StaticInputsConfig: ed.InputsExtra,
+		SourceFiles:        ed.InputFilePaths,
+		Session:            ed.Session,
 	})
 }
 

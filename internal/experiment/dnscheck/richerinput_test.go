@@ -2,6 +2,7 @@ package dnscheck
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"path/filepath"
@@ -298,6 +299,46 @@ func TestTargetLoaderLoad(t *testing.T) {
 				&Target{
 					URL:    "https://one.one.one.one/dns-query",
 					Config: &Config{},
+				},
+			},
+		},
+
+		{
+			name: "per-input inputs_extra overlays the experiment-wide config",
+			options: &Config{
+				DefaultAddrs: "1.1.1.1 1.0.0.1",
+			},
+			loader: &targetloading.Loader{
+				CheckInConfig:  &model.OOAPICheckInConfig{ /* nothing */ },
+				ExperimentName: "dnscheck",
+				InputPolicy:    model.InputOrStaticDefault,
+				Logger:         model.DiscardLogger,
+				Session:        &mocks.Session{},
+				StaticInputs: []string{
+					"https://dns.cloudflare.com/dns-query",
+					"https://one.one.one.one/dns-query",
+				},
+				StaticInputsConfig: []json.RawMessage{
+					// overrides http3 for the first input only (dnscheck has json tags)
+					json.RawMessage(`{"http3_enabled":true}`),
+					// empty config: the second input keeps the wide config
+					json.RawMessage(`{}`),
+				},
+			},
+			expectErr: nil,
+			expectTargets: []model.ExperimentTarget{
+				&Target{
+					URL: "https://dns.cloudflare.com/dns-query",
+					Config: &Config{
+						DefaultAddrs: "1.1.1.1 1.0.0.1", // preserved from the wide config
+						HTTP3Enabled: true,              // overridden per-input
+					},
+				},
+				&Target{
+					URL: "https://one.one.one.one/dns-query",
+					Config: &Config{
+						DefaultAddrs: "1.1.1.1 1.0.0.1", // unchanged
+					},
 				},
 			},
 		},

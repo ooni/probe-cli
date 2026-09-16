@@ -23,4 +23,6 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-alltests-${{ steps.goversion.outputs.version }}"
 
+      - run: make userauth
+
       - run: go test -race -tags shaping ./...

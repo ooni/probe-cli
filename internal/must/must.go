@@ -154,7 +154,7 @@ func ReadFile(filename string) []byte {
 func FirstLineBytes(data []byte) []byte {
 	first, _, good := bytes.Cut(data, []byte("\n"))
 	runtimex.Assert(good, "could not find the first line")
-	return first
+	return bytes.TrimSuffix(first, []byte("\r"))
 }
 
 // RunOutput is like [shellx.Output] but calls

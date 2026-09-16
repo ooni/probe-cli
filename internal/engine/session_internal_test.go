@@ -232,7 +232,7 @@ func TestSessionNewSubmitterWithCancelledContext(t *testing.T) {
 	sess := newSessionForTesting(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	subm, err := sess.NewSubmitter(ctx)
+	subm, err := sess.NewSubmitter(ctx, false)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected", err)
 	}

@@ -14,6 +14,33 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestConfig_alpn(t *testing.T) {
 	c := Config{}
 	if c.alpn() != "h2 http/1.1" {
@@ -43,23 +70,16 @@ const (
 func TestMeasurerRun(t *testing.T) {
 	// runHelper is an helper function to run this set of tests.
 	runHelper := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		m := NewExperimentMeasurer(Config{
-			ALPN:        "http/1.1",
-			Delay:       1, // millisecond
-			Repetitions: NPINGS,
-			SNI:         SNI,
-		})
+		m := NewExperimentMeasurer()
 
 		if m.ExperimentName() != "tlsping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.2.1" {
+		if m.ExperimentVersion() != "0.2.2" {
 			t.Fatal("invalid experiment version")
 		}
 
-		meas := &model.Measurement{
-			Input: model.MeasurementInput(input),
-		}
+		meas := &model.Measurement{}
 		sess := &mocks.Session{
 			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
@@ -68,6 +88,15 @@ func TestMeasurerRun(t *testing.T) {
 			Callbacks:   callbacks,
 			Measurement: meas,
 			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					ALPN:        "http/1.1",
+					Delay:       1, // millisecond
+					Repetitions: NPINGS,
+					SNI:         SNI,
+				},
+				URL: input,
+			},
 		}
 
 		err := m.Run(ctx, args)

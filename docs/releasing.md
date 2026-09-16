@@ -112,6 +112,23 @@ At the end, before committing and pusing, one should check that it's all good us
 ./script/go.bash test ./...
 ```
 
+## Userauth staticlib
+
+The CLI links the `libuniffi_ooniprobe.a` static library built from
+[ooniprobe-rs](https://github.com/ooni/ooniprobe-rs). The `userauth` Makefile target runs
+`./internal/cmd/buildtool <os> userauth`, which obtains the staticlib one of two ways
+depending on the `USERAUTH_FROM_SOURCE` environment variable:
+
+- **default (unset):** download the prebuilt `staticlib.tar.gz` bundle from the pinned
+ooniprobe-rs release. This is the fast path for local development.
+
+- **`USERAUTH_FROM_SOURCE=1`:** build the staticlib from the pinned ooniprobe-rs sources.
+**This is what the publishing CI does**, because the prebuilt bundle is glibc-based and
+cannot link into the musl static Linux builds or the cross-compiled Windows/darwin builds.
+
+Both paths use the single `userauthVersion` constant pinned in
+`internal/cmd/buildtool/userauth.go` (together with the source tarball `SHA256`).
+
 ## Updating assets and definitions
 
 We save some measurements results locally to test the `./internal/minipipeline` package. We

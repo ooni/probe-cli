@@ -55,6 +55,8 @@ func TestSampleN(t *testing.T) {
 }
 
 func Test_resolveOONIAddresses(t *testing.T) {
+	t.Skip("skip: depends on inactive OONI VPN endpoints")
+
 	expected := []string{
 		"108.61.164.186",
 	}

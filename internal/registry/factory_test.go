@@ -700,7 +700,8 @@ func TestNewFactory(t *testing.T) {
 			// serve these changes using the check-in API. Hence, disable torsf by default
 			// and require enabling it using the check-in API feature flags.
 			//enabledByDefault: false,
-			inputPolicy: model.InputNone,
+			inputPolicy:      model.InputNone,
+			enabledByDefault: true,
 		},
 		"urlgetter": {
 			enabledByDefault: true,

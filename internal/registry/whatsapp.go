@@ -14,14 +14,13 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return whatsapp.NewExperimentMeasurer(
-					*config.(*whatsapp.Config),
-				)
+				return whatsapp.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &whatsapp.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
+			newLoader:        whatsapp.NewLoader,
 		}
 	}
 }

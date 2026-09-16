@@ -94,7 +94,7 @@ func (*traceDefault) OnQUICHandshakeStart(now time.Time, remoteAddr string, conf
 	// nothing
 }
 
-func (*traceDefault) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+func (*traceDefault) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn model.QUICConn,
 	config *tls.Config, err error, finished time.Time) {
 	// nothing
 }

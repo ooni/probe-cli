@@ -448,7 +448,7 @@ func TestHTTPQUIC(t *testing.T) {
 	})
 
 	t.Run("Apply httpTransportQUICFunc", func(t *testing.T) {
-		conn := &mocks.QUICEarlyConnection{}
+		conn := &mocks.QUICConn{}
 		idGen := &atomic.Int64{}
 		zeroTime := time.Time{}
 		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)

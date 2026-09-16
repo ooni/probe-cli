@@ -164,9 +164,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: oonimkall.aar
-          path: MULTIPLATFORM
+          path: maven/android
 
       - name: Set Project Version
+        working-directory: maven/android
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
@@ -175,14 +176,15 @@ jobs:
             VERSION="${SHORT_SHA}"
           fi
           echo "Generated version: $VERSION"
-          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-android -DnewVersion=${VERSION}-android -DremoveSnapshot=true
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
         env:
           # Maven versions plugin might need GPG passphrase if it triggers a 'verify' phase.
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Publish to Maven Central
+        working-directory: maven/android
         run: |
-          mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-android --batch-mode -DskipTests
+          mvn clean deploy -Dandroid.aar.name=$(ls *.aar | xargs basename) --batch-mode -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}

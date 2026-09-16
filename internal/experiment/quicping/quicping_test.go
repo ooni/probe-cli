@@ -15,28 +15,58 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "quicping" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.1.1" {
+	if measurer.ExperimentVersion() != "0.1.2" {
 		t.Fatal("unexpected version")
 	}
 }
 
 func TestInvalidHost(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{
-		Port:        443,
-		Repetitions: 1,
-	})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("a.a.a.a")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{
+				Port:        443,
+				Repetitions: 1,
+			},
+			URL: "a.a.a.a",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err == nil {
@@ -51,16 +81,19 @@ func TestURLInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := NewExperimentMeasurer(Config{
-		Repetitions: 1,
-	})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("https://google.com/")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{
+				Repetitions: 1,
+			},
+			URL: "https://google.com/",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -77,14 +110,17 @@ func TestSuccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{},
+			URL:    "google.com",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -120,9 +156,8 @@ func TestWithCancelledContext(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -130,6 +165,10 @@ func TestWithCancelledContext(t *testing.T) {
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{},
+			URL:    "google.com",
+		},
 	}
 	err := measurer.Run(ctx, args)
 	if err != nil {
@@ -147,18 +186,21 @@ func TestListenFails(t *testing.T) {
 	}
 
 	expected := errors.New("expected")
-	measurer := NewExperimentMeasurer(Config{
-		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
-			return nil, expected
-		},
-	})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{
+				netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+					return nil, expected
+				},
+			},
+			URL: "google.com",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err == nil {
@@ -194,19 +236,22 @@ func TestWriteFails(t *testing.T) {
 			return 0, expected
 		},
 	}
-	measurer := NewExperimentMeasurer(Config{
-		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
-			return pconn, nil
-		},
-		Repetitions: 1,
-	})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{
+				netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+					return pconn, nil
+				},
+				Repetitions: 1,
+			},
+			URL: "google.com",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -255,19 +300,22 @@ func TestReadFails(t *testing.T) {
 			return len(p), nil
 		},
 	}
-	measurer := NewExperimentMeasurer(Config{
-		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
-			return pconn, nil
-		},
-		Repetitions: 1,
-	})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{
+				netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+					return pconn, nil
+				},
+				Repetitions: 1,
+			},
+			URL: "google.com",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -294,16 +342,19 @@ func TestNoResponse(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := NewExperimentMeasurer(Config{
-		Repetitions: 1,
-	})
+	measurer := NewExperimentMeasurer()
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementInput("ooni.org")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     sess,
+		Target: &Target{
+			Config: &Config{
+				Repetitions: 1,
+			},
+			URL: "ooni.org",
+		},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -324,7 +375,7 @@ func TestNoResponse(t *testing.T) {
 func TestDissect(t *testing.T) {
 	// destID--srcID: 040b9649d3fd4c038ab6c073966f3921--44d064031288e97646451f
 	versionNegotiationResponse, _ := hex.DecodeString("eb0000000010040b9649d3fd4c038ab6c073966f39210b44d064031288e97646451f00000001ff00001dff00001cff00001b")
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	destID := "040b9649d3fd4c038ab6c073966f3921"
 	_, dst, err := measurer.(*Measurer).dissectVersionNegotiation(versionNegotiationResponse)
 	if err != nil {

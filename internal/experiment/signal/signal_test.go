@@ -2,6 +2,7 @@ package signal_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/apex/log"
@@ -12,8 +13,35 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := signal.NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mockable.Session{},
+		})
+		if !errors.Is(err, signal.ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mockable.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, signal.ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := signal.NewExperimentMeasurer(signal.Config{})
+	measurer := signal.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "signal" {
 		t.Fatal("unexpected name")
 	}
@@ -28,7 +56,7 @@ func TestGood(t *testing.T) {
 	}
 	t.Skip("https://github.com/ooni/probe/issues/2636")
 
-	measurer := signal.NewExperimentMeasurer(signal.Config{})
+	measurer := signal.NewExperimentMeasurer()
 	measurement := new(model.Measurement)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -36,6 +64,7 @@ func TestGood(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		Target: &signal.Target{Config: &signal.Config{}},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -97,9 +126,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestBadSignalCA(t *testing.T) {
-	measurer := signal.NewExperimentMeasurer(signal.Config{
-		SignalCA: "INVALIDCA",
-	})
+	measurer := signal.NewExperimentMeasurer()
 	measurement := new(model.Measurement)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
@@ -107,6 +134,7 @@ func TestBadSignalCA(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		Target: &signal.Target{Config: &signal.Config{SignalCA: "INVALIDCA"}},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err.Error() != "AppendCertsFromPEM failed" {

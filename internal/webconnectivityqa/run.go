@@ -82,5 +82,5 @@ func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
 	tk := newTestKeys(measurement)
 
 	// compare the expected test keys to the ones we've got
-	return compareTestKeys(tc.ExpectTestKeys, tk)
+	return compareTestKeys(tc.ExpectTestKeys, tk, tc.IgnoreTestKeysFields...)
 }

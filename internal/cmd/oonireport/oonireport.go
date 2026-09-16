@@ -88,7 +88,7 @@ func newSession(ctx context.Context) *engine.Session {
 
 // new Submitter creates a probe services client and submitter
 func newSubmitter(sess *engine.Session, ctx context.Context) model.Submitter {
-	return runtimex.Try1(sess.NewSubmitter(ctx))
+	return runtimex.Try1(sess.NewSubmitter(ctx, true))
 }
 
 // toMeasurement loads an input string as model.Measurement

@@ -15,7 +15,7 @@ type Submitter = model.Submitter
 // SubmitterSession is the Submitter's view of the Session.
 type SubmitterSession interface {
 	// NewSubmitter creates a new probeservices Submitter.
-	NewSubmitter(ctx context.Context) (Submitter, error)
+	NewSubmitter(ctx context.Context, useAuth bool) (Submitter, error)
 }
 
 // SubmitterConfig contains settings for NewSubmitter.
@@ -28,6 +28,8 @@ type SubmitterConfig struct {
 
 	// Logger is the logger to be used.
 	Logger model.Logger
+
+	UseAuth bool
 }
 
 // NewSubmitter creates a new submitter instance. Depending on
@@ -37,7 +39,7 @@ func NewSubmitter(ctx context.Context, config SubmitterConfig) (Submitter, error
 	if !config.Enabled {
 		return stubSubmitter{}, nil
 	}
-	subm, err := config.Session.NewSubmitter(ctx)
+	subm, err := config.Session.NewSubmitter(ctx, config.UseAuth)
 	if err != nil {
 		return nil, err
 	}

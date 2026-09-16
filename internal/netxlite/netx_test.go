@@ -54,7 +54,7 @@ func TestNetxWithNetem(t *testing.T) {
 	webServerTCPListener := runtimex.Try1(webServerStack.ListenTCP("tcp", webServerTCPAddress))
 	webServerTCPServer := &http.Server{
 		Handler:   webServerHandler,
-		TLSConfig: webServerTLSConfig,
+		TLSConfig: webServerTLSConfig.Clone(),
 	}
 	go webServerTCPServer.ServeTLS(webServerTCPListener, "", "")
 	defer webServerTCPServer.Close()
@@ -67,7 +67,7 @@ func TestNetxWithNetem(t *testing.T) {
 	}
 	webServerUDPListener := runtimex.Try1(webServerStack.ListenUDP("udp", webServerUDPAddress))
 	webServerUDPServer := &http3.Server{
-		TLSConfig:  webServerTLSConfig,
+		TLSConfig:  webServerTLSConfig.Clone(),
 		QUICConfig: &quic.Config{},
 		Handler:    webServerHandler,
 	}

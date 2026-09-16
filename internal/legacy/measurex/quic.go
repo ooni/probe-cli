@@ -106,7 +106,7 @@ type quicDialerDB struct {
 }
 
 func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (model.QUICConn, error) {
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
 	netx := &netxlite.Netx{}

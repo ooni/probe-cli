@@ -326,11 +326,11 @@ func TestSession(t *testing.T) {
 	t.Run("NewSubmitter", func(t *testing.T) {
 		expected := errors.New("mocked err")
 		s := &Session{
-			MockNewSubmitter: func(ctx context.Context) (model.Submitter, error) {
+			MockNewSubmitter: func(ctx context.Context, useAuth bool) (model.Submitter, error) {
 				return nil, expected
 			},
 		}
-		out, err := s.NewSubmitter(context.Background())
+		out, err := s.NewSubmitter(context.Background(), false)
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err")
 		}

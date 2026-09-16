@@ -1,15 +1,15 @@
 diff --git a/include/openssl/opensslv.h.in b/include/openssl/opensslv.h.in
-index 3f47a2ac08..b413461ca7 100644
+index 58b290e..8b1ca96 100644
 --- a/include/openssl/opensslv.h.in
 +++ b/include/openssl/opensslv.h.in
 @@ -13,6 +13,10 @@
- # define OPENSSL_OPENSSLV_H
- # pragma once
+ #define OPENSSL_OPENSSLV_H
+ #pragma once
  
 +/* OPENSSL_OONI is used by dependencies to ensure they are using the
 +   correct OpenSSL headers and not some other headers. */
 +#define OPENSSL_OONI 1
 +
- # ifdef  __cplusplus
+ #ifdef __cplusplus
  extern "C" {
- # endif
+ #endif
