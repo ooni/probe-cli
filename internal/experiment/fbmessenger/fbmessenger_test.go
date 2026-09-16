@@ -2,6 +2,7 @@ package fbmessenger_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/url"
 	"testing"
@@ -40,6 +41,33 @@ var (
 	trueValue  = true
 	falseValue = false
 )
+
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := fbmessenger.NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, fbmessenger.ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, fbmessenger.ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
 
 func TestNewExperimentMeasurer(t *testing.T) {
 	measurer := fbmessenger.NewExperimentMeasurer()
