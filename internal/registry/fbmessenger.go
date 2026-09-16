@@ -14,14 +14,13 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return fbmessenger.NewExperimentMeasurer(
-					*config.(*fbmessenger.Config),
-				)
+				return fbmessenger.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &fbmessenger.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
+			newLoader:        fbmessenger.NewLoader,
 		}
 	}
 }

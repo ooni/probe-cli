@@ -18,6 +18,33 @@ import (
 // Implementation note: integration test performed by
 // the $topdir/experiment_test.go file
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := psiphon.NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mockable.Session{},
+		})
+		if !errors.Is(err, psiphon.ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mockable.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, psiphon.ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
 	measurer := psiphon.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "psiphon" {
