@@ -150,9 +150,13 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 	}
 
 	var txTime *time.Time
+	var t0 float64
 
 	txTimeVal := time.Now()
 	txTime = &txTimeVal
+	if txTime != nil {
+		t0 = txTime.Sub(zeroTime).Seconds()
+	}
 
 	err = unixOpsImpl.Connect(fd, sa)
 	if err != nil && err != unix.EINPROGRESS {
@@ -182,6 +186,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 			TTL: ttl,
 			ICMPError: &model.ArchivalICMPErrorMessage{
 				Timeout: "yes",
+				T0:      t0,
 				T:       pollEndTimeFromStart,
 			},
 		}
@@ -270,11 +275,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 
 		}
 
-		var t0, t float64
-
-		if txTime != nil {
-			t0 = txTime.Sub(zeroTime).Seconds()
-		}
+		var t float64
 
 		if rxTime != nil {
 			t = rxTime.Sub(zeroTime).Seconds()
@@ -329,6 +330,10 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 	}
 
 	if pfds[0].Revents&unix.POLLOUT != 0 {
+		pollOutEndTimeVal := time.Now()
+		pollOutEndTime := &pollOutEndTimeVal
+		pollOutEndTimeFromStart := pollOutEndTime.Sub(zeroTime).Seconds()
+
 		soerr, err := unixOpsImpl.GetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_ERROR)
 		if err != nil {
 			return nil, err
@@ -341,6 +346,8 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
 					Connected: "yes",
+					T0:        t0,
+					T:         pollOutEndTimeFromStart,
 				},
 			}
 			return ii_connected, nil
@@ -351,6 +358,8 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
 					Error: unix.Errno(soerr).Error(),
+					T0:    t0,
+					T:     pollOutEndTimeFromStart,
 				},
 			}
 			return ii_error, nil
