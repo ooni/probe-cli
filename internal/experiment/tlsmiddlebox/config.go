@@ -81,7 +81,7 @@ func (c Config) clientid() int {
 	return 0
 }
 
-func (c Config) privacyMode() string {
+func (c Config) privacymode() string {
 	if c.PrivacyMode != "" {
 		return c.PrivacyMode
 	}

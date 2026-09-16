@@ -90,6 +90,11 @@ func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
 }
 
 func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, privacyMode string) (*ICMPIteration, error) {
+	unixOpsImpl := unixOpsImpl{}
+	return tracerouteTCPWithOps(index, zeroTime, address, ttl, timeoutMS, wg, logger, privacyMode, unixOpsImpl)
+}
+
+func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, privacyMode string, unixOpsImpl unixOps) (*ICMPIteration, error) {
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
 
@@ -103,23 +108,23 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 		return nil, err
 	}
 
-	fd, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, unix.IPPROTO_TCP)
+	fd, err := unixOpsImpl.Socket(unix.AF_INET, unix.SOCK_STREAM, unix.IPPROTO_TCP)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer unix.Close(fd)
+	defer unixOpsImpl.Close(fd)
 
-	if err := unix.SetsockoptInt(fd, unix.IPPROTO_IP, unix.IP_RECVERR, 1); err != nil {
+	if err := unixOpsImpl.SetsockoptInt(fd, unix.IPPROTO_IP, unix.IP_RECVERR, 1); err != nil {
 		return nil, err
 	}
 
-	if err := unix.SetNonblock(fd, true); err != nil {
+	if err := unixOpsImpl.SetNonblock(fd, true); err != nil {
 		return nil, err
 	}
 
-	if err := unix.SetsockoptInt(fd, unix.IPPROTO_IP, unix.IP_TTL, ttl); err != nil {
+	if err := unixOpsImpl.SetsockoptInt(fd, unix.IPPROTO_IP, unix.IP_TTL, ttl); err != nil {
 		return nil, err
 	}
 
@@ -127,7 +132,7 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 		unix.SOF_TIMESTAMPING_RX_SOFTWARE |
 		unix.SOF_TIMESTAMPING_SOFTWARE
 
-	if err := unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_TIMESTAMPING, timestampFlags); err != nil {
+	if err := unixOpsImpl.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_TIMESTAMPING, timestampFlags); err != nil {
 		return nil, err
 	}
 
@@ -149,7 +154,7 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 	txTimeVal := time.Now()
 	txTime = &txTimeVal
 
-	err = unix.Connect(fd, sa)
+	err = unixOpsImpl.Connect(fd, sa)
 	if err != nil && err != unix.EINPROGRESS {
 		return nil, err
 	}
@@ -161,7 +166,7 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 		},
 	}
 
-	n, err := unix.Poll(pfds, timeoutMS)
+	n, err := unixOpsImpl.Poll(pfds, timeoutMS)
 	pollEndTimeVal := time.Now()
 	pollEndTime := &pollEndTimeVal
 
@@ -196,7 +201,7 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 		var quotedPacket *model.ArchivalICMPQuotation
 
 		for {
-			n, oobn, _, _, err := unix.Recvmsg(fd, buf, oob, unix.MSG_ERRQUEUE)
+			n, oobn, _, _, err := unixOpsImpl.Recvmsg(fd, buf, oob, unix.MSG_ERRQUEUE)
 
 			if err == unix.EAGAIN {
 				break
@@ -222,9 +227,11 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 
 			for _, cm := range cms {
 
-				// Prints the raw quote
+				// // Prints the raw quote
 				// fmt.Printf("n=%d\n", n)
 				// fmt.Printf("buf=%x\n", buf[:n])
+				// fmt.Printf("oobn=%d\n", oobn)
+				// fmt.Printf("oob=%x\n", oob[:oobn])
 
 				switch {
 				case cm.Header.Level == unix.SOL_SOCKET &&
@@ -297,6 +304,10 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 					T:                t,
 				},
 			}
+
+			if quotedPacket != nil && err == nil {
+				ii.ICMPError.Quote = *quotedPacket
+			}
 		} else {
 			ii = &ICMPIteration{
 				TTL: ttl,
@@ -312,17 +323,13 @@ func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, tim
 			}
 		}
 
-		if quotedPacket != nil && err == nil {
-			ii.ICMPError.Quote = *quotedPacket
-		}
-
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s Router %s", index, ttl, address, ip.String())
 		ol.Stop(err)
 		return ii, nil
 	}
 
 	if pfds[0].Revents&unix.POLLOUT != 0 {
-		soerr, err := unix.GetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_ERROR)
+		soerr, err := unixOpsImpl.GetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_ERROR)
 		if err != nil {
 			return nil, err
 		}

@@ -81,3 +81,23 @@ func TestConfig_clientid(t *testing.T) {
 		t.Fatal("invalid default ClientHello ID")
 	}
 }
+
+func TestConfig_privacymode(t *testing.T) {
+
+	t.Run("default Privacy Mode", func(t *testing.T) {
+		c := Config{}
+		if c.privacymode() != "safe" {
+			t.Fatalf("invalif default Privacy Mode")
+		}
+	})
+
+	t.Run("unsafe Privacy Mode", func(t *testing.T) {
+		c := Config{
+			PrivacyMode: "unsafe",
+		}
+		if c.privacymode() != "unsafe" {
+			t.Fatalf("expected unsafe Privacy Mode, got %s", c.privacymode())
+		}
+	})
+
+}

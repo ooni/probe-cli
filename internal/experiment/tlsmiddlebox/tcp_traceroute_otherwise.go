@@ -4,11 +4,12 @@ package tlsmiddlebox
 
 import (
 	"sync"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func tracerouteTCP(_ string, _ int, _ int, wg *sync.WaitGroup, _ model.Logger, _ int64) (*ICMPIteration, error) {
+func tracerouteTCP(_ int64, _ time.Time, _ string, _ int, _ int, wg *sync.WaitGroup, _ model.Logger, _ string) (*ICMPIteration, error) {
 	defer wg.Done()
 
 	return nil, nil
