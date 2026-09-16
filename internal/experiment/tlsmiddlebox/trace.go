@@ -62,24 +62,6 @@ func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model
 	}
 }
 
-// NewICMPIterationFromHandshake returns a new iteration from a model.ArchivalICMPErrorMessage
-func newICMPIterationFromHandshake(ttl int, err error, soErr error, icmpError *model.ArchivalICMPErrorMessage) *ICMPIteration {
-	if err != nil {
-		return &ICMPIteration{
-			TTL: ttl,
-			ICMPError: &model.ArchivalICMPErrorMessage{
-				Timeout: "yes",
-			},
-		}
-	}
-
-	return &ICMPIteration{
-		TTL:       ttl,
-		ICMPError: icmpError,
-	}
-
-}
-
 // addIterations adds iterations to the trace
 func (t *IterativeTrace) addIterations(ev ...*Iteration) {
 	t.mu.Lock()
