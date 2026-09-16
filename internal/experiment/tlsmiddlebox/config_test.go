@@ -76,8 +76,19 @@ func TestConfig_testhelper(t *testing.T) {
 }
 
 func TestConfig_clientid(t *testing.T) {
-	c := Config{}
-	if c.clientid() != 0 {
-		t.Fatal("invalid default ClientHello ID")
-	}
+	t.Run("without config", func(t *testing.T) {
+		c := Config{}
+		if c.clientid() != 0 {
+			t.Fatal("invalid default ClientHello ID")
+		}
+	})
+
+	t.Run("with config", func(t *testing.T) {
+		c := Config{
+			ClientId: 2,
+		}
+		if c.clientid() != 2 {
+			t.Fatal("invalid ClientHello ID")
+		}
+	})
 }

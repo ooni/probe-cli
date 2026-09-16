@@ -18,7 +18,7 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 	if measurer.ExperimentName() != "tlsmiddlebox" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.1.2" {
+	if measurer.ExperimentVersion() != "0.1.3" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
@@ -78,6 +78,29 @@ func TestMeasurer_input_failure(t *testing.T) {
 	t.Run("with invalid TH scheme", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "http://google.com", "")
 		if !errors.Is(err, errInvalidTHScheme) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid ClientId", func(t *testing.T) {
+		m := NewExperimentMeasurer(Config{
+			ClientId: 5, // we only know fingerprints between 1 and 4
+		})
+		meas := &model.Measurement{
+			Input: model.MeasurementInput("tlstrace://example.com"),
+		}
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: meas,
+			Session:     sess,
+		}
+		err := m.Run(context.Background(), args)
+		if !errors.Is(err, errInvalidClientId) {
 			t.Fatal("unexpected error", err)
 		}
 	})
