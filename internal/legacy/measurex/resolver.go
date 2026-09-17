@@ -187,3 +187,30 @@ func (r *resolverDB) computeOddityHTTPSSvc(https *model.HTTPSSvc, err error) Odd
 	addrs = append(addrs, https.IPv6...)
 	return r.computeOddityLookupHost(addrs, nil)
 }
+
+func (r *resolverDB) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	started := time.Since(r.begin).Seconds()
+	svcb, err := r.Resolver.LookupSVCB(ctx, domain)
+	finished := time.Since(r.begin).Seconds()
+
+	// DNS lookup event does not really support SVCB
+	ev := &DNSLookupEvent{
+		Network:   tracex.ResolverNetworkAdaptNames(r.Resolver.Network()),
+		Address:   r.Resolver.Address(),
+		Domain:    domain,
+		QueryType: "SVCB",
+		Started:   started,
+		Finished:  finished,
+		Failure:   NewFailure(err),
+	}
+
+	if err == nil {
+		for _, svc := range svcb {
+			for _, alpn := range svc.ALPN {
+				ev.ALPN = append(ev.ALPN, alpn)
+			}
+		}
+	}
+	r.db.InsertIntoLookupHTTPSSvc(ev)
+	return svcb, err
+}

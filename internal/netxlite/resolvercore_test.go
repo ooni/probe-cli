@@ -198,6 +198,17 @@ func TestResolverSystem(t *testing.T) {
 		}
 	})
 
+	t.Run("LookupSVCB", func(t *testing.T) {
+		r := &resolverSystem{}
+		svcb, err := r.LookupSVCB(context.Background(), "x.org")
+		if !errors.Is(err, ErrNoDNSTransport) {
+			t.Fatal("not the error we expected")
+		}
+		if svcb != nil {
+			t.Fatal("expected nil result")
+		}
+	})
+
 	t.Run("LookupNS", func(t *testing.T) {
 		r := &resolverSystem{}
 		ns, err := r.LookupNS(context.Background(), "x.org")

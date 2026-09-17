@@ -113,6 +113,11 @@ func (r *cacheResolver) LookupHTTPS(ctx context.Context, domain string) (*model.
 	return nil, ErrNoDNSTransport
 }
 
+// LookupSVCB implements model.Resolver.LookupSVCB.
+func (r *cacheResolver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // LookupNS implements model.Resolver.LookupNS.
 func (r *cacheResolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
 	return nil, ErrNoDNSTransport

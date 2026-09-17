@@ -59,6 +59,12 @@ func (r *bogonResolver) LookupHTTPS(ctx context.Context, hostname string) (*mode
 	return nil, ErrNoDNSTransport
 }
 
+// LookupSVCB implements Resolver.LookupSVCB
+func (r *bogonResolver) LookupSVCB(ctx context.Context, hostname string) ([]*model.SVCB, error) {
+	// TODO: decide whether we want to implement this method or not
+	return nil, ErrNoDNSTransport
+}
+
 // LookupNS implements Resolver.LookupNS
 func (r *bogonResolver) LookupNS(ctx context.Context, hostname string) ([]*net.NS, error) {
 	// TODO(bassosimone): decide whether we want to implement this method or not
