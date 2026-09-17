@@ -39,7 +39,7 @@ cat <<EOF>$DOC_PATH
 # version: $REPO_NAME:$COMMIT_HASH
 title: OONI Probe Engine Design
 description: Design documents for OONI Probe
-slug: probe-engine/design/
+slug: probe-engine/design
 ---
 EOF
 strip_title $BASE_PATH/README.md >> $DOC_PATH
@@ -174,7 +174,7 @@ cat <<EOF>$DOC_PATH
 # version: $REPO_NAME:$COMMIT_HASH
 title: OONI Probe Release
 description: OONI Probe release documentation
-slug: probe-engine/releasing/
+slug: probe-engine/releasing
 ---
 EOF
 strip_title docs/releasing.md >> $DOC_PATH

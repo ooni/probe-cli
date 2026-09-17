@@ -41,7 +41,7 @@ type QUICHandshakeStage struct {
 
 // QUICConnection is a QUIC connection.
 type QUICConnection struct {
-	Conn      quic.EarlyConnection
+	Conn      model.QUICConn
 	tlsConfig *tls.Config
 	tx        Trace
 }

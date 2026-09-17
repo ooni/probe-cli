@@ -20,7 +20,7 @@ func (gal *GeoIPASNLookupper) LookupASN(ip string) (asn uint, org string, err er
 
 // NewGeoIPASNLookupper creates a [model.GeoIPASNLookupper] from the given map.
 func NewGeoIPASNLookupper(mx map[string]*model.LocationASN) model.GeoIPASNLookupper {
-	return model.GeoIPASNLookupperFunc(func(ip string) (asn uint, org string, err error) {
+	return model.GeoIPASNLookupperFunc(func(ip string, dbPath string) (asn uint, org string, err error) {
 		result, found := mx[ip]
 		if !found {
 			return 0, "", errors.New("geoip: record not found")

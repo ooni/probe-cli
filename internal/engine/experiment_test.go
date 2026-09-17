@@ -11,12 +11,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/dnscheck"
 	"github.com/ooni/probe-cli/v3/internal/experiment/example"
 	"github.com/ooni/probe-cli/v3/internal/experiment/signal"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestExperimentHonoursSharingDefaults(t *testing.T) {
 	measure := func(info *enginelocate.Results) *model.Measurement {
-		sess := &Session{location: info}
+		sess := &Session{location: info, kvStore: &kvstore.Memory{}}
 		builder, err := sess.NewExperimentBuilder("example")
 		if err != nil {
 			t.Fatal(err)

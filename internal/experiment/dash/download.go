@@ -89,7 +89,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 	}
 
 	// read the response body
-	data, err := netxlite.ReadAllContext(ctx, resp.Body)
+	data, err := netxlite.ReadAllContext(ctx, netxlite.LimitBodyReader(resp))
 	if err != nil {
 		return result, err
 	}

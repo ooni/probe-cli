@@ -1,0 +1,35 @@
+# automatically syched from: ooni/pm-tools
+on:
+  issues:
+    types:
+      - opened
+      - closed
+      - labeled
+
+jobs:
+  add-to-project:
+    name: Add issue to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        if: github.event.action == 'opened'
+        with:
+          # Add to triaging board
+          project-url: https://github.com/orgs/ooni/projects/47
+          github-token: ${{ secrets.ADD_TO_PROJECT_GH_TOKEN }}
+          labeled: bug, triage
+          label-operator: OR
+
+      - uses: actions/add-to-project@v1.0.2
+        if: github.event.action == 'labeled' && startsWith(github.event.label.name, 'funder/')
+        with:
+          # Add to funder reporting board
+          project-url: https://github.com/orgs/ooni/projects/33
+          github-token: ${{ secrets.ADD_TO_PROJECT_GH_TOKEN }}
+
+      - uses: actions/add-to-project@v1.0.2
+        # Move closed issues that are not invalid over to the funder reporting board
+        if: github.event.action == 'closed' && github.event.issue.state_reason != 'not_planned' && !contains(github.event.issue.labels.*.name, 'invalid')
+        with:
+          project-url: https://github.com/orgs/ooni/projects/33
+          github-token: ${{ secrets.ADD_TO_PROJECT_GH_TOKEN }}

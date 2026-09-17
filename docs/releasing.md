@@ -67,31 +67,6 @@ specific toolchain we want to use. (The `toolchain` mechanism was introduced by
 Go 1.21.0 and it may be that we can now use just the `toolchain` instead of
 using the `GOVERSION` file; this should eventually be investigated.)
 
-After updating `GOVERSION` and `go.mod`, we need to update our stdlib forks:
-
-- https://github.com/ooni/oocrypto
-- https://github.com/ooni/oohttp
-
-When tagging `oocrypto` and `oohttp` you should bump the patch version number if you
-are _updating_ from go1.X.Y to go1.X.Y+M and bump the minor version number if you are
-_upgrading_ from go1.X.Z to go1.X+N.Y. For example, for `oohttp`, we bumped from
-`v0.6.8` to `v0.7.0` when we upgraded from go1.20 to go1.21; we bumped from `v0.6.7`
-to `v0.6.8` when we updated from go1.20.12 to go1.20.14.
-
-Once these two packages have been updated, use:
-
-```bash
-./script/go.bash get -u -v github.com/ooni/oocrypto@TAG
-./script/go.bash get -u -v github.com/ooni/oohttp@TAG
-./script/go.bash mod tidy
-./script/go.bash build -v ./...
-./script/go.bash test ./...
-```
-
-to update `go.mod` and `go.sum`.
-
-Remember to also update mentions to the correct Go version in `Readme.md`.
-
 ## Android
 
 We use `NDKVERSION` to track the expected version of the NDK to use. We should also
@@ -136,6 +111,23 @@ At the end, before committing and pusing, one should check that it's all good us
 ./script/go.bash build -v ./...
 ./script/go.bash test ./...
 ```
+
+## Userauth staticlib
+
+The CLI links the `libuniffi_ooniprobe.a` static library built from
+[ooniprobe-rs](https://github.com/ooni/ooniprobe-rs). The `userauth` Makefile target runs
+`./internal/cmd/buildtool <os> userauth`, which obtains the staticlib one of two ways
+depending on the `USERAUTH_FROM_SOURCE` environment variable:
+
+- **default (unset):** download the prebuilt `staticlib.tar.gz` bundle from the pinned
+ooniprobe-rs release. This is the fast path for local development.
+
+- **`USERAUTH_FROM_SOURCE=1`:** build the staticlib from the pinned ooniprobe-rs sources.
+**This is what the publishing CI does**, because the prebuilt bundle is glibc-based and
+cannot link into the musl static Linux builds or the cross-compiled Windows/darwin builds.
+
+Both paths use the single `userauthVersion` constant pinned in
+`internal/cmd/buildtool/userauth.go` (together with the source tarball `SHA256`).
 
 ## Updating assets and definitions
 

@@ -80,7 +80,7 @@ func TestHTTPTransportLogger(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			ReadAllContext(context.Background(), resp.Body)
+			ReadAllContext(context.Background(), LimitBodyReader(resp))
 			resp.Body.Close()
 			if count < 1 {
 				t.Fatal("no logs?!")

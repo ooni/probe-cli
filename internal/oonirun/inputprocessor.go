@@ -87,7 +87,7 @@ func (ipsw inputProcessorSaverWrapper) SaveMeasurement(
 // InputProcessorSubmitterWrapper is InputProcessor's
 // wrapper for a Submitter implementation.
 type InputProcessorSubmitterWrapper interface {
-	Submit(ctx context.Context, idx int, m *model.Measurement) error
+	Submit(ctx context.Context, idx int, m *model.Measurement) (string, error)
 }
 
 type inputProcessorSubmitterWrapper struct {
@@ -101,7 +101,7 @@ func NewInputProcessorSubmitterWrapper(submitter Submitter) InputProcessorSubmit
 }
 
 func (ipsw inputProcessorSubmitterWrapper) Submit(
-	ctx context.Context, idx int, m *model.Measurement) error {
+	ctx context.Context, idx int, m *model.Measurement) (string, error) {
 	return ipsw.submitter.Submit(ctx, m)
 }
 
@@ -141,7 +141,7 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 			return 0, err
 		}
 		meas.AddAnnotations(ip.Annotations)
-		err = ip.Submitter.Submit(ctx, idx, meas)
+		_, err = ip.Submitter.Submit(ctx, idx, meas)
 		if err != nil {
 			// TODO(bassosimone): when re-reading this code, I find it confusing that
 			// we return on error because I am always like "wait, this is not the right

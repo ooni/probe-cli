@@ -32,7 +32,12 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"go", "install", "golang.org/x/mobile/cmd/gomobile@latest",
+				"go", "install", "github.com/ooni/oomobile/cmd/gomobile@latest",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"go", "install", "github.com/ooni/oomobile/cmd/gobind@latest",
 			},
 		}, {
 			Env: []string{},
@@ -42,20 +47,21 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"go", "get", "-d", "golang.org/x/mobile/cmd/gomobile",
+				"go", "get", "-d", "github.com/ooni/oomobile/cmd/gomobile",
 			},
 		}, {
 			Env: []string{
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
 				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
+				"CGO_LDFLAGS=-Wl,-z,max-page-size=16384",
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
 				"-o", "MOBILE/android/oonimkall.aar",
 				"-androidapi", "21",
-				"-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w",
+				"-tags", "nouserauth,ooni_libtor,ooni_psiphon_config",
+				"-ldflags", "-checklinkname=0 -s -w",
 				"./pkg/oonimkall",
 			},
 		}, {
@@ -70,7 +76,12 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"go", "install", "golang.org/x/mobile/cmd/gomobile@latest",
+				"go", "install", "github.com/ooni/oomobile/cmd/gomobile@latest",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"go", "install", "github.com/ooni/oomobile/cmd/gobind@latest",
 			},
 		}, {
 			Env: []string{},
@@ -80,20 +91,21 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"go", "get", "-d", "golang.org/x/mobile/cmd/gomobile",
+				"go", "get", "-d", "github.com/ooni/oomobile/cmd/gomobile",
 			},
 		}, {
 			Env: []string{
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
 				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
+				"CGO_LDFLAGS=-Wl,-z,max-page-size=16384",
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
 				"-o", "MOBILE/android/oonimkall.aar",
 				"-androidapi", "21",
-				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w",
+				"-tags", "nouserauth,ooni_libtor",
+				"-ldflags", "-checklinkname=0 -s -w",
 				"./pkg/oonimkall",
 			},
 		}, {
@@ -110,7 +122,8 @@ func TestAndroidBuildGomobile(t *testing.T) {
 			cc := &buildtooltest.SimpleCommandCollector{}
 
 			deps := &buildtooltest.DependenciesCallCounter{
-				HasPsiphon: testcase.hasPsiphon,
+				HasPsiphon:      testcase.hasPsiphon,
+				IsLibtorEnabled: true,
 			}
 
 			shellxtesting.WithCustomLibrary(cc, func() {
@@ -122,6 +135,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				buildtooltest.TagAndroidNDKCheck:             1,
 				buildtooltest.TagAndroidSDKCheck:             1,
 				buildtooltest.TagGolangCheck:                 1,
+				buildtooltest.TagLibtorEnabled:               1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           1,
 			}
@@ -173,7 +187,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-amd64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -186,7 +200,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-amd64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -199,7 +213,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-386",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -212,7 +226,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-386",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -225,7 +239,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -238,7 +252,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -252,7 +266,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -266,7 +280,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm",
 				"./cmd/ooniprobe",
 			},
 		}},
@@ -284,7 +298,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-amd64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -298,7 +312,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-amd64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -312,7 +326,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-386",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -326,7 +340,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-386",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -340,7 +354,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -354,7 +368,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -369,7 +383,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -384,7 +398,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm",
 				"./cmd/ooniprobe",
 			},
 		}},
@@ -440,12 +454,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -493,12 +507,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -546,12 +560,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -599,12 +613,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.1.tar.gz",
+				"tar", "-xf", "zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -702,12 +716,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -757,12 +771,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -812,12 +826,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -867,12 +881,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.6.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -974,12 +988,12 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1153,12 +1167,12 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1332,12 +1346,12 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1511,12 +1525,12 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Argv: []string{
 				"curl",
 				"-fsSLO",
-				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+				"https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+				"tar", "-xf", "release-2.1.13-stable.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1738,12 +1752,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.13.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1827,12 +1841,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.13.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1916,12 +1930,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.13.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -2005,12 +2019,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.13.tar.gz",
+				"tar", "-xf", "tor-0.4.9.11.tar.gz",
 			},
 		}, {
 			Env: []string{},

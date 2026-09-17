@@ -69,8 +69,9 @@ func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 	must.Run(log.Log, "docker", "pull", "--platform", "linux/"+dockerArch, golangDockerImage)
 	must.Run(log.Log, "docker", "build", "--platform", "linux/"+dockerArch, "-t", image, "CLI")
 
-	log.Infof("run the build inside docker")
 	curdir := runtimex.Try1(os.Getwd())
+
+	log.Infof("run the build inside docker")
 
 	must.Run(
 		log.Log, "docker", "run",
@@ -90,6 +91,7 @@ func linuxDockerWriteDockerfile(deps buildtoolmodel.Dependencies, dockerArch, go
 		RUN apk update
 		RUN apk upgrade
 		RUN apk add --no-progress gcc git linux-headers musl-dev
+		RUN apk add --no-progress curl tar cargo rust cmake ninja make perl g++ clang-dev
 		RUN adduser -D -h /home/oobuild -G nobody -u %s oobuild
 		ENV HOME=/home/oobuild`, dockerArch, golangDockerImage, uid,
 	))

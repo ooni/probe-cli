@@ -21,6 +21,7 @@ func fatalOnError(err error) {
 // Measurement contains a OONI measurement.
 type Measurement struct {
 	ReportID        string  `json:"report_id"`
+	MeasurementUID  string  `json:"measurement_uid"`
 	Input           *string `json:"input"`
 	SoftwareName    string  `json:"software_name"`
 	SoftwareVersion string  `json:"software_version"`
@@ -64,12 +65,15 @@ func main() {
 				"./internal/cmd/apitool",
 				"-backend", *backend,
 				"-mode", "meta",
-				"-report-id", entry.ReportID,
 			}
 			found++
-			if entry.Input != nil {
-				options = append(options, "-input")
-				options = append(options, *entry.Input)
+			if entry.MeasurementUID != "" {
+				options = append(options, "-measurement-uid", entry.MeasurementUID)
+			} else {
+				options = append(options, "-report-id", entry.ReportID)
+				if entry.Input != nil {
+					options = append(options, "-input", *entry.Input)
+				}
 			}
 			log.Printf("run: go %s", strings.Join(options, " "))
 			cmd := execabs.Command("go", options...) // #nosec G204 - this is working as intended

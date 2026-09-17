@@ -93,9 +93,9 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 		newTargetLoaderFn:      nil,
 		newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 			subm := &mocks.Submitter{
-				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
+				MockSubmit: func(ctx context.Context, m *model.Measurement) (string, error) {
 					failedToSubmit++
-					return errors.New("mocked error")
+					return "", errors.New("mocked error")
 				},
 			}
 			return subm, nil
@@ -128,6 +128,15 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 
 // This test ensures that we honour InitialOptions then ExtraOptions.
 func TestExperimentSetOptions(t *testing.T) {
+	ctx := context.Background()
+	session, err := engine.NewSession(ctx, engine.SessionConfig{
+		Logger:          model.DiscardLogger,
+		SoftwareName:    "ooniprobe-test",
+		SoftwareVersion: "1.0",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// create the Experiment we're using for this test
 	exp := &Experiment{
@@ -140,7 +149,7 @@ func TestExperimentSetOptions(t *testing.T) {
 		// TODO(bassosimone): A zero-value session works here. The proper change
 		// however would be to write a engine.NewExperimentBuilder factory that takes
 		// as input an interface for the session. This would help testing.
-		Session: &engine.Session{},
+		Session: session,
 	}
 
 	// create the experiment builder manually

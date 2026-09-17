@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-EXPECTED_XCODE_VERSION=${EXPECTED_XCODE_VERSION:-15.1}
+EXPECTED_XCODE_VERSION=${EXPECTED_XCODE_VERSION:-15.4}
 
 printf "checking for xcodebuild... "
 command -v xcodebuild || {

@@ -33,9 +33,8 @@ func buildAndPublishMobileIOS(w io.Writer, job *Job) {
 	newJob(w, buildJob, runsOnMacOS, noDependencies, noPermissions)
 	newStepCheckout(w)
 	newStepSetupGo(w, "ios")
-	newStepSetupPsiphon(w)
 	iosNewStepBrewInstall(w)
-	newStepMake(w, "EXPECTED_XCODE_VERSION=14.2 ios")
+	newStepMake(w, "EXPECTED_XCODE_VERSION=15.4 ios")
 	newStepUploadArtifacts(w, artifacts)
 
 	newJob(w, publishJob, runsOnUbuntu, buildJob, contentsWritePermissions)

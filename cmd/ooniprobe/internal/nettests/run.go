@@ -14,11 +14,12 @@ import (
 
 // RunGroupConfig contains the settings for running a nettest group.
 type RunGroupConfig struct {
-	GroupName  string
-	InputFiles []string
-	Inputs     []string
-	Probe      *ooni.Probe
-	RunType    model.RunType // hint for check-in API
+	GroupName     string
+	InputFiles    []string
+	Inputs        []string
+	Probe         *ooni.Probe
+	RunType       model.RunType // hint for check-in API
+	NoCredentials bool
 }
 
 const websitesURLLimitRemoved = `WARNING: CONFIGURATION CHANGE REQUIRED:
@@ -114,6 +115,7 @@ func RunGroup(config RunGroupConfig) error {
 		ctl.InputFiles = config.InputFiles
 		ctl.Inputs = config.Inputs
 		ctl.RunType = config.RunType
+		ctl.NoCredentials = config.NoCredentials
 		ctl.SetNettestIndex(i, len(group.Nettests))
 		if err = nt.Run(ctl); err != nil {
 			// We used to emit an error here, now we emit a warning--the proper choice

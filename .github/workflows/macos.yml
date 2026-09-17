@@ -14,9 +14,9 @@ on:
 
 jobs:
   build_darwin_cli:
-    runs-on: macos-12
+    runs-on: macos-15
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -28,44 +28,39 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-macos-${{ steps.goversion.outputs.version }}"
 
-      - run: |
-          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
-          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
-        env:
-          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
-          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
-
       - run: make CLI/darwin
+        env:
+          USERAUTH_FROM_SOURCE: "1" 
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-darwin-amd64
           path: ./CLI/ooniprobe-darwin-amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-darwin-arm64
           path: ./CLI/ooniprobe-darwin-arm64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-darwin-amd64
           path: ./CLI/miniooni-darwin-amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-darwin-arm64
           path: ./CLI/miniooni-darwin-arm64
 
   test_darwin_cli:
-    runs-on: macos-12
+    runs-on: macos-15
     needs: build_darwin_cli
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ooniprobe-darwin-amd64
 
@@ -74,28 +69,28 @@ jobs:
         shell: bash
 
   publish_darwin_cli:
-    runs-on: macos-12
+    runs-on: macos-15
     needs: test_darwin_cli
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ooniprobe-darwin-amd64
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ooniprobe-darwin-arm64
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: miniooni-darwin-amd64
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: miniooni-darwin-arm64
 

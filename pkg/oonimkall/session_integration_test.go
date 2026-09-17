@@ -21,7 +21,7 @@ func NewSessionForTestingWithAssetsDir(assetsDir string) (*oonimkall.Session, er
 	return oonimkall.NewSession(&oonimkall.SessionConfig{
 		AssetsDir:        assetsDir,
 		Logger:           log.Log,
-		ProbeServicesURL: "https://backend-hel.ooni.org/",
+		ProbeServicesURL: "https://api.dev.ooni.io/",
 		SoftwareName:     "oonimkall-test",
 		SoftwareVersion:  "0.1.0",
 		StateDir:         "../testdata/oonimkall/state",
@@ -162,7 +162,7 @@ func DoSubmission(ctx *oonimkall.Context, sess *oonimkall.Session) error {
 		ProbeASN:             "AS30722",
 		ProbeCC:              "IT",
 		ProbeIP:              "127.0.0.1",
-		ReportID:             "",
+		ReportID:             "report",
 		ResolverIP:           "172.217.33.129",
 		SoftwareName:         "miniooni",
 		SoftwareVersion:      "0.1.0-dev",

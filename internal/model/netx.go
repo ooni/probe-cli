@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	oohttp "github.com/ooni/oohttp"
 	"github.com/quic-go/quic-go"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -188,6 +187,10 @@ type HTTPSSvc struct {
 
 	// IPv6 contains the IPv6 hints (which may be empty).
 	IPv6 []string
+
+	// Encrypted ClientHello config decoded from base64 to bytes
+	// (which may be empty).
+	Ech []byte
 }
 
 // SVCB is the reply to an SVCB DNS query.
@@ -276,6 +279,33 @@ type QUICDialerWrapper interface {
 	WrapQUICDialer(qd QUICDialer) QUICDialer
 }
 
+// QUICConn is the interface representing a *quic.Conn compatible QUIC
+// connection.
+type QUICConn interface {
+	// CloseWithError closes the connection using the given application
+	// error code and reason string.
+	CloseWithError(code quic.ApplicationErrorCode, reason string) error
+
+	// HandshakeComplete returns a channel that is closed when the QUIC
+	// handshake completes.
+	HandshakeComplete() <-chan struct{}
+
+	// ConnectionState returns the state of the QUIC connection.
+	ConnectionState() quic.ConnectionState
+
+	// LocalAddr returns the local address.
+	LocalAddr() net.Addr
+
+	// RemoteAddr returns the address of the peer.
+	RemoteAddr() net.Addr
+
+	// Context returns a context that is cancelled when the connection is closed.
+	Context() context.Context
+}
+
+// Ensures that a [*quic.Conn] implements the [QUICConn] interface.
+var _ QUICConn = &quic.Conn{}
+
 // QUICDialer dials QUIC sessions.
 type QUICDialer interface {
 	// DialContext establishes a new QUIC session using the given
@@ -292,7 +322,7 @@ type QUICDialer interface {
 	//
 	// Typically, you want to pass `&quic.Config{}` as quicConfig.
 	DialContext(ctx context.Context, address string,
-		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
+		tlsConfig *tls.Config, quicConfig *quic.Config) (QUICConn, error)
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
@@ -345,12 +375,25 @@ type Resolver interface {
 	LookupSVCB(ctx context.Context, domain string) ([]*SVCB, error)
 }
 
-// TLSConn is the type of connection that oohttp expects from
-// any library that implements TLS functionality. By using this
-// kind of TLSConn we're able to use both the standard library
-// and gitlab.com/yawning/utls.git to perform TLS operations. Note
-// that the stdlib's tls.Conn implements this interface.
-type TLSConn = oohttp.TLSConn
+// TLSConn is the interface representing a *tls.Conn compatible
+// connection, which could possibly be different from a *tls.Conn
+// as long as it implements the interface. You can use, for
+// example, refraction-networking/utls instead of the stdlib.
+type TLSConn interface {
+	// net.Conn is the underlying interface
+	net.Conn
+
+	// ConnectionState returns the ConnectionState according
+	// to the standard library.
+	ConnectionState() tls.ConnectionState
+
+	// HandshakeContext performs an TLS handshake bounded
+	// in time by the given context.
+	HandshakeContext(ctx context.Context) error
+
+	// NetConn returns the underlying net.Conn
+	NetConn() net.Conn
+}
 
 // Ensures that a [*tls.Conn] implements the [TLSConn] interface.
 var _ TLSConn = &tls.Conn{}
@@ -361,7 +404,7 @@ type TLSDialer interface {
 	CloseIdleConnections()
 
 	// DialTLSContext dials a TLS connection. This method will always return
-	// to you a oohttp.TLSConn, so you can always safely cast to it.
+	// to you a [TLSConn], so you can always safely cast to it.
 	//
 	// The endpoint is an endpoint like the ones accepted by [net.DialContext]. For example,
 	// x.org:443, 130.192.91.211:443 and [::1]:443. Note that IPv6 addrs are quoted.
@@ -542,7 +585,7 @@ type Trace interface {
 	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
 	//
 	// - qconn is the QUIC connection we receive after the handshake: either
-	// a valid quic.EarlyConnection or nil;
+	// a valid QUICConn or nil;
 	//
 	// - config is the non-nil TLS config we are using;
 	//
@@ -552,7 +595,7 @@ type Trace interface {
 	//
 	// The error passed to this function will always be wrapped such that the
 	// string returned by Error is an OONI error.
-	OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+	OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn QUICConn,
 		config *tls.Config, err error, finished time.Time)
 }
 

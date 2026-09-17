@@ -50,13 +50,14 @@ type Session = model.ExperimentTargetLoaderSession
 func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
 	// Construct the default loader used in the non-richer input case.
 	loader := &targetloading.Loader{
-		CheckInConfig:  config.CheckInConfig, // OPTIONAL
-		ExperimentName: b.canonicalName,
-		InputPolicy:    b.inputPolicy,
-		Logger:         config.Session.Logger(),
-		Session:        config.Session,
-		StaticInputs:   config.StaticInputs,
-		SourceFiles:    config.SourceFiles,
+		CheckInConfig:      config.CheckInConfig, // OPTIONAL
+		ExperimentName:     b.canonicalName,
+		InputPolicy:        b.inputPolicy,
+		Logger:             config.Session.Logger(),
+		Session:            config.Session,
+		StaticInputs:       config.StaticInputs,
+		StaticInputsConfig: config.StaticInputsConfig,
+		SourceFiles:        config.SourceFiles,
 	}
 
 	// If an experiment implements richer input, it will use its custom loader
@@ -345,7 +346,7 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 	// and improve the LTE implementation so that we can always use it. See the actual
 	// issue test for additional details on this planned A/B test.
 	switch {
-	case name == "web_connectivity" && checkincache.GetFeatureFlag(kvStore, "webconnectivity_0.5"):
+	case name == "web_connectivity" && checkincache.GetFeatureFlag(kvStore, "webconnectivity_0.5", false):
 		// use LTE rather than the normal webconnectivity when the
 		// feature flag has been set through the check-in API
 		logger.Infof("using webconnectivity LTE")
@@ -367,15 +368,18 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 	//
 	// Note: check-in flags expire after 24h.
 	//
-	// TODO(https://github.com/ooni/probe/issues/2554): we need to restructure
-	// how we run experiments to make sure check-in flags are always fresh.
+	//
+	//
 	if factory.enabledByDefault {
-		return factory, nil // enabled by default
+		if !checkincache.ExperimentEnabled(kvStore, name, true) {
+			return nil, fmt.Errorf("%s: %w", name, ErrRequiresForceEnable)
+		}
+		return factory, nil
 	}
 	if os.Getenv(OONI_FORCE_ENABLE_EXPERIMENT) == "1" {
 		return factory, nil // enabled by environment variable
 	}
-	if checkincache.ExperimentEnabled(kvStore, name) {
+	if checkincache.ExperimentEnabled(kvStore, name, false) {
 		return factory, nil // enabled by check-in
 	}
 

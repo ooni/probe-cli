@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/quic-go/quic-go"
 )
 
@@ -18,7 +19,7 @@ func TestQUICDialer(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		qcd := &QUICDialer{
-			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (model.QUICConn, error) {
 				return nil, expected
 			},
 		}
@@ -48,109 +49,9 @@ func TestQUICDialer(t *testing.T) {
 	})
 }
 
-func TestQUICEarlyConnection(t *testing.T) {
-	t.Run("AcceptStream", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockAcceptStream: func(ctx context.Context) (quic.Stream, error) {
-				return nil, expected
-			},
-		}
-		ctx := context.Background()
-		stream, err := qconn.AcceptStream(ctx)
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if stream != nil {
-			t.Fatal("expected nil stream here")
-		}
-	})
-
-	t.Run("AcceptUniStream", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockAcceptUniStream: func(ctx context.Context) (quic.ReceiveStream, error) {
-				return nil, expected
-			},
-		}
-		ctx := context.Background()
-		stream, err := qconn.AcceptUniStream(ctx)
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if stream != nil {
-			t.Fatal("expected nil stream here")
-		}
-	})
-
-	t.Run("OpenStream", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockOpenStream: func() (quic.Stream, error) {
-				return nil, expected
-			},
-		}
-		stream, err := qconn.OpenStream()
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if stream != nil {
-			t.Fatal("expected nil stream here")
-		}
-	})
-
-	t.Run("OpenStreamSync", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockOpenStreamSync: func(ctx context.Context) (quic.Stream, error) {
-				return nil, expected
-			},
-		}
-		ctx := context.Background()
-		stream, err := qconn.OpenStreamSync(ctx)
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if stream != nil {
-			t.Fatal("expected nil stream here")
-		}
-	})
-
-	t.Run("OpenUniStream", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockOpenUniStream: func() (quic.SendStream, error) {
-				return nil, expected
-			},
-		}
-		stream, err := qconn.OpenUniStream()
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if stream != nil {
-			t.Fatal("expected nil stream here")
-		}
-	})
-
-	t.Run("OpenUniStreamSync", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockOpenUniStreamSync: func(ctx context.Context) (quic.SendStream, error) {
-				return nil, expected
-			},
-		}
-		ctx := context.Background()
-		stream, err := qconn.OpenUniStreamSync(ctx)
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if stream != nil {
-			t.Fatal("expected nil stream here")
-		}
-	})
-
+func TestQUICConn(t *testing.T) {
 	t.Run("LocalAddr", func(t *testing.T) {
-		qconn := &QUICEarlyConnection{
+		qconn := &QUICConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{}
 			},
@@ -162,7 +63,7 @@ func TestQUICEarlyConnection(t *testing.T) {
 	})
 
 	t.Run("RemoteAddr", func(t *testing.T) {
-		qconn := &QUICEarlyConnection{
+		qconn := &QUICConn{
 			MockRemoteAddr: func() net.Addr {
 				return &net.UDPAddr{}
 			},
@@ -175,7 +76,7 @@ func TestQUICEarlyConnection(t *testing.T) {
 
 	t.Run("CloseWithError", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
+		qconn := &QUICConn{
 			MockCloseWithError: func(
 				code quic.ApplicationErrorCode, reason string) error {
 				return expected
@@ -189,7 +90,7 @@ func TestQUICEarlyConnection(t *testing.T) {
 
 	t.Run("Context", func(t *testing.T) {
 		ctx := context.Background()
-		qconn := &QUICEarlyConnection{
+		qconn := &QUICConn{
 			MockContext: func() context.Context {
 				return ctx
 			},
@@ -201,8 +102,8 @@ func TestQUICEarlyConnection(t *testing.T) {
 	})
 
 	t.Run("ConnectionState", func(t *testing.T) {
-		state := quic.ConnectionState{SupportsDatagrams: true}
-		qconn := &QUICEarlyConnection{
+		state := quic.ConnectionState{Used0RTT: true}
+		qconn := &QUICConn{
 			MockConnectionState: func() quic.ConnectionState {
 				return state
 			},
@@ -215,7 +116,7 @@ func TestQUICEarlyConnection(t *testing.T) {
 
 	t.Run("HandshakeComplete", func(t *testing.T) {
 		ctx := context.Background()
-		qconn := &QUICEarlyConnection{
+		qconn := &QUICConn{
 			MockHandshakeComplete: func() <-chan struct{} {
 				return ctx.Done()
 			},
@@ -223,50 +124,6 @@ func TestQUICEarlyConnection(t *testing.T) {
 		out := qconn.HandshakeComplete()
 		if !reflect.DeepEqual(ctx.Done(), out) {
 			t.Fatal("not the channel we expected")
-		}
-	})
-
-	t.Run("NextConnection", func(t *testing.T) {
-		next := &QUICEarlyConnection{}
-		qconn := &QUICEarlyConnection{
-			MockNextConnection: func() quic.Connection {
-				return next
-			},
-		}
-		out := qconn.NextConnection()
-		if !reflect.DeepEqual(next, out) {
-			t.Fatal("not the context we expected")
-		}
-	})
-
-	t.Run("SendDatagram", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		qconn := &QUICEarlyConnection{
-			MockSendDatagram: func(b []byte) error {
-				return expected
-			},
-		}
-		b := make([]byte, 17)
-		err := qconn.SendDatagram(b)
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-	})
-
-	t.Run("ReceiveDatagram", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		ctx := context.Background()
-		qconn := &QUICEarlyConnection{
-			MockReceiveDatagram: func(ctx context.Context) ([]byte, error) {
-				return nil, expected
-			},
-		}
-		b, err := qconn.ReceiveDatagram(ctx)
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if b != nil {
-			t.Fatal("expected nil buffer here")
 		}
 	})
 }

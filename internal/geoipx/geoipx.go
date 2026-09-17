@@ -2,6 +2,7 @@
 package geoipx
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/ooni/probe-assets/assets"
@@ -14,10 +15,16 @@ import (
 // once the database and then reuse it for every address.
 
 // LookupASN maps [ip] to an AS number and an AS organization name.
-func LookupASN(ip string) (asn uint, org string, err error) {
+func LookupASN(ip string, dbPath string) (asn uint, org string, err error) {
 	asn, org = model.DefaultProbeASN, model.DefaultProbeNetworkName
-	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
-	runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	var db *maxminddb.Reader
+	if dbPath == "" {
+		db, err = maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+		runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	} else {
+		db, err = maxminddb.Open(dbPath)
+		runtimex.PanicOnError(err, fmt.Sprintf("cannot load geoip2 database from path %s", dbPath))
+	}
 	defer db.Close()
 	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
 	if err != nil {
@@ -31,10 +38,16 @@ func LookupASN(ip string) (asn uint, org string, err error) {
 }
 
 // LookupCC maps [ip] to a country code.
-func LookupCC(ip string) (cc string, err error) {
+func LookupCC(ip string, dbPath string) (cc string, err error) {
 	cc = model.DefaultProbeCC
-	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
-	runtimex.PanicOnError(err, "cannot load embedded geoip2 country database")
+	var db *maxminddb.Reader
+	if dbPath == "" {
+		db, err = maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+		runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	} else {
+		db, err = maxminddb.Open(dbPath)
+		runtimex.PanicOnError(err, fmt.Sprintf("cannot load geoip2 database from path %s", dbPath))
+	}
 	defer db.Close()
 	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
 	if err != nil {

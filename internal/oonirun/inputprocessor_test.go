@@ -55,9 +55,9 @@ type FakeInputProcessorSubmitter struct {
 }
 
 func (fips *FakeInputProcessorSubmitter) Submit(
-	ctx context.Context, m *model.Measurement) error {
+	ctx context.Context, m *model.Measurement) (string, error) {
 	fips.M = append(fips.M, m)
-	return fips.Err
+	return "", fips.Err
 }
 
 func TestInputProcessorSubmissionFailed(t *testing.T) {

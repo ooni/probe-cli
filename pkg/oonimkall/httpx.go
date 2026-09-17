@@ -71,7 +71,7 @@ func (sess *Session) httpDoLocked(ctx *Context, jreq *HTTPRequest) (*HTTPRespons
 		return nil, errors.New("httpx: HTTP request failed")
 	}
 
-	rawResp, err := netxlite.ReadAllContext(ctx.ctx, resp.Body)
+	rawResp, err := netxlite.ReadAllContext(ctx.ctx, netxlite.LimitBodyReader(resp))
 	if err != nil {
 		return nil, err
 	}

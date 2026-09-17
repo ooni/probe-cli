@@ -2,6 +2,7 @@ package httphostheader
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,24 +17,50 @@ const (
 	softwareVersion = "0.0.1"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mockable.Session{},
+		})
+		if !errors.Is(err, ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mockable.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "http_host_header" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.3.1" {
 		t.Fatal("unexpected version")
 	}
 }
 
 func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{
-		TestHelperURL: "http://www.google.com",
-	})
+	measurer := NewExperimentMeasurer()
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: &model.Measurement{},
 		Session:     newsession(),
+		Target:      &Target{Config: &Config{TestHelperURL: "http://www.google.com"}, URL: ""},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err == nil || err.Error() != "experiment requires input" {
@@ -42,12 +69,13 @@ func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
 }
 
 func TestMeasurerMeasureNoTestHelper(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
-	measurement := &model.Measurement{Input: "x.org"}
+	measurer := NewExperimentMeasurer()
+	measurement := &model.Measurement{}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     newsession(),
+		Target:      &Target{Config: &Config{}, URL: "x.org"},
 	}
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
@@ -62,16 +90,13 @@ func TestRunnerHTTPSetHostHeader(t *testing.T) {
 		w.WriteHeader(200)
 	}))
 	defer server.Close()
-	measurer := NewExperimentMeasurer(Config{
-		TestHelperURL: server.URL,
-	})
-	measurement := &model.Measurement{
-		Input: "x.org",
-	}
+	measurer := NewExperimentMeasurer()
+	measurement := &model.Measurement{}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
 		Session:     newsession(),
+		Target:      &Target{Config: &Config{TestHelperURL: server.URL}, URL: "x.org"},
 	}
 	err := measurer.Run(context.Background(), args)
 	if host != "x.org" {

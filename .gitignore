@@ -10,6 +10,10 @@
 /*.sqlite3
 /*.tar.gz
 /*.zip
+/*.jar
+/target
+/MOBILE/android/target
+/DESKTOP/target
 /DEBIAN_INSTALLED_PACKAGE.txt
 /apitool
 /badproxy.pem
@@ -29,3 +33,5 @@
 /tinyjafar
 /tmp-*
 /dist
+maven/ios/pom.xml
+maven/ios/pom.xml.versionsBackup

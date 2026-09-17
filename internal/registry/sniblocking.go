@@ -14,14 +14,13 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return sniblocking.NewExperimentMeasurer(
-					*config.(*sniblocking.Config),
-				)
+				return sniblocking.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &sniblocking.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrQueryBackend,
+			newLoader:        sniblocking.NewLoader,
 		}
 	}
 }

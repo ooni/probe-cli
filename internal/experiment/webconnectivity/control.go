@@ -45,7 +45,7 @@ func Control(
 func fillASNs(dns *ControlDNSResult) {
 	dns.ASNs = []int64{}
 	for _, ip := range dns.Addrs {
-		asn, _, _ := geoipx.LookupASN(ip)
+		asn, _, _ := geoipx.LookupASN(ip, "")
 		dns.ASNs = append(dns.ASNs, int64(asn))
 	}
 }

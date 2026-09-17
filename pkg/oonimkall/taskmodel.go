@@ -19,6 +19,7 @@ package oonimkall
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -106,12 +107,13 @@ type eventLog struct {
 }
 
 type eventMeasurementGeneric struct {
-	CategoryCode string `json:"category_code,omitempty"`
-	CountryCode  string `json:"country_code,omitempty"`
-	Failure      string `json:"failure,omitempty"`
-	Idx          int64  `json:"idx"`
-	Input        string `json:"input"`
-	JSONStr      string `json:"json_str,omitempty"`
+	CategoryCode   string `json:"category_code,omitempty"`
+	CountryCode    string `json:"country_code,omitempty"`
+	Failure        string `json:"failure,omitempty"`
+	Idx            int64  `json:"idx"`
+	Input          string `json:"input"`
+	JSONStr        string `json:"json_str,omitempty"`
+	MeasurementUID string `json:"measurement_uid,omitempty"`
 }
 
 type eventStatusEnd struct {
@@ -121,6 +123,7 @@ type eventStatusEnd struct {
 }
 
 type eventStatusGeoIPLookup struct {
+	GeoipDB          string `json:"geoip_db"`
 	ProbeASN         string `json:"probe_asn"`
 	ProbeCC          string `json:"probe_cc"`
 	ProbeIP          string `json:"probe_ip"`
@@ -138,6 +141,7 @@ type eventStatusReportGeneric struct {
 }
 
 type eventStatusResolverLookup struct {
+	GeoipDB             string `json:"geoip_db"`
 	ResolverASN         string `json:"resolver_asn"`
 	ResolverIP          string `json:"resolver_ip"`
 	ResolverNetworkName string `json:"resolver_network_name"`
@@ -204,6 +208,10 @@ type taskSession interface {
 	// ResolverNetworkName must be called after MaybeLookupLocationContext
 	// and returns the resolved resolver's network name.
 	ResolverNetworkName() string
+
+	// GeoipDB must be called after MaybeLookupLocationContext
+	// and returns the path of the geoip database used to perform the location lookup.
+	GeoipDB() string
 }
 
 //
@@ -238,6 +246,9 @@ type settings struct {
 	// this field is empty, the task won't start.
 	AssetsDir string `json:"assets_dir"`
 
+	// GeoipDB is the path of the geoip database
+	GeoipDB string `json:"geoip_db"`
+
 	// DisabledEvents contains disabled events. See
 	// https://git.io/Jv4Rv for the events names.
 	//
@@ -248,6 +259,10 @@ type settings struct {
 	// Inputs contains the inputs. The task will fail if it
 	// requires input and you provide no input.
 	Inputs []string `json:"inputs,omitempty"`
+
+	// InputsExtra contains OPTIONAL opaque per-input richer-input config
+	// index-aligned with Inputs.
+	InputsExtra []json.RawMessage `json:"inputs_extra,omitempty"`
 
 	// LogLevel contains the logs level. See https://git.io/Jv4Rv
 	// for the names of the available log levels.

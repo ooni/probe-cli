@@ -66,9 +66,9 @@ func logSectionTitle(w io.Writer, f log.Fields) error {
 	colWidth := 24
 
 	title := f.Get("title").(string)
-	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
+	fmt.Fprintf(w, "┏%s┓\n", strings.Repeat("━", colWidth+2))
 	fmt.Fprintf(w, "┃ %s ┃\n", utils.RightPad(title, colWidth))
-	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
+	fmt.Fprintf(w, "┗%s┛\n", strings.Repeat("━", colWidth+2))
 	return nil
 }
 
@@ -91,13 +91,13 @@ func logTable(w io.Writer, f log.Fields) error {
 		}
 	}
 
-	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
+	fmt.Fprintf(w, "┏%s┓\n", strings.Repeat("━", colWidth+2))
 	for _, line := range lines {
 		fmt.Fprintf(w, "┃ %s ┃\n",
 			utils.RightPad(line, colWidth),
 		)
 	}
-	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
+	fmt.Fprintf(w, "┗%s┛\n", strings.Repeat("━", colWidth+2))
 	return nil
 }
 

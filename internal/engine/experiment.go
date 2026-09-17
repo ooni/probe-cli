@@ -104,10 +104,10 @@ func (e *experiment) ReportID() string {
 
 // SubmitAndUpdateMeasurementContext implements [model.Experiment].
 func (e *experiment) SubmitAndUpdateMeasurementContext(
-	ctx context.Context, measurement *model.Measurement) error {
+	ctx context.Context, measurement *model.Measurement) (string, error) {
 	report := e.mrep.Get()
 	if report == nil {
-		return errors.New("report is not open")
+		return "", errors.New("report is not open")
 	}
 	return report.SubmitMeasurement(ctx, measurement)
 }

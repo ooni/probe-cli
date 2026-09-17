@@ -73,6 +73,7 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 		KVStore:         kvstore,
 		Logger:          logger,
 		ProxyURL:        proxyURL,
+		GeoipDB:         r.settings.GeoipDB,
 		SoftwareName:    r.settings.Options.SoftwareName,
 		SoftwareVersion: r.settings.Options.SoftwareVersion,
 		TempDir:         r.settings.TempDir,
@@ -177,12 +178,14 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	r.emitter.EmitStatusProgress(0.2, "geoip lookup")
 	r.emitter.EmitStatusProgress(0.3, "resolver lookup")
 	r.emitter.Emit(eventTypeStatusGeoIPLookup, eventStatusGeoIPLookup{
+		GeoipDB:          sess.GeoipDB(),
 		ProbeIP:          sess.ProbeIP(),
 		ProbeASN:         sess.ProbeASNString(),
 		ProbeCC:          sess.ProbeCC(),
 		ProbeNetworkName: sess.ProbeNetworkName(),
 	})
 	r.emitter.Emit(eventTypeStatusResolverLookup, eventStatusResolverLookup{
+		GeoipDB:             sess.GeoipDB(),
 		ResolverASN:         sess.ResolverASNString(),
 		ResolverIP:          sess.ResolverIP(),
 		ResolverNetworkName: sess.ResolverNetworkName(),
@@ -197,9 +200,10 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			// TODO(https://github.com/ooni/probe/issues/2766): to correctly load Web Connectivity targets
 			// here we need to honour the relevant check-in settings.
 		},
-		Session:      sess,
-		StaticInputs: r.settings.Inputs,
-		SourceFiles:  []string{},
+		Session:            sess,
+		StaticInputs:       r.settings.Inputs,
+		StaticInputsConfig: r.settings.InputsExtra,
+		SourceFiles:        []string{},
 	})
 	loadCtx, loadCancel := context.WithTimeout(rootCtx, 30*time.Second)
 	defer loadCancel()
@@ -352,13 +356,14 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		// if possible, submit the measurement to the OONI backend
 		if !r.settings.Options.NoCollector {
 			logger.Info("Submitting measurement... please, be patient")
-			err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
+			muid, err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
 			warnOnFailure(logger, "cannot submit measurement", err)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
-				Idx:     int64(idx),
-				Input:   target.Input(),
-				JSONStr: string(data),
-				Failure: measurementSubmissionFailure(err),
+				Idx:            int64(idx),
+				Input:          target.Input(),
+				JSONStr:        string(data),
+				Failure:        measurementSubmissionFailure(err),
+				MeasurementUID: muid,
 			})
 		}
 

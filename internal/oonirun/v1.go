@@ -79,6 +79,7 @@ func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
 		MaxRuntime:             config.MaxRuntime,
 		Name:                   name,
 		NoCollector:            config.NoCollector,
+		NoCredentials:          config.NoCredentials,
 		NoJSON:                 config.NoJSON,
 		Random:                 config.Random,
 		ReportFile:             config.ReportFile,

@@ -14,48 +14,55 @@ on:
 
 jobs:
   build_windows_cli:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Get GOVERSION content
         id: goversion
+        shell: bash
         run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
       - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y mingw-w64
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          install: >-
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-i686-gcc
 
-      - run: |
-          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
-          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+      - name: Build the CLI
+        shell: msys2 {0}
+        run: |
+          export PATH="$PATH:/mingw32/bin"
+          make CLI/windows
         env:
-          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
-          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+          EXPECTED_MINGW_W64_VERSION: "16.1.0"
+          USERAUTH_FROM_SOURCE: "1"
 
-      - run: make EXPECTED_MINGW_W64_VERSION="10-win32" CLI/windows
-
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-windows-386.exe
           path: ./CLI/ooniprobe-windows-386.exe
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-windows-amd64.exe
           path: ./CLI/ooniprobe-windows-amd64.exe
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-windows-386.exe
           path: ./CLI/miniooni-windows-386.exe
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-windows-amd64.exe
           path: ./CLI/miniooni-windows-amd64.exe
@@ -64,11 +71,11 @@ jobs:
     runs-on: windows-2022
     needs: build_windows_cli
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ooniprobe-windows-amd64.exe
 
@@ -81,23 +88,23 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ooniprobe-windows-386.exe
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ooniprobe-windows-amd64.exe
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: miniooni-windows-386.exe
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: miniooni-windows-amd64.exe
 

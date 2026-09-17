@@ -156,7 +156,7 @@ func TestWebConnectivityRunnerWithNoError(t *testing.T) {
 func TestWebConnectivityRunWithCancelledContext(t *testing.T) {
 	sess, err := NewSession(&SessionConfig{
 		AssetsDir:        "../testdata/oonimkall/assets",
-		ProbeServicesURL: "https://backend-hel.ooni.org/",
+		ProbeServicesURL: "https://api.dev.ooni.io/",
 		SoftwareName:     "oonimkall-test",
 		SoftwareVersion:  "0.1.0",
 		StateDir:         "../testdata/oonimkall/state",

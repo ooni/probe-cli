@@ -103,27 +103,27 @@ func logResultItem(w io.Writer, f log.Fields) error {
 	index := f.Get("index").(int)
 	totalCount := f.Get("total_count").(int)
 	if index == 0 {
-		fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth*2+2)+"┓\n")
+		fmt.Fprintf(w, "┏%s┓\n", strings.Repeat("━", colWidth*2+2))
 	} else {
-		fmt.Fprintf(w, "┢"+strings.Repeat("━", colWidth*2+2)+"┪\n")
+		fmt.Fprintf(w, "┢%s┪\n", strings.Repeat("━", colWidth*2+2))
 	}
 
 	firstRow := utils.RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
-	fmt.Fprintf(w, "┃ "+firstRow+" ┃\n")
-	fmt.Fprintf(w, "┡"+strings.Repeat("━", colWidth*2+2)+"┩\n")
+	fmt.Fprintf(w, "┃ %s ┃\n", firstRow)
+	fmt.Fprintf(w, "┡%s┩\n",strings.Repeat("━", colWidth*2+2))
 
 	summary := makeSummary(name,
 		f.Get("measurement_count").(uint64),
 		f.Get("measurement_anomaly_count").(uint64),
 		f.Get("test_keys").(string))
 
-	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+	fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s %s│\n",
 		utils.RightPad(name, colWidth),
 		utils.RightPad(summary[0], colWidth)))
-	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+	fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s %s│\n",
 		utils.RightPad(networkName, colWidth),
 		utils.RightPad(summary[1], colWidth)))
-	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+	fmt.Fprintf(w, "%s", fmt.Sprintf("│ %s %s│\n",
 		utils.RightPad(asn, colWidth),
 		utils.RightPad(summary[2], colWidth)))
 

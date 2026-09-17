@@ -90,9 +90,9 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 
 	// Build the list of targets that we should measure.
 	var targets []model.ExperimentTarget
-	for _, input := range inputs {
+	for i, input := range inputs {
 		targets = append(targets, &Target{
-			Config: tl.options,
+			Config: targetloading.PerInputConfig(tl.loader, tl.options, i),
 			URL:    input,
 		})
 	}

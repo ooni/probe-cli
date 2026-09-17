@@ -50,7 +50,7 @@ func main() {
 	}
 	defer resp.Body.Close()
 
-	bundle, err := netxlite.ReadAllContext(context.Background(), resp.Body)
+	bundle, err := netxlite.ReadAllContext(context.Background(), netxlite.LimitBodyReader(resp))
 	if err != nil {
 		log.Fatal(err)
 	}

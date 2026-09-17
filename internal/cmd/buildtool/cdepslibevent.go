@@ -27,13 +27,13 @@ func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependenci
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/lib/libevent.rb
-	cdepsMustFetch("https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz")
+	cdepsMustFetch("https://github.com/libevent/libevent/archive/release-2.1.13-stable.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"7180a979aaa7000e1264da484f712d403fcf7679b1e9212c4e3d09f5c93efc24",
-		"release-2.1.12-stable.tar.gz",
+		"1a0885e17dc78afbaeddf13cf849f9238bbc24acdc178464a0d1934d7c5ffbd5",
+		"release-2.1.13-stable.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "release-2.1.12-stable.tar.gz")
-	_ = deps.MustChdir("libevent-release-2.1.12-stable") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "release-2.1.13-stable.tar.gz")
+	_ = deps.MustChdir("libevent-release-2.1.13-stable") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "libevent")
 	for _, patch := range cdepsMustListPatches(mydir) {

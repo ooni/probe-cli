@@ -1,19 +1,14 @@
 package netxlite
 
-//
-// Code to adapt oohttp to the stdlib and the stdlib to our HTTP models
-//
-
 import (
 	"net/http"
 
-	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// stdlibTransport wraps oohttp.StdlibTransport to add .Network()
+// stdlibTransport wraps a httpTransportStdlib to add .Network()
 type httpTransportStdlib struct {
-	StdlibTransport *oohttp.StdlibTransport
+	StdlibTransport *http.Transport
 }
 
 var _ model.HTTPTransport = &httpTransportStdlib{}

@@ -94,7 +94,7 @@ func TestHTTPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
+			data, err := netxlite.ReadAllContext(context.Background(), netxlite.LimitBodyReader(resp))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -141,7 +141,7 @@ func TestHTTPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
+			data, err := netxlite.ReadAllContext(context.Background(), netxlite.LimitBodyReader(resp))
 			if err != nil {
 				t.Fatal(err)
 			}

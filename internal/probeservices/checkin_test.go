@@ -42,7 +42,7 @@ func TestCheckIn(t *testing.T) {
 		}
 
 		client := newclient()
-		client.BaseURL = "https://backend-hel.ooni.org" // use the test infra
+		client.BaseURL = "https://api.dev.ooni.io" // use the test infra
 
 		ctx := context.Background()
 
@@ -391,10 +391,10 @@ func TestCheckIn(t *testing.T) {
 		}
 
 		// make sure we have written non-default values into the key-value store
-		if !checkincache.GetFeatureFlag(client.KVStore, "torsf_enabled") {
+		if !checkincache.GetFeatureFlag(client.KVStore, "torsf_enabled", false) {
 			t.Fatal("expected to see true here")
 		}
-		if !checkincache.GetFeatureFlag(client.KVStore, "vanilla_tor_enabled") {
+		if !checkincache.GetFeatureFlag(client.KVStore, "vanilla_tor_enabled", false) {
 			t.Fatal("expected to see true here")
 		}
 		checkinrawdata, err := client.KVStore.Get(checkincache.CheckInFlagsState)
@@ -502,10 +502,10 @@ func TestCheckIn(t *testing.T) {
 		}
 
 		// make sure we are still getting the default values here
-		if checkincache.GetFeatureFlag(client.KVStore, "torsf_enabled") {
+		if checkincache.GetFeatureFlag(client.KVStore, "torsf_enabled", false) {
 			t.Fatal("expected to see false here")
 		}
-		if checkincache.GetFeatureFlag(client.KVStore, "vanilla_tor_enabled") {
+		if checkincache.GetFeatureFlag(client.KVStore, "vanilla_tor_enabled", false) {
 			t.Fatal("expected to see false here")
 		}
 		checkinrawdata, err := client.KVStore.Get(checkincache.CheckInFlagsState)

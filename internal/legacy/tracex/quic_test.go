@@ -78,7 +78,7 @@ func TestQUICDialerSaver(t *testing.T) {
 
 		t.Run("on success", func(t *testing.T) {
 			saver := &Saver{}
-			returnedConn := &mocks.QUICEarlyConnection{
+			returnedConn := &mocks.QUICConn{
 				MockConnectionState: func() quic.ConnectionState {
 					cs := quic.ConnectionState{}
 					cs.TLS.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
@@ -92,7 +92,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			}
 			dialer := saver.WrapQUICDialer(&mocks.QUICDialer{
 				MockDialContext: func(ctx context.Context, address string,
-					tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+					tlsConfig *tls.Config, quicConfig *quic.Config) (model.QUICConn, error) {
 					return returnedConn, nil
 				},
 			})
@@ -132,7 +132,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			saver := &Saver{}
 			dialer := saver.WrapQUICDialer(&mocks.QUICDialer{
 				MockDialContext: func(ctx context.Context, address string,
-					tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+					tlsConfig *tls.Config, quicConfig *quic.Config) (model.QUICConn, error) {
 					return nil, expected
 				},
 			})

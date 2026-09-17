@@ -2,6 +2,9 @@ package echcheck
 
 import (
 	"context"
+	"errors"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -9,12 +12,39 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "echcheck" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.3.2" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -47,11 +77,12 @@ func TestMeasurerMeasureWithCancelledContext(t *testing.T) {
 		cancel() // immediately cancel the context
 
 		// create measurer
-		measurer := NewExperimentMeasurer(Config{})
+		measurer := NewExperimentMeasurer()
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 			Measurement: &model.Measurement{},
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+			Target:      &Target{Config: &Config{}, URL: ""},
 		}
 
 		// run measurement
@@ -72,14 +103,13 @@ func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
 	defer env.Close()
 
 	// create measurer
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	args := &model.ExperimentArgs{
-		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
-		Measurement: &model.Measurement{
-			// leading space to test url.Parse failure
-			Input: " https://crypto.cloudflare.com/cdn-cgi/trace",
-		},
-		Session: &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+		Measurement: &model.Measurement{},
+		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		// leading space to test url.Parse failure
+		Target: &Target{Config: &Config{}, URL: " https://crypto.cloudflare.com/cdn-cgi/trace"},
 	}
 	// run measurement
 	err := measurer.Run(context.Background(), args)
@@ -98,12 +128,13 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 	}
 
 	// create measurer
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	msrmnt := &model.Measurement{}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		Measurement: msrmnt,
 		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		Target:      &Target{Config: &Config{}, URL: ""},
 	}
 
 	// run measurement
@@ -114,12 +145,57 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 
 	// check results
 	tk := msrmnt.TestKeys.(TestKeys)
+	foundA, foundAAAA, foundHTTPS := false, false, false
+	parsed, err := url.Parse(defaultURL)
+	if err != nil {
+		t.Fatal("bad default url:", err)
+	}
+	for _, q := range tk.Queries {
+		aboutHost := q.Hostname == parsed.Hostname()
+		if (q.Failure == nil) && aboutHost {
+			switch q.QueryType {
+			case "A":
+				foundA = true
+			case "AAAA":
+				foundAAAA = true
+			case "HTTPS":
+				foundHTTPS = true
+			default:
+				// nothing
+			}
+		}
+	}
+	if !foundA {
+		t.Fatal("No DNS type A roundtrip reported")
+	}
+	if !foundAAAA {
+		t.Fatal("No DNS type AAAA roundtrip reported")
+	}
+	if !foundHTTPS {
+		t.Fatal("No DNS type HTTPS roundtrip reported")
+	}
+	if len(tk.NetworkEvents) == 0 {
+		t.Fatal("no network events recorded")
+	}
+	// NoECH, GREASE, RealECH
+	if len(tk.TLSHandshakes) != 4 {
+		t.Fatal("unexpected number of TLS handshakes", len(tk.TLSHandshakes))
+	}
+	if len(tk.TCPConnects) != 4 {
+		t.Fatal("unexpected number of TCP connections", len(tk.TCPConnects))
+	}
 	for _, hs := range tk.TLSHandshakes {
 		if hs.Failure != nil {
 			if hs.ECHConfig == "GREASE" {
-				t.Fatal("unexpected exp failure:", hs.Failure)
+				// We expect that this either succeeds (i.e. with a non-ECH server)
+				// OR that it fails with an EchRejeECHRejectionError
+				if !strings.Contains(*hs.Failure, "tls: server rejected ECH") {
+					t.Fatal("unexpected exp (grease) failure:", *hs.Failure)
+				}
+			} else if len(hs.ECHConfig) > 0 {
+				t.Fatal("unexpected exp (ech) failure:", *hs.Failure)
 			} else {
-				t.Fatal("unexpected ctrl failure:", hs.Failure)
+				t.Fatal("unexpected ctrl failure:", *hs.Failure)
 			}
 		}
 	}

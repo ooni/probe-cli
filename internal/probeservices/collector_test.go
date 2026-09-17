@@ -108,7 +108,8 @@ func TestReportLifecycle(t *testing.T) {
 
 		// attempt to submit the measurement to the backend, which should succeed
 		// since we've just opened a report for it
-		if err = report.SubmitMeasurement(context.Background(), &measurement); err != nil {
+		_, err = report.SubmitMeasurement(context.Background(), &measurement)
+		if err != nil {
 			t.Fatal(err)
 		}
 
@@ -168,7 +169,8 @@ func TestReportLifecycle(t *testing.T) {
 
 		// attempt to submit the measurement to the backend, which should succeed
 		// since we've just opened a report for it
-		if err = report.SubmitMeasurement(context.Background(), &measurement); err != nil {
+		_, err = report.SubmitMeasurement(context.Background(), &measurement)
+		if err != nil {
 			t.Fatal(err)
 		}
 
@@ -231,7 +233,8 @@ func TestReportLifecycle(t *testing.T) {
 
 		// attempt to submit the measurement to the backend, which should succeed
 		// since we've just opened a report for it
-		if err = report.SubmitMeasurement(context.Background(), &measurement); err != nil {
+		_, err = report.SubmitMeasurement(context.Background(), &measurement)
+		if err != nil {
 			t.Fatal(err)
 		}
 
@@ -376,7 +379,7 @@ func TestReportLifecycle(t *testing.T) {
 		}
 
 		// update the report
-		err := rc.SubmitMeasurement(context.Background(), &model.Measurement{})
+		_, err := rc.SubmitMeasurement(context.Background(), &model.Measurement{})
 
 		// we do expect an error
 		if !errors.Is(err, netxlite.ECONNRESET) {
@@ -418,7 +421,7 @@ func TestReportLifecycle(t *testing.T) {
 		}
 
 		// update the report
-		err := rc.SubmitMeasurement(context.Background(), &model.Measurement{})
+		_, err := rc.SubmitMeasurement(context.Background(), &model.Measurement{})
 
 		// we do expect an error
 		if err == nil || err.Error() != "unexpected end of JSON input" {
@@ -444,7 +447,7 @@ func TestReportLifecycle(t *testing.T) {
 		}
 
 		// update the report
-		err := rc.SubmitMeasurement(context.Background(), &model.Measurement{})
+		_, err := rc.SubmitMeasurement(context.Background(), &model.Measurement{})
 
 		// we do expect an error
 		if err == nil || err.Error() != `parse "\t\t\t": net/url: invalid control character in URL` {
@@ -665,7 +668,8 @@ func TestReportLifecycle(t *testing.T) {
 
 		// attempt to submit the measurement to the backend, which should succeed
 		// since we've just opened a report for it
-		if err = report.SubmitMeasurement(context.Background(), &measurement); err != nil {
+		_, err = report.SubmitMeasurement(context.Background(), &measurement)
+		if err != nil {
 			t.Fatal(err)
 		}
 
@@ -687,14 +691,14 @@ func (rrc *RecordingReportChannel) CanSubmit(m *model.Measurement) bool {
 	return reflect.DeepEqual(NewReportTemplate(m), rrc.tmpl)
 }
 
-func (rrc *RecordingReportChannel) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
+func (rrc *RecordingReportChannel) SubmitMeasurement(ctx context.Context, m *model.Measurement) (string, error) {
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return "", ctx.Err()
 	}
 	rrc.mu.Lock()
 	defer rrc.mu.Unlock()
 	rrc.m = append(rrc.m, m)
-	return nil
+	return "", nil
 }
 
 func (rrc *RecordingReportChannel) Close(ctx context.Context) error {
@@ -755,15 +759,18 @@ func TestSubmitterLifecyle(t *testing.T) {
 	submitter := NewSubmitter(rro, log.Log)
 	ctx := context.Background()
 	m1 := makeMeasurementWithoutTemplate("example")
-	if err := submitter.Submit(ctx, m1); err != nil {
+	_, err := submitter.Submit(ctx, m1)
+	if err != nil {
 		t.Fatal(err)
 	}
 	m2 := makeMeasurementWithoutTemplate("example")
-	if err := submitter.Submit(ctx, m2); err != nil {
+	_, err = submitter.Submit(ctx, m2)
+	if err != nil {
 		t.Fatal(err)
 	}
 	m3 := makeMeasurementWithoutTemplate("example_extended")
-	if err := submitter.Submit(ctx, m3); err != nil {
+	_, err = submitter.Submit(ctx, m3)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if len(rro.channels) != 2 {
@@ -783,15 +790,18 @@ func TestSubmitterCannotOpenNewChannel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	m1 := makeMeasurementWithoutTemplate("example")
-	if err := submitter.Submit(ctx, m1); !errors.Is(err, context.Canceled) {
+	_, err := submitter.Submit(ctx, m1)
+	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
 	m2 := makeMeasurementWithoutTemplate("example")
-	if err := submitter.Submit(ctx, m2); !errors.Is(err, context.Canceled) {
+	_, err = submitter.Submit(ctx, m2)
+	if !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 	m3 := makeMeasurementWithoutTemplate("example_extended")
-	if err := submitter.Submit(ctx, m3); !errors.Is(err, context.Canceled) {
+	_, err = submitter.Submit(ctx, m3)
+	if !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 	if len(rro.channels) != 0 {

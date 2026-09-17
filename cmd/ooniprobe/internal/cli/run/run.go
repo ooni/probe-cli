@@ -14,6 +14,7 @@ import (
 func init() {
 	cmd := root.Command("run", "Run a test group or OONI Run link")
 	noCollector := cmd.Flag("no-collector", "Disable uploading measurements to a collector").Bool()
+	noCredentials := cmd.Flag("no-creds", "Submit measurements without an anonymous credential").Bool()
 
 	var probe *ooni.Probe
 	cmd.Action(func(_ *kingpin.ParseContext) error {
@@ -40,9 +41,10 @@ func init() {
 			}
 			log.Infof("Running %s tests", color.BlueString(name))
 			conf := nettests.RunGroupConfig{
-				GroupName: name,
-				Probe:     probe,
-				RunType:   runType,
+				GroupName:     name,
+				Probe:         probe,
+				RunType:       runType,
+				NoCredentials: *noCredentials,
 			}
 			if err := nettests.RunGroup(conf); err != nil {
 				log.WithError(err).Errorf("failed to run %s", name)
@@ -65,11 +67,12 @@ func init() {
 	websitesCmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Running %s tests", color.BlueString("websites"))
 		return nettests.RunGroup(nettests.RunGroupConfig{
-			GroupName:  "websites",
-			Probe:      probe,
-			InputFiles: *inputFile,
-			Inputs:     *input,
-			RunType:    model.RunTypeManual,
+			GroupName:     "websites",
+			Probe:         probe,
+			InputFiles:    *inputFile,
+			Inputs:        *input,
+			RunType:       model.RunTypeManual,
+			NoCredentials: *noCredentials,
 		})
 	})
 

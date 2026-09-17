@@ -22,10 +22,18 @@ help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
 #help:
+#help: The `make userauth` command makes the userauth staticlib available for the
+#help: current OS. By default the buildtool downloads the prebuilt bundle; set
+#help: USERAUTH_FROM_SOURCE=1 to instead build it from the pinned ooniprobe-rs
+#help: sources, which is what we do when publishing.
+userauth:
+	./script/go.bash run ./internal/cmd/buildtool $(shell go env GOOS) userauth
+
+#help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
-CLI/darwin:
+CLI/darwin: userauth
 	./script/go.bash run ./internal/cmd/buildtool darwin
 
 #help:
@@ -33,55 +41,55 @@ CLI/darwin:
 #help: ooniprobe and miniooni binaries for linux/386.
 .PHONY: CLI/linux-static-386
 CLI/linux-static-386:
-	./script/go.bash run ./internal/cmd/buildtool linux docker 386
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch 386
 
 #help:
 #help: The `make CLI/linux-static-amd64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/amd64.
 .PHONY: CLI/linux-static-amd64
 CLI/linux-static-amd64:
-	./script/go.bash run ./internal/cmd/buildtool linux docker amd64
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch amd64
 
 #help:
 #help: The `make CLI/linux-static-armv6` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v6.
 .PHONY: CLI/linux-static-armv6
 CLI/linux-static-armv6:
-	./script/go.bash run ./internal/cmd/buildtool linux docker armv6
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm --goarm 6
 
 #help:
 #help: The `make CLI/linux-static-armv7` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v7.
 .PHONY: CLI/linux-static-armv7
 CLI/linux-static-armv7:
-	./script/go.bash run ./internal/cmd/buildtool linux docker armv7
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm --goarm 7
 
 #help:
 #help: The `make CLI/linux-static-arm64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm64.
 .PHONY: CLI/linux-static-arm64
 CLI/linux-static-arm64:
-	./script/go.bash run ./internal/cmd/buildtool linux docker arm64
+	CGO_ENABLED=0 ./script/go.bash run ./internal/cmd/buildtool linux static --goarch arm64
 
 #help:
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/miniooni
-CLI/miniooni:
+CLI/miniooni: userauth
 	./script/go.bash run ./internal/cmd/buildtool generic miniooni
 
 #help:
 #help: The `make CLI/ooniprobe` command creates a build of ooniprobe, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/ooniprobe
-CLI/ooniprobe:
+CLI/ooniprobe: userauth
 	./script/go.bash run ./internal/cmd/buildtool generic ooniprobe
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
 #help: command line clients for windows/386 and windows/amd64.
 .PHONY: CLI/windows
-CLI/windows:
+CLI/windows: userauth
 	./script/go.bash run ./internal/cmd/buildtool windows
 
 #help:
@@ -92,7 +100,6 @@ android: search/for/java
 	./script/go.bash run ./internal/cmd/buildtool android cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool android cli
 	./script/go.bash run ./internal/cmd/buildtool android gomobile
-	./MOBILE/android/createpom
 
 #help:
 #help: The `make ios` command builds the oonimkall library for iOS.
@@ -103,6 +110,24 @@ ios: search/for/zip search/for/xcode
 	./MOBILE/ios/make-extra-frameworks
 	./MOBILE/ios/zipframeworks
 	./MOBILE/ios/createpodspecs
+
+#help:
+#help: The `make DESKTOP/windows` command builds the oonimkall jar for windows.
+.PHONY: DESKTOP/windows
+DESKTOP/windows: search/for/java
+	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
+
+#help:
+#help: The `make DESKTOP/darwin` command builds the oonimkall jar for darwin.
+.PHONY: DESKTOP/darwin
+DESKTOP/darwin: search/for/java
+	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=darwin
+
+#help:
+#help: The `make DESKTOP/linux` command builds the oonimkall jar for linux.
+.PHONY: DESKTOP/linux
+DESKTOP/linux: search/for/java
+	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=linux
 
 .PHONY: search/for/java
 search/for/java:

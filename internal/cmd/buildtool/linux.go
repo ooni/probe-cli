@@ -15,5 +15,6 @@ func linuxSubcommand() *cobra.Command {
 	cmd.AddCommand(linuxCdepsSubcommand())
 	cmd.AddCommand(linuxDockerSubcommand())
 	cmd.AddCommand(linuxStaticSubcommand())
+	cmd.AddCommand(linuxUserauthSubcommand())
 	return cmd
 }

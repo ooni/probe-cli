@@ -26,7 +26,6 @@ func buildAndPublishCLIMacOS(w io.Writer, job *Job) {
 	newJob(w, buildJob, runsOnMacOS, noDependencies, noPermissions)
 	newStepCheckout(w)
 	newStepSetupGo(w, "macos")
-	newStepSetupPsiphon(w)
 	newStepMake(w, "CLI/darwin")
 	newStepUploadArtifacts(w, artifacts)
 

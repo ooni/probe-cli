@@ -24,7 +24,7 @@ import (
 
 const (
 	testName      = "dnscheck"
-	testVersion   = "0.9.2"
+	testVersion   = "0.9.3"
 	defaultDomain = "example.org"
 )
 

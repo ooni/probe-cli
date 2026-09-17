@@ -186,7 +186,7 @@ type Experiment interface {
 	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
 	// fields whose value has changed as part of the submission.
 	SubmitAndUpdateMeasurementContext(
-		ctx context.Context, measurement *Measurement) error
+		ctx context.Context, measurement *Measurement) (string, error)
 
 	// OpenReportContext will open a report using the given context
 	// to possibly limit the lifetime of this operation.
@@ -279,6 +279,11 @@ type ExperimentTargetLoaderConfig struct {
 	// to the resulting input list if possible.
 	StaticInputs []string
 
+	// StaticInputsConfig contains OPTIONAL opaque per-input richer-input config
+	// index-aligned with StaticInputs. When set, len(StaticInputsConfig) SHOULD
+	// equal len(StaticInputs).
+	StaticInputsConfig []json.RawMessage
+
 	// SourceFiles contains OPTIONAL files to read input
 	// from. Each file should contain a single input string
 	// per line. We will fail if any file is unreadable
@@ -322,7 +327,7 @@ type ExperimentTargetLoader interface {
 type Submitter interface {
 	// Submit submits the measurement and updates its
 	// report ID field in case of success.
-	Submit(ctx context.Context, m *Measurement) error
+	Submit(ctx context.Context, m *Measurement) (string, error)
 }
 
 // Saver saves a measurement on some persistent storage.

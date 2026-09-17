@@ -62,10 +62,15 @@ func newTestKeys(measurement *model.Measurement) *TestKeys {
 
 // compareTestKeys compares two testKeys instances. It returns an error in
 // case of a mismatch and returns nil otherwise.
-func compareTestKeys(expected, got *TestKeys) error {
+func compareTestKeys(expected, got *TestKeys, ignoreFields ...string) error {
 	// always ignore the experiment version because it is not set inside the expected value
 	options := []cmp.Option{
 		cmpopts.IgnoreFields(TestKeys{}, "XExperimentVersion"),
+	}
+
+	// ignore any caller-provided fields (e.g., nondeterministic sub-flags)
+	if len(ignoreFields) > 0 {
+		options = append(options, cmpopts.IgnoreFields(TestKeys{}, ignoreFields...))
 	}
 
 	switch got.XExperimentVersion {

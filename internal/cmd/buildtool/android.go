@@ -37,7 +37,9 @@ func androidSubcommand() *cobra.Command {
 				runtime.GOOS == "darwin" || runtime.GOOS == "linux",
 				"this command requires darwin or linux",
 			)
-			androidBuildGomobile(&buildDeps{})
+			androidBuildGomobile(&buildDeps{
+				libtorEnabled: true,
+			})
 		},
 	})
 
@@ -99,6 +101,11 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 	goPath := filepath.Join(deps.GOPATH(), "bin")
 	envp.Append("PATH", cdepsPrependToPath(goPath))
 
+	// We need to support 16KB page size as per android guidelines
+	//
+	// See https://android-developers.googleblog.com/2025/05/prepare-play-apps-for-devices-with-16kb-page-size.html
+	envp.Append("CGO_LDFLAGS", "-Wl,-z,max-page-size=16384")
+
 	config := &gomobileConfig{
 		deps:       deps,
 		envp:       envp,
@@ -107,7 +114,7 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 		target:     "android",
 	}
 	log.Info("building the mobile library using gomobile")
-	gomobileBuild(config)
+	oomobileBuild(config)
 }
 
 // androidSDKCheck checks we have the right SDK installed.
@@ -183,7 +190,9 @@ func androidBuildCLIProductArch(
 	} else {
 		argv.Append("-tags", "ooni_libtor")
 	}
-	argv.Append("-ldflags", "-s -w")
+	// we have to pass the "-checklinkname=0" flag to build for go>=1.23.0
+	// https://github.com/wlynxg/anet?tab=readme-ov-file#how-to-build-with-go-1230-or-later
+	argv.Append("-ldflags", "-checklinkname=0 -s -w")
 	argv.Append("-o", product.DestinationPath("android", ooniArch))
 	argv.Append(product.Pkg)
 

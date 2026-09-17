@@ -28,7 +28,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/quic-go/quic-go"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -95,7 +94,7 @@ func (mx *Measurer) NewHTTPTransportWithTLSConn(
 // NewHTTPTransportWithQUICConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC connection.
 func (mx *Measurer) NewHTTPTransportWithQUICConn(
-	logger model.Logger, db WritableDB, qconn quic.EarlyConnection) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, qconn model.QUICConn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
 		logger, netxlite.NewSingleUseQUICDialer(qconn),
 		&tls.Config{}, // #nosec G402 - we need to use a large TLS versions range for measuring

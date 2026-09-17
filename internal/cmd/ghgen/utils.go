@@ -30,7 +30,7 @@ func newJob(w io.Writer, name, runsOn, needs string, permissions map[string]stri
 }
 
 func newStepCheckout(w io.Writer) {
-	mustFprintf(w, "      - uses: actions/checkout@v3\n")
+	mustFprintf(w, "      - uses: actions/checkout@v4\n")
 	mustFprintf(w, "        with:\n")
 	mustFprintf(w, "          fetch-depth: 0\n")
 	mustFprintf(w, "\n")
@@ -64,7 +64,7 @@ func newStepMake(w io.Writer, target string) {
 
 func newStepUploadArtifacts(w io.Writer, artifacts []string) {
 	for _, arti := range artifacts {
-		mustFprintf(w, "      - uses: actions/upload-artifact@v3\n")
+		mustFprintf(w, "      - uses: actions/upload-artifact@v4\n")
 		mustFprintf(w, "        with:\n")
 		mustFprintf(w, "          name: %s\n", filepath.Base(arti))
 		mustFprintf(w, "          path: %s\n", arti)
@@ -74,7 +74,7 @@ func newStepUploadArtifacts(w io.Writer, artifacts []string) {
 
 func newStepDownloadArtifacts(w io.Writer, artifacts []string) {
 	for _, arti := range artifacts {
-		mustFprintf(w, "      - uses: actions/download-artifact@v3\n")
+		mustFprintf(w, "      - uses: actions/download-artifact@v4\n")
 		mustFprintf(w, "        with:\n")
 		mustFprintf(w, "          name: %s\n", filepath.Base(arti))
 		mustFprintf(w, "\n")

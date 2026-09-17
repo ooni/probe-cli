@@ -2,6 +2,7 @@ package oonimkall
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -228,8 +229,8 @@ func TestTaskRunnerRun(t *testing.T) {
 				MockMeasureWithContext: func(ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 					return &model.Measurement{}, nil
 				},
-				MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) error {
-					return nil
+				MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) (string, error) {
+					return "", nil
 				},
 			},
 
@@ -275,6 +276,9 @@ func TestTaskRunnerRun(t *testing.T) {
 				},
 				MockResolverNetworkName: func() string {
 					return "GARR"
+				},
+				MockGeoipDB: func() string {
+					return ""
 				},
 			},
 
@@ -394,6 +398,40 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusEnd, Count: 1},
 		}
 		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("passes inputs_extra to the target loader as StaticInputsConfig", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+
+		// configure per-input richer-input config on the settings
+		inputsExtra := []json.RawMessage{
+			json.RawMessage(`{"provider":"riseupvpn"}`),
+		}
+		runner.settings.Inputs = []string{"openvpn://x.corp/1.1.1.1"}
+		runner.settings.InputsExtra = inputsExtra
+
+		fake := fakeSuccessfulDeps()
+
+		// capture the loader config and short-circuit by failing the load
+		var gotConfig *model.ExperimentTargetLoaderConfig
+		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+			gotConfig = config
+			return &mocks.ExperimentTargetLoader{
+				MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+					return nil, errors.New("stop here")
+				},
+			}
+		}
+		runner.newSession = fake.NewSession
+
+		_ = runAndCollect(runner, emitter)
+
+		if gotConfig == nil {
+			t.Fatal("the target loader was never created")
+		}
+		if diff := cmp.Diff(inputsExtra, gotConfig.StaticInputsConfig); diff != "" {
+			t.Fatal(diff)
+		}
 	})
 
 	t.Run("with failure opening report", func(t *testing.T) {
@@ -667,8 +705,8 @@ func TestTaskRunnerRun(t *testing.T) {
 				},
 			}
 		}
-		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) error {
-			return errors.New("cannot submit")
+		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) (string, error) {
+			return "", errors.New("cannot submit")
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)

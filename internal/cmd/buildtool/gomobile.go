@@ -6,6 +6,7 @@ package main
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
@@ -57,7 +58,49 @@ func gomobileBuild(config *gomobileConfig) {
 	} else {
 		argv.Append("-tags", "ooni_libtor")
 	}
-	argv.Append("-ldflags", "-s -w")
+	// we have to pass the "-checklinkname=0" flag to build for go>=1.23.0
+	// https://github.com/wlynxg/anet?tab=readme-ov-file#how-to-build-with-go-1230-or-later
+	argv.Append("-ldflags", "-checklinkname=0 -s -w")
+	argv.Append("./pkg/oonimkall")
+
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, config.envp))
+}
+
+// oomobileBuild runs a build based on oomobile
+func oomobileBuild(config *gomobileConfig) {
+	// Undoes the effects of go-getting golang.org/x/mobile/cmd/gomobile
+	defer must.Run(log.Log, "go", "mod", "tidy")
+
+	must.Run(log.Log, "go", "install", "github.com/ooni/oomobile/cmd/gomobile@latest")
+	must.Run(log.Log, "go", "install", "github.com/ooni/oomobile/cmd/gobind@latest")
+
+	gopath := config.deps.GOPATH()
+	gomobile := filepath.Join(gopath, "bin", "gomobile")
+	must.Run(log.Log, gomobile, "init")
+
+	// Adding gomobile to go.mod as documented by golang.org/wiki/Mobile
+	must.Run(log.Log, "go", "get", "-d", "github.com/ooni/oomobile/cmd/gomobile")
+
+	argv := runtimex.Try1(shellx.NewArgv(gomobile, "bind"))
+	argv.Append("-target", config.target)
+	argv.Append("-o", config.output)
+	for _, entry := range config.extraFlags {
+		argv.Append(entry)
+	}
+
+	tags := []string{"nouserauth"}
+	if config.deps.LibtorEnabled() {
+		tags = append(tags, "ooni_libtor")
+	}
+	if config.deps.PsiphonFilesExist() {
+		tags = append(tags, "ooni_psiphon_config")
+	}
+	argv.Append("-tags", strings.Join(tags, ","))
+
+	// we have to pass the "-checklinkname=0" flag to build for go>=1.23.0
+	// https://github.com/wlynxg/anet?tab=readme-ov-file#how-to-build-with-go-1230-or-later
+	argv.Append("-ldflags", "-checklinkname=0 -s -w")
+
 	argv.Append("./pkg/oonimkall")
 
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, config.envp))

@@ -39,7 +39,7 @@ func newIPInfo(creq *ctrlRequest, addrs []string) map[string]*model.THIPInfo {
 		if netxlite.IsBogon(addr) { // note: we already excluded non-IP addrs above
 			flags |= model.THIPInfoFlagIsBogon
 		}
-		asn, _, _ := geoipx.LookupASN(addr) // AS0 on failure
+		asn, _, _ := geoipx.LookupASN(addr, "") // AS0 on failure
 		ipinfo[addr] = &model.THIPInfo{
 			ASN:   int64(asn),
 			Flags: flags,

@@ -1,0 +1,269 @@
+name: desktop
+
+on:
+  push:
+    branches:
+      - "release/**"
+      - "fullbuild"
+      - "desktopbuild"
+    tags:
+      - "v*"
+  schedule:
+    - cron: "17 1 * * *"
+
+jobs:
+  build_linux_desktop_jar:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+
+      - run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - run: make DESKTOP/linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall-linux.jar
+          path: ./DESKTOP/oonimkall.jar
+
+  publish_linux_jar_maven:
+    runs-on: ubuntu-22.04
+    needs:
+      - build_linux_desktop_jar
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-linux.jar
+          path: maven/desktop
+
+      - name: Publish to Maven Central
+        working-directory: maven/desktop
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+            VERSION="${SHORT_SHA}"
+          fi
+
+          ARTIFACT_ID="oonimkall-linux"
+
+          echo "Deploying $ARTIFACT_ID version $VERSION..."
+
+          sed -i "s|ARTIFACT_ID|${ARTIFACT_ID}|g" pom.xml
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+          mvn clean deploy -Ddesktop.jar.name=$(ls *.jar | xargs basename) --batch-mode -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+  build_darwin_desktop_jar:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+
+      - run: make DESKTOP/darwin
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: ./DESKTOP/oonimkall.jar
+
+  publish_darwin_jar_maven:
+    runs-on: ubuntu-22.04
+    needs:
+      - build_darwin_desktop_jar
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: maven/desktop
+
+      - name: Publish to Maven Central
+        working-directory: maven/desktop
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+            VERSION="${SHORT_SHA}"
+          fi
+
+          ARTIFACT_ID="oonimkall-darwin"
+
+          echo "Deploying $ARTIFACT_ID version $VERSION..."
+
+          sed -i "s|ARTIFACT_ID|${ARTIFACT_ID}|g" pom.xml
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+          mvn clean deploy -Ddesktop.jar.name=$(ls *.jar | xargs basename) --batch-mode -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+  build_windows_desktop_jar:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+
+      - name: Build the desktop jar
+        run: ./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
+        shell: bash
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: ./DESKTOP/oonimkall.jar
+
+  publish_windows_jar_maven:
+    runs-on: ubuntu-22.04
+    needs:
+      - build_windows_desktop_jar
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: maven/desktop
+
+      - name: Publish to Maven Central
+        working-directory: maven/desktop
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+            VERSION="${SHORT_SHA}"
+          fi
+
+          ARTIFACT_ID="oonimkall-windows"
+
+          echo "Deploying $ARTIFACT_ID version $VERSION..."
+
+          sed -i "s|ARTIFACT_ID|${ARTIFACT_ID}|g" pom.xml
+          mvn versions:set -DnewVersion=${VERSION} -DremoveSnapshot=true
+          mvn clean deploy -Ddesktop.jar.name=$(ls *.jar | xargs basename) --batch-mode -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+  publish_desktop_jar_github:
+    runs-on: ubuntu-22.04
+    needs:
+      - build_linux_desktop_jar
+      - build_darwin_desktop_jar
+      - build_windows_desktop_jar
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-linux.jar
+          path: linux
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: darwin
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: windows
+
+      - name: Rename artifacts
+        run: |
+          mv linux/oonimkall.jar oonimkall-linux.jar
+          mv darwin/oonimkall.jar oonimkall-darwin.jar
+          mv windows/oonimkall.jar oonimkall-windows.jar
+
+      - name: Upload to Github
+        run: ./script/ghpublish.bash oonimkall-linux.jar oonimkall-darwin.jar oonimkall-windows.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

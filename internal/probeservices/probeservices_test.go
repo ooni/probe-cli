@@ -3,6 +3,7 @@ package probeservices
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -23,7 +24,7 @@ func newclient() *Client {
 			MockableLogger:     log.Log,
 		},
 		model.OOAPIService{
-			Address: "https://backend-hel.ooni.org/",
+			Address: "https://api.dev.ooni.io/",
 			Type:    "https",
 		},
 	)
@@ -142,9 +143,9 @@ func TestCloudfront(t *testing.T) {
 	}
 	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
-			Address: "https://meek.azureedge.net",
+			Address: "https://www.fastly.com",
 			Type:    "cloudfront",
-			Front:   "ajax.aspnetcdn.com",
+			Front:   "github.global.ssl.fastly.net",
 		})
 	if err != nil {
 		t.Fatal(err)
@@ -159,15 +160,13 @@ func TestCloudfront(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
+	fmt.Println(resp.StatusCode)
 	if resp.StatusCode != 200 {
 		t.Fatal("unexpected status code")
 	}
-	data, err := netxlite.ReadAllContext(req.Context(), resp.Body)
+	_, err = netxlite.ReadAllContext(req.Context(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if string(data) != "I’m just a happy little web server.\n" {
-		t.Fatal("unexpected response body")
 	}
 }
 

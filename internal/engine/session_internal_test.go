@@ -232,7 +232,7 @@ func TestSessionNewSubmitterWithCancelledContext(t *testing.T) {
 	sess := newSessionForTesting(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	subm, err := sess.NewSubmitter(ctx)
+	subm, err := sess.NewSubmitter(ctx, false)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected", err)
 	}
@@ -337,7 +337,8 @@ func TestNewSessionWithFakeTunnelAndCancelledContext(t *testing.T) {
 func TestSessionNewExperimentBuilder(t *testing.T) {
 	t.Run("for a normal experiment", func(t *testing.T) {
 		sess := &Session{
-			logger: model.DiscardLogger,
+			kvStore: &kvstore.Memory{},
+			logger:  model.DiscardLogger,
 		}
 		builder, err := sess.NewExperimentBuilder("ndt7")
 		if err != nil {

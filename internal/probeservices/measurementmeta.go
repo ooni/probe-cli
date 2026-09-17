@@ -16,11 +16,16 @@ import (
 // GetMeasurementMeta returns meta information about a measurement.
 func (c Client) GetMeasurementMeta(
 	ctx context.Context, config model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
-	// construct the query to use
+	// construct the query to use: a measurement UID identifies the measurement
+	// on its own, so it takes precedence over the report ID and input.
 	query := url.Values{}
-	query.Add("report_id", config.ReportID)
-	if config.Input != "" {
-		query.Add("input", config.Input)
+	if config.MeasurementUID != "" {
+		query.Add("measurement_uid", config.MeasurementUID)
+	} else {
+		query.Add("report_id", config.ReportID)
+		if config.Input != "" {
+			query.Add("input", config.Input)
+		}
 	}
 	if config.Full {
 		query.Add("full", "true")

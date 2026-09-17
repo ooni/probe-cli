@@ -31,7 +31,6 @@ func buildAndPublishCLILinux(w io.Writer, job *Job) {
 		default:
 			newSetupInstallQemuUserStatic(w)
 		}
-		newStepSetupPsiphon(w)
 		newStepSetupGo(w, fmt.Sprintf("linux-%s", arch))
 		newStepSetupLinuxDockerGoCache(w, arch)
 		newStepMake(w, fmt.Sprintf("CLI/linux-static-%s", arch))

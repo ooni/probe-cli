@@ -20,7 +20,7 @@ func init() {
 			},
 			canonicalName:    canonicalName,
 			config:           &torsf.Config{},
-			enabledByDefault: false,
+			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
 		}
 	}

@@ -45,7 +45,7 @@ func TestExperimentNameAndVersion(t *testing.T) {
 	if measurer.ExperimentName() != "dnscheck" {
 		t.Error("unexpected experiment name")
 	}
-	if measurer.ExperimentVersion() != "0.9.2" {
+	if measurer.ExperimentVersion() != "0.9.3" {
 		t.Error("unexpected experiment version")
 	}
 }
@@ -167,7 +167,7 @@ func TestMakeResolverURL(t *testing.T) {
 	}
 
 	// test IPv6 URLs are quoted
-	addr = "2001:db8:85a3:8d3:1319:8a2e:370"
+	addr = "2001:db8:85a3:8d3:1319:8a2e:370:7348"
 	resolver = makeResolverURL(&url.URL{Host: "example.com"}, addr)
 	resolverURL, err = url.Parse(resolver)
 	if err != nil {
