@@ -28,6 +28,9 @@ type Config struct {
 
 	// ClientId is the client fingerprint to use
 	ClientId int `ooni:"ClientHello fingerprint to use"`
+
+	// PrivacyMode is whether the user only wants to reveal AS and country information or city-level geolocation and /24 prefix information with respect to traceroutes
+	PrivacyMode string `ooni:"privacy mode to use for traceroutes"`
 }
 
 func (c Config) resolverURL() string {
@@ -76,4 +79,12 @@ func (c Config) clientid() int {
 		return c.ClientId
 	}
 	return 0
+}
+
+func (c Config) privacymode() string {
+	if c.PrivacyMode != "" {
+		return c.PrivacyMode
+	}
+
+	return "safe"
 }

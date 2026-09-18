@@ -16,7 +16,7 @@ import (
 
 const (
 	testName    = "tlsmiddlebox"
-	testVersion = "0.1.2"
+	testVersion = "0.1.3"
 )
 
 // Measurer performs the measurement.
