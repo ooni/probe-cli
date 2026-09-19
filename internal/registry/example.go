@@ -13,7 +13,7 @@ import (
 
 func init() {
 	const canonicalName = "example"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		// TODO(bassosimone,DecFox): as pointed out by @ainghazal, this experiment
 		// should be the one that people modify to start out new experiments, so it's
 		// kind of suboptimal that it has a constructor with explicit experiment
@@ -34,5 +34,5 @@ func init() {
 			interruptible:    true,
 			inputPolicy:      model.InputNone,
 		}
-	}
+	})
 }

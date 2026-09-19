@@ -228,7 +228,7 @@ func staticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
-	switch experimentname.Canonicalize(name) {
+	switch experimentname.Parse(name).Base {
 	case "dnscheck":
 		// TODO(https://github.com/ooni/probe/issues/1390): serve DNSCheck
 		// inputs using richer input (aka check-in v2).

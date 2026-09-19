@@ -335,54 +335,66 @@ const OONI_FORCE_ENABLE_EXPERIMENT = "OONI_FORCE_ENABLE_EXPERIMENT"
 
 // NewFactory creates a new Factory instance.
 func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (*Factory, error) {
-	// Make sure we are deadling with the canonical experiment name. Historically MK used
-	// names such as WebConnectivity and we want to continue supporting this use case.
-	name = experimentname.Canonicalize(name)
+	// Parse the name into its base and version.
+	parsed := experimentname.Parse(name)
 
-	// Handle A/B testing where we dynamically choose LTE for some users. The current policy
-	// only relates to a few users to collect data.
-	//
-	// TODO(https://github.com/ooni/probe/issues/2555): perform the actual comparison
-	// and improve the LTE implementation so that we can always use it. See the actual
-	// issue test for additional details on this planned A/B test.
-	switch {
-	case name == "web_connectivity" && checkincache.GetFeatureFlag(kvStore, "webconnectivity_0.5", false):
-		// use LTE rather than the normal webconnectivity when the
-		// feature flag has been set through the check-in API
-		logger.Infof("using webconnectivity LTE")
-		name = "web_connectivity@v0.5"
-
-	default:
-		// nothing
+	// Obtain the registered versions for the base experiment name.
+	entry := AllExperiments[parsed.Base]
+	if entry == nil {
+		return nil, fmt.Errorf("%w: %s", ErrNoSuchExperiment, parsed.Base)
 	}
 
-	// Obtain the factory for the canonical name.
-	ff := AllExperiments[name]
+	// Resolve which version to use: an explicit "@version" wins, otherwise we
+	// use the default version, possibly overridden remotely.
+	version := parsed.Version
+	if version == "" {
+		version = resolveDefaultVersion(parsed.Base, entry, kvStore, logger)
+	}
+
+	// Obtain the factory for the resolved version.
+	ff := entry.factories[version]
 	if ff == nil {
-		return nil, fmt.Errorf("%w: %s", ErrNoSuchExperiment, name)
+		return nil, fmt.Errorf("%w: %s", ErrNoSuchExperiment, experimentname.Name{
+			Base: parsed.Base, Version: version,
+		}.String())
 	}
 	factory := ff()
 
 	// Some experiments are not enabled by default. To enable them we use
-	// the cached check-in response or an environment variable.
+	// the cached check-in response or an environment variable. We key the
+	// enable/disable checks on the base name because the backend enables and
+	// disables experiments by their base name only.
 	//
 	// Note: check-in flags expire after 24h.
-	//
-	//
-	//
 	if factory.enabledByDefault {
-		if !checkincache.ExperimentEnabled(kvStore, name, true) {
-			return nil, fmt.Errorf("%s: %w", name, ErrRequiresForceEnable)
+		if !checkincache.ExperimentEnabled(kvStore, parsed.Base, true) {
+			return nil, fmt.Errorf("%s: %w", parsed.Base, ErrRequiresForceEnable)
 		}
 		return factory, nil
 	}
 	if os.Getenv(OONI_FORCE_ENABLE_EXPERIMENT) == "1" {
 		return factory, nil // enabled by environment variable
 	}
-	if checkincache.ExperimentEnabled(kvStore, name, false) {
+	if checkincache.ExperimentEnabled(kvStore, parsed.Base, false) {
 		return factory, nil // enabled by check-in
 	}
 
-	logger.Warnf(experimentDisabledByCheckInWarning, name)
-	return nil, fmt.Errorf("%s: %w", name, ErrRequiresForceEnable)
+	logger.Warnf(experimentDisabledByCheckInWarning, parsed.Base)
+	return nil, fmt.Errorf("%s: %w", parsed.Base, ErrRequiresForceEnable)
+}
+
+// resolveDefaultVersion returns the version key to use when a bare (unversioned)
+// experiment name is requested. It returns the experiment's registered default
+// version unless a remote override selects a different version.
+func resolveDefaultVersion(base string, entry *experimentFactories,
+	kvStore model.KeyValueStore, logger model.Logger) string {
+	fallback := defaultVersion
+
+	// We only honour a selected version that this probe actually knows about.
+	version := checkincache.GetExperimentVersion(kvStore, base, fallback)
+	if _, known := entry.factories[version]; known {
+		return version
+	}
+	logger.Warnf("check-in selected unknown version %q for %s; using %q", version, base, fallback)
+	return fallback
 }
