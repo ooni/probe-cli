@@ -743,6 +743,21 @@ func TestNewFactory(t *testing.T) {
 
 		// expectErr is the error we expect when calling NewFactory
 		expectErr error
+
+		// assertMeasurer, when set, additionally checks the measurer that the
+		// factory builds
+		assertMeasurer func(t *testing.T, m model.ExperimentMeasurer)
+	}
+
+	// storeVersions returns a kvstore holding the given check-in versions map.
+	storeVersions := func(versions map[string]string) model.KeyValueStore {
+		store := &kvstore.Memory{}
+		if err := checkincache.Store(store, &model.OOAPICheckInResult{
+			Conf: model.OOAPICheckInResultConfig{Versions: versions},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return store
 	}
 
 	// allCases contains all test cases
@@ -791,12 +806,49 @@ func TestNewFactory(t *testing.T) {
 		expectErr:      nil,
 	})
 
-	// add additional test for the web_connectivity@v_0_5 experiment name
+	isLTE := func(t *testing.T, m model.ExperimentMeasurer) {
+		if _, ok := m.(*webconnectivitylte.Measurer); !ok {
+			t.Fatalf("expected the LTE (v0.5) measurer, got %T", m)
+		}
+	}
+
+	// add additional test for the WebConnectivity@v0.5 experiment name
 	allCases = append(allCases, &testCase{
-		description:    "the web_connectivity@v_0_5 name still works",
-		experimentName: "web_connectivity@v_0_5",
+		description:    "the WebConnectivity@v0.5 name still works",
+		experimentName: "WebConnectivity@v0.5",
 		kvStore:        &kvstore.Memory{},
 		expectErr:      nil,
+	})
+
+	// the check-in versions map selects web_connectivity@v0.5
+	allCases = append(allCases, &testCase{
+		description:    "the check-in versions map selects web_connectivity v0.5",
+		experimentName: "web_connectivity",
+		kvStore:        storeVersions(map[string]string{"web_connectivity": "v0.5"}),
+		expectErr:      nil,
+		assertMeasurer: isLTE,
+	})
+
+	// an explicit @version wins over a check-in versions map selecting the default
+	allCases = append(allCases, &testCase{
+		description:    "an explicit @version wins over the check-in versions map",
+		experimentName: "web_connectivity@v0.5",
+		kvStore:        storeVersions(map[string]string{"web_connectivity": ""}),
+		expectErr:      nil,
+		assertMeasurer: isLTE,
+	})
+
+	// an unknown selected version falls back to the default (non-LTE)
+	allCases = append(allCases, &testCase{
+		description:    "an unknown check-in version falls back to the default",
+		experimentName: "web_connectivity",
+		kvStore:        storeVersions(map[string]string{"web_connectivity": "v9.9"}),
+		expectErr:      nil,
+		assertMeasurer: func(t *testing.T, m model.ExperimentMeasurer) {
+			if _, ok := m.(*webconnectivitylte.Measurer); ok {
+				t.Fatalf("expected the default (non-LTE) measurer, got %T", m)
+			}
+		},
 	})
 
 	// make sure we can create default-not-enabled experiments if we
@@ -859,7 +911,7 @@ func TestNewFactory(t *testing.T) {
 
 			// get experiment expectations -- note that here we must canonicalize the
 			// experiment name otherwise we won't find it into the map when testing non-canonical names
-			expectations := expectationsMap[experimentname.Canonicalize(tc.experimentName)]
+			expectations := expectationsMap[experimentname.Parse(tc.experimentName).String()]
 			if expectations == nil {
 				t.Fatal("no expectations for", tc.experimentName)
 			}
@@ -909,53 +961,13 @@ func TestNewFactory(t *testing.T) {
 			if measurer == nil {
 				t.Fatal("expected non-nil measurer, got nil")
 			}
+
+			// if the case cares about which measurer/version we built, check it
+			if tc.assertMeasurer != nil {
+				tc.assertMeasurer(t, measurer)
+			}
 		})
 	}
-
-	// make sure we create web_connectivity@v0.5 when the check-in says so
-	t.Run("we honor check-in flags for web_connectivity@v0.5", func(t *testing.T) {
-		// create a keyvalue store with the proper flags
-		store := &kvstore.Memory{}
-		checkincache.Store(store, &model.OOAPICheckInResult{
-			Conf: model.OOAPICheckInResultConfig{
-				Features: map[string]bool{
-					"webconnectivity_0.5": true,
-				},
-			},
-		})
-
-		// get the experiment factory
-		factory, err := NewFactory("web_connectivity", store, model.DiscardLogger)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// make sure the enabled by default field is consistent with expectations
-		if !factory.enabledByDefault {
-			t.Fatal("expected enabledByDefault to be true")
-		}
-
-		// make sure the input policy is the expected one
-		if factory.InputPolicy() != model.InputOrQueryBackend {
-			t.Fatal("expected inputPolicy to be InputOrQueryBackend")
-		}
-
-		// make sure the interrupted value is the expected one
-		if factory.Interruptible() {
-			t.Fatal("expected interruptible to be false")
-		}
-
-		// make sure we can create the measurer
-		measurer := factory.NewExperimentMeasurer()
-		if measurer == nil {
-			t.Fatal("expected non-nil measurer, got nil")
-		}
-
-		// make sure the type we're creating is the correct one
-		if _, good := measurer.(*webconnectivitylte.Measurer); !good {
-			t.Fatalf("expected to see an instance of *webconnectivitylte.Measurer, got %T", measurer)
-		}
-	})
 
 	// add a test case for a nonexistent experiment
 	t.Run("we correctly return an error for a nonexistent experiment", func(t *testing.T) {
@@ -1097,10 +1109,20 @@ func TestFactoryNewTargetLoader(t *testing.T) {
 	})
 }
 
-// This test is important because SetOptionsJSON assumes that the experiment
-// config is a struct pointer into which it is possible to write
+func TestRegisteredMeasurerReportsBaseName(t *testing.T) {
+	for name, ffunc := range RegisteredFactories() {
+		t.Run(name, func(t *testing.T) {
+			base := experimentname.Parse(name).Base
+			measurer := ffunc().NewExperimentMeasurer()
+			if got := measurer.ExperimentName(); got != base {
+				t.Fatalf("registered as %q (base %q) but measurer reports %q", name, base, got)
+			}
+		})
+	}
+}
+
 func TestExperimentConfigIsAlwaysAPointerToStruct(t *testing.T) {
-	for name, ffunc := range AllExperiments {
+	for name, ffunc := range RegisteredFactories() {
 		t.Run(name, func(t *testing.T) {
 			factory := ffunc()
 			config := factory.config
