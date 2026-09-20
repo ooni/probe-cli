@@ -4,6 +4,7 @@ package targetloading
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -100,6 +101,11 @@ type Loader struct {
 	// StaticInputs contains optional input to be added
 	// to the resulting input list if possible.
 	StaticInputs []string
+
+	// StaticInputsConfig contains optional opaque per-input richer-input config
+	// index-aligned with StaticInputs; richer-input experiments overlay the raw
+	// JSON onto their per-input config.
+	StaticInputsConfig []json.RawMessage
 
 	// SourceFiles contains optional files to read input
 	// from. Each file should contain a single input string
@@ -262,6 +268,20 @@ func (il *Loader) loadLocal() ([]model.ExperimentTarget, error) {
 		targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 	}
 	return targets, nil
+}
+
+// PerInputConfig returns a copy of base with the per-input richer-input config
+// overlaid on top.
+func PerInputConfig[T any](loader *Loader, base *T, idx int) *T {
+	config := *base
+	if idx < len(loader.StaticInputs) && idx < len(loader.StaticInputsConfig) {
+		if raw := loader.StaticInputsConfig[idx]; len(raw) > 0 {
+			if err := json.Unmarshal(raw, &config); err != nil {
+				loader.logger().Warnf("targetloading: cannot parse inputs_extra: %s", err.Error())
+			}
+		}
+	}
+	return &config
 }
 
 // openFunc is the type of the function to open a file.

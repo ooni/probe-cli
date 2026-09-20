@@ -14,12 +14,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/pion/stun"
 )
 
 const (
 	testName    = "stunreachability"
-	testVersion = "0.4.0"
+	testVersion = "0.4.1"
 )
 
 // Config contains the experiment config.
@@ -42,9 +43,7 @@ func registerExtensions(m *model.Measurement) {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config Config
-}
+type Measurer struct{}
 
 // ExperimentName implements ExperimentMeasurer.ExperiExperimentName.
 func (m *Measurer) ExperimentName() string {
@@ -63,14 +62,22 @@ func wrap(err error) error {
 	return nil
 }
 
-// errStunMissingInput means that the user did not provide any input
-var errStunMissingInput = errors.New("stun: missing input")
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
 
-// errStunMissingPortInURL means the URL is missing the port
-var errStunMissingPortInURL = errors.New("stun: missing port in URL")
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 
-// errUnsupportedURLScheme means we don't support the URL scheme
-var errUnsupportedURLScheme = errors.New("stun: unsupported URL scheme")
+	// errStunMissingInput means that the user did not provide any input
+	errStunMissingInput = errors.New("stun: missing input")
+
+	// errStunMissingPortInURL means the URL is missing the port
+	errStunMissingPortInURL = errors.New("stun: missing port in URL")
+
+	// errUnsupportedURLScheme means we don't support the URL scheme
+	errUnsupportedURLScheme = errors.New("stun: unsupported URL scheme")
+)
 
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
@@ -80,7 +87,17 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	registerExtensions(measurement)
-	input := string(measurement.Input)
+
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config, input := target.Config, target.URL
+
 	if input == "" {
 		return errStunMissingInput
 	}
@@ -94,7 +111,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if URL.Scheme != "stun" {
 		return errUnsupportedURLScheme
 	}
-	if err := wrap(tk.run(ctx, m.config, sess, measurement, callbacks, URL.Host)); err != nil {
+	if err := wrap(tk.run(ctx, *config, sess, measurement, callbacks, URL.Host)); err != nil {
 		s := err.Error()
 		tk.Failure = &s
 		return nil // we want to submit this measurement
@@ -166,6 +183,6 @@ func (tk *TestKeys) do(
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }

@@ -30,6 +30,8 @@ func ooniRunMain(ctx context.Context,
 		NoJSON:        currentOptions.NoJSON,
 		Random:        currentOptions.Random,
 		ReportFile:    currentOptions.ReportFile,
+		ProbeCC:       sess.ProbeCC(),
+		ProbeASN:      sess.ProbeASNString(),
 		Session:       sess,
 	}
 	for _, URL := range currentOptions.Inputs {

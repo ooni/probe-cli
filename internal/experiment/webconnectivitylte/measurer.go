@@ -12,24 +12,29 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/inputparser"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 	"golang.org/x/net/publicsuffix"
 )
 
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+)
+
 // Measurer for the web_connectivity experiment.
 type Measurer struct {
-	// Contains the experiment's config.
-	Config *Config
-
 	// DNSOverHTTPSURLProvider is the MANDATORY provider of DNS-over-HTTPS
 	// URLs that arranges for periodic measurements.
 	DNSOverHTTPSURLProvider *webconnectivityalgo.OpportunisticDNSOverHTTPSURLProvider
 }
 
 // NewExperimentMeasurer creates a new model.ExperimentMeasurer.
-func NewExperimentMeasurer(config *Config) model.ExperimentMeasurer {
+func NewExperimentMeasurer() model.ExperimentMeasurer {
 	return &Measurer{
-		Config: config,
 		DNSOverHTTPSURLProvider: webconnectivityalgo.NewOpportunisticDNSOverHTTPSURLProvider(
 			"https://mozilla.cloudflare-dns.com/dns-query",
 			"https://dns.nextdns.io/dns-query",
@@ -58,13 +63,22 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+
 	// make sure we have a cancellable context such that we can stop any
 	// goroutine running in the background (e.g., priority.go's ones)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// honour InputOrQueryBackend
-	input := measurement.Input
+	input := model.MeasurementInput(target.URL)
 	if input == "" {
 		return errors.New("no input provided")
 	}
@@ -78,7 +92,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		AllowEndpoints: false,
 		DefaultScheme:  "",
 	}
-	URL, err := inputparser.Parse(inputParserConfig, measurement.Input)
+	URL, err := inputparser.Parse(inputParserConfig, input)
 	if err != nil {
 		return err
 	}
@@ -129,7 +143,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		Referer:                 "",
 		Session:                 sess,
 		TestHelpers:             testhelpers,
-		UDPAddress:              m.Config.DNSOverUDPResolver,
+		UDPAddress:              target.Config.DNSOverUDPResolver,
 	}
 	resos.Start(ctx)
 

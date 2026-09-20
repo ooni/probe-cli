@@ -19,6 +19,7 @@ package oonimkall
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -258,6 +259,10 @@ type settings struct {
 	// Inputs contains the inputs. The task will fail if it
 	// requires input and you provide no input.
 	Inputs []string `json:"inputs,omitempty"`
+
+	// InputsExtra contains OPTIONAL opaque per-input richer-input config
+	// index-aligned with Inputs.
+	InputsExtra []json.RawMessage `json:"inputs_extra,omitempty"`
 
 	// LogLevel contains the logs level. See https://git.io/Jv4Rv
 	// for the names of the available log levels.

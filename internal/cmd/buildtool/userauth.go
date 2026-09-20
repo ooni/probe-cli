@@ -33,7 +33,7 @@ const (
 
 	// userauthVersion is the ooniprobe-rs release we use for BOTH the from-source
 	// build and the prebuilt bundle download.
-	userauthVersion = "0.1.5"
+	userauthVersion = "0.1.6"
 
 	// userauthSourceSHA256 pins the source tarball for userauthVersion.
 	userauthSourceSHA256 = "629aff29a75592280ec65c51ad2e22520bae89b26cd403b3a7fafe36d808b751"

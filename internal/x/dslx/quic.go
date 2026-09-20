@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/quic-go/quic-go"
 )
 
@@ -89,7 +90,7 @@ type QUICConnection struct {
 	Address string
 
 	// QUICConn is the established QUIC conn.
-	QUICConn quic.EarlyConnection
+	QUICConn model.QUICConn
 
 	// Domain is the OPTIONAL domain we resolved.
 	Domain string
@@ -109,7 +110,7 @@ type QUICConnection struct {
 }
 
 type quicCloserConn struct {
-	quic.EarlyConnection
+	model.QUICConn
 }
 
 func (c *quicCloserConn) Close() error {

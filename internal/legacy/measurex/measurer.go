@@ -417,7 +417,7 @@ func (mx *Measurer) quicHandshakeTimeout() time.Duration {
 // db to store events rather than creating a temporary one and
 // use it to generate a new Measurement.
 func (mx *Measurer) QUICHandshakeWithDB(ctx context.Context, db WritableDB,
-	address string, config *tls.Config) (quic.EarlyConnection, error) {
+	address string, config *tls.Config) (model.QUICConn, error) {
 	timeout := mx.quicHandshakeTimeout()
 	ol := NewOperationLogger(mx.Logger,
 		"QUICHandshake %s with sni=%s", address, config.ServerName)

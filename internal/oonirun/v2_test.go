@@ -796,3 +796,129 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		}
 	})
 }
+
+func TestIsV2EngineDescriptorURL(t *testing.T) {
+	tests := []struct {
+		name string
+		URL  string
+		want bool
+	}{{
+		name: "engine-descriptor URL",
+		URL:  "https://api.ooni.io/api/v2/oonirun/links/1234/engine-descriptor/7",
+		want: true,
+	}, {
+		name: "CRUD link URL (not runnable)",
+		URL:  "https://api.ooni.io/api/v2/oonirun/links/1234",
+		want: false,
+	}, {
+		name: "full-descriptor URL (GET, not engine-descriptor)",
+		URL:  "https://api.ooni.io/api/v2/oonirun/links/1234/full-descriptor/7",
+		want: false,
+	}, {
+		name: "arbitrary static descriptor URL",
+		URL:  "https://example.com/descriptor.json",
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isV2EngineDescriptorURL(tt.URL); got != tt.want {
+				t.Fatalf("isV2EngineDescriptorURL(%q) = %v, want %v", tt.URL, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestV2MeasureEngineDescriptor(t *testing.T) {
+	// captured is where we record the request that reached the fake backend
+	var (
+		gotMethod  string
+		gotRequest v2EngineDescriptorRequest
+	)
+
+	// make a local server that emulates the engine-descriptor endpoint: it
+	// records the request and returns a descriptor with concrete inputs.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		_ = json.NewDecoder(r.Body).Decode(&gotRequest)
+
+		descriptor := &V2Descriptor{
+			Revision: "7",
+			Nettests: []V2Nettest{{
+				Inputs: []string{"https://example.com/"},
+				InputsExtra: []json.RawMessage{
+					json.RawMessage(`{"category_code":"NEWS"}`),
+				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
+				TestName: "example",
+			}},
+		}
+		data, err := json.Marshal(descriptor)
+		runtimex.PanicOnError(err, "json.Marshal failed")
+		w.Write(data)
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+
+	config := &LinkConfig{
+		AcceptChanges: true,
+		Annotations:   map[string]string{"platform": "linux"},
+		KVStore:       &kvstore.Memory{},
+		NoCollector:   true, // disable collector so we don't submit
+		NoJSON:        true,
+		ProbeCC:       "ZZ",
+		ProbeASN:      "AS0",
+		Session:       newMinimalFakeSession(),
+	}
+
+	// the URL shape must be recognized as an engine-descriptor URL so that
+	// NewLinkRunner routes it to the POST-with-context path.
+	engineURL := server.URL + "/api/v2/oonirun/links/1234/engine-descriptor/7"
+	r := NewLinkRunner(config, engineURL)
+
+	if err := r.Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// the endpoint MUST be POSTed, not GETed
+	if gotMethod != http.MethodPost {
+		t.Fatalf("expected POST, got %s", gotMethod)
+	}
+
+	// the request body MUST carry the probe context taken from the LinkConfig
+	if gotRequest.ProbeCC != "ZZ" {
+		t.Fatalf("unexpected probe_cc: %q", gotRequest.ProbeCC)
+	}
+	if gotRequest.ProbeASN != "AS0" {
+		t.Fatalf("unexpected probe_asn: %q", gotRequest.ProbeASN)
+	}
+	if gotRequest.RunType != "manual" {
+		t.Fatalf("unexpected run_type: %q", gotRequest.RunType)
+	}
+	if !gotRequest.IsCharging {
+		t.Fatal("expected is_charging to be true")
+	}
+}
+
+func TestV2MeasureEngineDescriptorFetchError(t *testing.T) {
+	// create and immediately cancel the context so the POST fails
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	config := &LinkConfig{
+		AcceptChanges: true,
+		Annotations:   map[string]string{},
+		KVStore:       &kvstore.Memory{},
+		NoCollector:   true,
+		NoJSON:        true,
+		Session:       newMinimalFakeSession(),
+	}
+
+	engineURL := "https://api.ooni.io/api/v2/oonirun/links/1234/engine-descriptor/7"
+	err := v2MeasureHTTPS(ctx, config, engineURL)
+	if err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+}

@@ -41,7 +41,7 @@ func (s *Saver) WrapQUICDialer(qd model.QUICDialer) model.QUICDialer {
 
 // DialContext implements QUICDialer.DialContext
 func (h *QUICDialerSaver) DialContext(ctx context.Context,
-	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
+	host string, tlsCfg *tls.Config, cfg *quic.Config) (model.QUICConn, error) {
 	start := time.Now()
 	// TODO(bassosimone): in the future we probably want to also save
 	// information about what versions we're willing to accept.
@@ -92,7 +92,7 @@ func (h *QUICDialerSaver) CloseIdleConnections() {
 }
 
 // quicConnectionState returns the ConnectionState of a QUIC Session.
-func quicConnectionState(sess quic.EarlyConnection) tls.ConnectionState {
+func quicConnectionState(sess model.QUICConn) tls.ConnectionState {
 	return sess.ConnectionState().TLS
 }
 

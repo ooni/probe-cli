@@ -46,7 +46,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		var hasCorrectTrace bool
 		underlying := &mocks.QUICDialer{
 			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
-				quicConfig *quic.Config) (quic.EarlyConnection, error) {
+				quicConfig *quic.Config) (model.QUICConn, error) {
 				gotTrace := netxlite.ContextTraceOrDefault(ctx)
 				hasCorrectTrace = (gotTrace == trace)
 				return nil, expectedErr
@@ -370,7 +370,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 func TestMaybeCloseQUICConn(t *testing.T) {
 	type closeQuicTest struct {
 		name   string
-		input  quic.EarlyConnection
+		input  model.QUICConn
 		called bool
 	}
 	var called bool
@@ -383,7 +383,7 @@ func TestMaybeCloseQUICConn(t *testing.T) {
 		},
 		{
 			name: "with nonnil conn",
-			input: &mocks.QUICEarlyConnection{
+			input: &mocks.QUICConn{
 				MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
 					called = true
 					return nil

@@ -32,6 +32,10 @@ var (
 	// v2CountFailedExperiments countes the number of failed experiments
 	// and is useful when testing this package
 	v2CountFailedExperiments = &atomic.Int64{}
+
+	// v2CountSkippedNettests counts the number of nettests we skipped because
+	// they were disabled for the current run type, which is useful for testing.
+	v2CountSkippedNettests = &atomic.Int64{}
 )
 
 // V2Descriptor describes a list of nettests to run together.
@@ -47,6 +51,14 @@ type V2Descriptor struct {
 
 	// Nettests contains the list of nettests to run.
 	Nettests []V2Nettest `json:"nettests"`
+
+	// Revision is the OPTIONAL revision of this descriptor as assigned by the
+	// OONI Run backend.
+	Revision string `json:"revision"`
+
+	// DateCreated is the OPTIONAL creation timestamp of this revision as
+	// assigned by the OONI Run backend.
+	DateCreated string `json:"date_created"`
 }
 
 // V2Nettest specifies how a nettest should run.
@@ -54,14 +66,86 @@ type V2Nettest struct {
 	// Inputs contains inputs for the experiment.
 	Inputs []string `json:"inputs"`
 
+	// InputsExtra contains OPTIONAL opaque per-input richer-input config parallel
+	// to Inputs. When present, its length SHOULD match the length of Inputs.
+	InputsExtra []json.RawMessage `json:"inputs_extra"`
+
+	// TargetsName OPTIONALLY names a predefined target list that the OONI Run
+	// backend generates dynamically.
+	TargetsName string `json:"targets_name"`
+
 	// Options contains the experiment options. Any option name starting with
 	// `Safe` will be available for the experiment run, but omitted from
 	// the serialized Measurement that the experiment builder will submit
 	// to the OONI backend.
+	//
+	// Deprecated: OONI Run v2.1 removes this field from the spec in favour of
+	// inputs_extra/targets_name.
+	// See here: https://github.com/ooni/spec/blob/master/backends/bk-005-ooni-run-v2.md
 	Options json.RawMessage `json:"options"`
+
+	// IsBackgroundRunEnabled OPTIONALLY indicates whether this nettest runs as
+	// part of background/autoruns. A nil value defaults to true.
+	IsBackgroundRunEnabled *bool `json:"is_background_run_enabled"`
+
+	// IsManualRunEnabled OPTIONALLY indicates whether this nettest runs as part
+	// of a manual run. A nil value defaults to true.
+	IsManualRunEnabled *bool `json:"is_manual_run_enabled"`
 
 	// TestName contains the nettest name.
 	TestName string `json:"test_name"`
+}
+
+// v2EngineDescriptorRequest is the request body for the OONI Run v2
+// engine-descriptor endpoint.
+type v2EngineDescriptorRequest struct {
+	// IsCharging indicates whether the probe is charging.
+	IsCharging bool `json:"is_charging"`
+
+	// RunType is either "timed" or "manual".
+	RunType string `json:"run_type"`
+
+	// ProbeCC is the probe country code.
+	ProbeCC string `json:"probe_cc"`
+
+	// ProbeASN is the probe ASN (e.g., "AS1234").
+	ProbeASN string `json:"probe_asn"`
+
+	// NetworkType is the probe network type (e.g., "wifi").
+	NetworkType string `json:"network_type"`
+
+	// WebsiteCategoryCodes filters the website targets by category code. An
+	// empty slice lets the backend use its default set of categories.
+	WebsiteCategoryCodes []string `json:"website_category_codes"`
+}
+
+// isV2EngineDescriptorURL returns whether the URL points to an OONI Run v2
+// engine-descriptor endpoint,
+func isV2EngineDescriptorURL(URL string) bool {
+	return strings.Contains(URL, "/oonirun/links/") && strings.Contains(URL, "/engine-descriptor/")
+}
+
+// getV2EngineDescriptor POSTs the probe context to an OONI Run v2 engine-descriptor
+// URL and returns the resulting descriptor.
+func getV2EngineDescriptor(ctx context.Context, config *LinkConfig,
+	client model.HTTPClient, logger model.Logger, URL string) (*V2Descriptor, error) {
+	request := &v2EngineDescriptorRequest{
+		IsCharging:           true,
+		RunType:              string(model.RunTypeManual),
+		ProbeCC:              config.ProbeCC,
+		ProbeASN:             config.ProbeASN,
+		NetworkType:          "wifi",
+		WebsiteCategoryCodes: []string{},
+	}
+	return httpclientx.PostJSON[*v2EngineDescriptorRequest, *V2Descriptor](
+		ctx,
+		httpclientx.NewEndpoint(URL),
+		request,
+		&httpclientx.Config{
+			Client:    client,
+			Logger:    logger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
 }
 
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
@@ -135,9 +219,15 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // - ctx is the context for deadline/cancellation;
 //
+// - config is the link config providing the probe context for the POST branch;
+//
 // - client is the HTTPClient to use;
 //
-// - URL is the URL from which to download/update the OONIRun v2Descriptor.
+// - logger is the logger to use;
+//
+// - URL is the URL from which to download/update the OONIRun v2Descriptor;
+//
+// - auth is the OPTIONAL bearer token used for the static-descriptor GET.
 //
 // Return values:
 //
@@ -147,11 +237,22 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // - err is the error that occurred, or nil in case of success.
 func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
-	ctx context.Context, client model.HTTPClient, logger model.Logger,
+	ctx context.Context, config *LinkConfig, client model.HTTPClient, logger model.Logger,
 	URL, auth string) (oldValue, newValue *V2Descriptor, err error) {
 	oldValue = cache.Entries[URL]
-	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, logger, URL, auth)
+	newValue, err = v2FetchDescriptor(ctx, config, client, logger, URL, auth)
 	return
+}
+
+// v2FetchDescriptor fetches a v2Descriptor from the given URL. It switches on
+// the URL shape: an OONI Run v2 engine-descriptor URL is a POST request with the
+// probe context, while any other URL is a GET request.
+func v2FetchDescriptor(ctx context.Context, config *LinkConfig,
+	client model.HTTPClient, logger model.Logger, URL, auth string) (*V2Descriptor, error) {
+	if isV2EngineDescriptorURL(URL) {
+		return getV2EngineDescriptor(ctx, config, client, logger, URL)
+	}
+	return getV2DescriptorFromHTTPSURL(ctx, client, logger, URL, auth)
 }
 
 // Update updates the given cache entry and writes back onto the disk.
@@ -194,6 +295,7 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			ExtraOptions:           make(map[string]any),
 			InitialOptions:         nettest.Options,
 			Inputs:                 nettest.Inputs,
+			InputsExtra:            nettest.InputsExtra,
 			InputFilePaths:         nil,
 			MaxRuntime:             config.MaxRuntime,
 			Name:                   nettest.TestName,
@@ -276,7 +378,7 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 	if err != nil {
 		logger.Warnf("oonirun: failed to retrieve auth token: %v", err)
 	}
-	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, logger, URL, auth)
+	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, config, clnt, logger, URL, auth)
 	if err != nil {
 		return err
 	}

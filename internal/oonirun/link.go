@@ -40,6 +40,12 @@ type LinkConfig struct {
 	// credential.
 	NoCredentials bool
 
+	// ProbeCC is the OPTIONAL probe country code.
+	ProbeCC string
+
+	// ProbeASN is the OPTIONAL probe ASN (e.g., "AS1234").
+	ProbeASN string
+
 	// NoJSON OPTIONALLY indicates we don't want to save measurements to a JSON file.
 	NoJSON bool
 
@@ -79,6 +85,8 @@ func (lr *linkRunner) Run(ctx context.Context) error {
 // 2. OONI Run v1 link with ooni scheme (e.g., ooni://nettest?...)
 //
 // 3. arbitrary URL of the OONI Run v2 descriptor.
+//
+// 4. OONI Run v2 engine-descriptor URL (e.g., https://api.ooni.io/api/v2/oonirun/links/{id}/engine-descriptor/{revision})
 func NewLinkRunner(c *LinkConfig, URL string) LinkRunner {
 	// TODO(bassosimone): add support for v2 deeplinks.
 	out := &linkRunner{
