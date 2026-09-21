@@ -327,6 +327,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				if firstSvcb.ALPN[0] != "sample" {
 					t.Fatal("unexpected protocol")
 				}
+				if string(firstSvcb.Ech) != "ECHCONFIG" {
+					t.Fatal("unexpected ech config")
+				}
 			})
 		})
 
@@ -845,6 +848,7 @@ func dnsGenSVCBReplySuccess(rawQuery []byte, target string, port int, alpns []st
 	if len(alpns) > 0 {
 		answer.Value = append(answer.Value, &dns.SVCBAlpn{Alpn: alpns})
 	}
+	answer.Value = append(answer.Value, &dns.SVCBECHConfig{ECH: []byte("ECHCONFIG")})
 	data, err := reply.Pack()
 	runtimex.PanicOnError(err, "reply.Pack failed")
 	return data

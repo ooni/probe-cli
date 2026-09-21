@@ -162,6 +162,8 @@ func (r *dnsResponse) DecodeSVCB() ([]*model.SVCB, error) {
 					svcb.OHttp = true
 				case *dns.SVCBDoHPath:
 					svcb.DoHPath = extv.String()
+				case *dns.SVCBECHConfig:
+					svcb.Ech = extv.ECH
 				}
 			}
 			svcb.Priority = record.Priority

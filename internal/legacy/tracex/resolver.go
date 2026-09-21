@@ -105,14 +105,14 @@ func (r *ResolverSaver) LookupSVCB(ctx context.Context, domain string) ([]*model
 
 	stop := time.Now()
 	r.Saver.Write(&EventResolveDone{&EventValue{
-		Address:         r.Resolver.Address(),
-		DNSQueryType:    "SVCB",
-		DNSSVCBRespones: resp,
-		Duration:        stop.Sub(start),
-		Err:             NewFailureStr(err),
-		Hostname:        domain,
-		Proto:           r.Network(),
-		Time:            stop,
+		Address:          r.Resolver.Address(),
+		DNSQueryType:     "SVCB",
+		DNSSVCBResponses: resp,
+		Duration:         stop.Sub(start),
+		Err:              NewFailureStr(err),
+		Hostname:         domain,
+		Proto:            r.Network(),
+		Time:             stop,
 	}})
 	return resp, err
 }

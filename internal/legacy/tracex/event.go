@@ -280,7 +280,7 @@ type EventValue struct {
 	DNSQueryType                string        `json:",omitempty"`
 	DNSQuery                    []byte        `json:",omitempty"`
 	DNSResponse                 []byte        `json:",omitempty"`
-	DNSSVCBRespones             []*model.SVCB `json:",omitempty"`
+	DNSSVCBResponses            []*model.SVCB `json:",omitempty"`
 	Data                        []byte        `json:",omitempty"`
 	Duration                    time.Duration `json:",omitempty"`
 	Err                         FailureStr    `json:",omitempty"`

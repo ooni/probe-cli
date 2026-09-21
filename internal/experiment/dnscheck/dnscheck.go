@@ -24,8 +24,11 @@ import (
 
 const (
 	testName      = "dnscheck"
-	testVersion   = "0.9.3"
+	testVersion   = "0.9.4"
 	defaultDomain = "example.org"
+
+	// ddrDomain is the special-use domain queried to probe DDR support.
+	ddrDomain = "_dns.resolver.arpa."
 )
 
 // Endpoints keeps track of repeatedly measured endpoints.
@@ -226,6 +229,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 				RejectDNSBogons:  true, // bogons are errors in this context
 				ResolverURL:      makeResolverURL(URL, addr),
 				Timeout:          15 * time.Second,
+				// Also probe RFC 9462 DDR support on this same resolver by issuing an
+				// SVCB query for _dns.resolver.arpa.
+				DNSSVCBName: ddrDomain,
 			},
 			Target: fmt.Sprintf("dnslookup://%s", domain), // urlgetter wants a URL
 		})

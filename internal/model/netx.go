@@ -219,7 +219,8 @@ type SVCB struct {
 	// OHttp denotes whether oblivious DNS over HTTPS is supported.
 	OHttp bool
 
-	//This could also include ECH and other SVCB parameters
+	// Ech contains the ECHConfig (Encrypted ClientHello) parameter, if present.
+	Ech []byte
 }
 
 // MeasuringNetwork defines the constructors required for implementing OONI experiments. All
@@ -371,7 +372,7 @@ type Resolver interface {
 	// LookupNS issues a NS query for a domain.
 	LookupNS(ctx context.Context, domain string) ([]*net.NS, error)
 
-	//LookupSVCB issues a SVCB query for a domain.
+	// LookupSVCB issues a SVCB query for a domain.
 	LookupSVCB(ctx context.Context, domain string) ([]*SVCB, error)
 }
 

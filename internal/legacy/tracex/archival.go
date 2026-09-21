@@ -167,7 +167,7 @@ func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 				T:               ev.Time.Sub(begin).Seconds(),
 			}
 			svcbResponses := make([]model.SVCBData, 0)
-			for _, record := range ev.DNSSVCBRespones {
+			for _, record := range ev.DNSSVCBResponses {
 				svcb := model.SVCBData{Priority: record.Priority,
 					TargetName: record.TargetName}
 				svcb.Params = make(map[string]string)
