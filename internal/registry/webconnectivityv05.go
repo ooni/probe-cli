@@ -16,15 +16,14 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
-				return webconnectivitylte.NewExperimentMeasurer(
-					config.(*webconnectivitylte.Config),
-				)
+				return webconnectivitylte.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &webconnectivitylte.Config{},
 			enabledByDefault: true,
 			interruptible:    false,
 			inputPolicy:      model.InputOrQueryBackend,
+			newLoader:        webconnectivitylte.NewLoader,
 		}
 	}
 }
