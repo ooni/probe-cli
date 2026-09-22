@@ -217,6 +217,10 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if parallelism > len(allAddrs) {
 		parallelism = len(allAddrs)
 	}
+
+	// Determine the SVCB name to probe on this resolver (empty means skip).
+	svcbName := svcbNameForResolver(URL)
+
 	var inputs []urlgetter.MultiInput
 	multi := urlgetter.Multi{Begin: begin, Parallelism: parallelism, Session: sess}
 	for addr := range allAddrs {
@@ -229,9 +233,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 				RejectDNSBogons:  true, // bogons are errors in this context
 				ResolverURL:      makeResolverURL(URL, addr),
 				Timeout:          15 * time.Second,
-				// Also probe RFC 9462 DDR support on this same resolver by issuing an
-				// SVCB query for _dns.resolver.arpa.
-				DNSSVCBName: ddrDomain,
+				DNSSVCBName:      svcbName,
 			},
 			Target: fmt.Sprintf("dnslookup://%s", domain), // urlgetter wants a URL
 		})
@@ -251,6 +253,22 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		m.Endpoints.maybeRegister(resolverURL)
 	}
 	return nil
+}
+
+// svcbNameForResolver returns the name to query via SVCB for the given resolver.
+//
+// For unencrypted Do53 resolvers we query _dns.resolver.arpa. and for
+// encrypted named resolvers we query _dns.<hostname>.
+func svcbNameForResolver(URL *url.URL) string {
+	switch URL.Scheme {
+	case "udp", "tcp":
+		return ddrDomain
+	case "https", "dot":
+		if host := URL.Hostname(); host != "" {
+			return "_dns." + host
+		}
+	}
+	return ""
 }
 
 func (m *Measurer) lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {

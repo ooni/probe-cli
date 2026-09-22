@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestMaybeWrapWithCachingResolver(t *testing.T) {
@@ -188,6 +189,26 @@ func TestCacheResolver(t *testing.T) {
 			}
 			if https != nil {
 				t.Fatal("expected nil")
+			}
+		})
+
+		t.Run("LookupSVCB delegates to the wrapped resolver", func(t *testing.T) {
+			expected := []*model.SVCB{{}}
+			var called bool
+			reso := &cacheResolver{
+				resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						called = true
+						return expected, nil
+					},
+				},
+			}
+			svcb, err := reso.LookupSVCB(context.Background(), "_dns.resolver.arpa")
+			if err != nil {
+				t.Fatal("unexpected err", err)
+			}
+			if len(svcb) != 1 || !called {
+				t.Fatal("expected the call to be delegated to the wrapped resolver")
 			}
 		})
 
