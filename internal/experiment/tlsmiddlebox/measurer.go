@@ -16,7 +16,7 @@ import (
 
 const (
 	testName    = "tlsmiddlebox"
-	testVersion = "0.1.2"
+	testVersion = "0.1.3"
 )
 
 // Measurer performs the measurement.
@@ -49,6 +49,9 @@ var (
 
 	// errInvalidTHScheme indicates that the TH scheme is invalid
 	errInvalidTHScheme = errors.New("th scheme must be tlshandshake")
+
+	// errInvalidClientId indicates that the ClientId is invalid
+	errInvalidClientId = errors.New("ClientId does not match any known fingerprint")
 )
 
 // // Run implements ExperimentMeasurer.Run.
@@ -72,6 +75,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 	if th.Scheme != "tlshandshake" {
 		return errInvalidTHScheme
+	}
+	if clientId := m.config.clientid(); clientId > 0 && ClientIDs[clientId] == nil {
+		return errInvalidClientId
 	}
 	tk := NewTestKeys()
 	measurement.TestKeys = tk
