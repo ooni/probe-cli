@@ -36,7 +36,13 @@ const (
 	userauthVersion = "0.1.6"
 
 	// userauthSourceSHA256 pins the source tarball for userauthVersion.
-	userauthSourceSHA256 = "629aff29a75592280ec65c51ad2e22520bae89b26cd403b3a7fafe36d808b751"
+	//
+	// NOTE: this must be updated together with userauthVersion - it is
+	// easy to bump the version for the prebuilt-bundle download path
+	// (which pins nothing) and forget that the from-source path also
+	// needs its hash updated to match, since the mismatch only surfaces
+	// when someone actually builds with USERAUTH_FROM_SOURCE=1.
+	userauthSourceSHA256 = "c76057a566aa14737c7cb8d8ec85f6fc555d0b1fdb600be99becc61f64d624c7"
 
 	// userauthFromSourceEnv, when set to "1", makes the userauth subcommand build the
 	// staticlib from source instead of downloading the prebuilt bundle.
