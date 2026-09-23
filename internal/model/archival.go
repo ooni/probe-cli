@@ -172,6 +172,39 @@ func (value *ArchivalScrubbedMaybeBinaryString) UnmarshalJSON(rawData []byte) er
 }
 
 //
+// ICMP
+//
+
+// ArchivalICMPErrorMessage is the result of any ICMP error message.
+//
+// See https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md. //update this, will also add timestamp info
+type ArchivalICMPErrorMessage struct {
+	Timeout          string                `json:"timeout"`
+	Connected        string                `json:"connected"`
+	Error            string                `json:"error"`
+	SrcIPPrefix      string                `json:"source_ip_prefix"`
+	SrcIPCountryCode string                `json:"source_ip_country_code"`
+	SrcIPASN         uint                  `json:"source_ip_asn"`
+	SrcIPASNOrg      string                `json:"source_ip_asn_org"`
+	Type             int                   `json:"type"`
+	Code             int                   `json:"code"`
+	Quote            ArchivalICMPQuotation `json:"quote"`
+	T0               float64               `json:"t0,omitempty"`
+	T                float64               `json:"t"`
+}
+
+// ArchivalICMPQuotation is the quotation of an ICMP error message.
+type ArchivalICMPQuotation struct {
+	Protocol         int    `json:"protocol"`
+	SrcPort          int    `json:"source_port"`
+	DstPort          int    `json:"destination_port"`
+	TCPSeqNum        uint32 `json:"tcp_sequence_number"`
+	UDPLength        int    `json:"udp_length"`
+	UDPChecksum      int    `json:"udp_checksum"`
+	RemainingPayload []byte `json:"remaining_payload"`
+}
+
+//
 // DNS lookup
 //
 
