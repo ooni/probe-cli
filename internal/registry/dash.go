@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "dash"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return dash.NewExperimentMeasurer(
@@ -24,5 +24,5 @@ func init() {
 			interruptible:    true,
 			inputPolicy:      model.InputNone,
 		}
-	}
+	})
 }

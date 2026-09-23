@@ -18,9 +18,13 @@ func TestStore(t *testing.T) {
 		expectmap := map[string]bool{
 			"foobar": true,
 		}
+		expectversions := map[string]string{
+			"web_connectivity": "v0.5",
+		}
 		result := &model.OOAPICheckInResult{
 			Conf: model.OOAPICheckInResultConfig{
 				Features: expectmap,
+				Versions: expectversions,
 			},
 		}
 		err := Store(memstore, result)
@@ -36,6 +40,9 @@ func TestStore(t *testing.T) {
 			t.Fatal(err)
 		}
 		if diff := cmp.Diff(expectmap, wrapper.Flags); diff != "" {
+			t.Fatal(diff)
+		}
+		if diff := cmp.Diff(expectversions, wrapper.Versions); diff != "" {
 			t.Fatal(diff)
 		}
 		if wrapper.Expire.Before(time.Now().Add(23 * time.Hour)) {
@@ -130,6 +137,75 @@ func TestGetFeatureFlag(t *testing.T) {
 		}
 		if GetFeatureFlag(memstore, "antani", false) {
 			t.Fatal("expected to see false here")
+		}
+	})
+}
+
+func TestGetExperimentVersion(t *testing.T) {
+	// defaultVersion is a sentinel we can recognize when the function falls back.
+	const defaultVersion = "default"
+
+	t.Run("when we cannot get from the store", func(t *testing.T) {
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return nil, errors.New("mocked error")
+			},
+		}
+		if got := GetExperimentVersion(memstore, "web_connectivity", defaultVersion); got != defaultVersion {
+			t.Fatalf("expected %q, got %q", defaultVersion, got)
+		}
+	})
+
+	t.Run("when we cannot unmarshal", func(t *testing.T) {
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return []byte(`{`), nil
+			},
+		}
+		if got := GetExperimentVersion(memstore, "web_connectivity", defaultVersion); got != defaultVersion {
+			t.Fatalf("expected %q, got %q", defaultVersion, got)
+		}
+	})
+
+	t.Run("if the record was cached too much time ago", func(t *testing.T) {
+		response := &checkInFlagsWrapper{
+			Expire:   time.Now().Add(-time.Hour), // already expired
+			Versions: map[string]string{"web_connectivity": "v0.5"},
+		}
+		data, err := json.Marshal(response)
+		if err != nil {
+			t.Fatal(err)
+		}
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return data, nil
+			},
+		}
+		if got := GetExperimentVersion(memstore, "web_connectivity", defaultVersion); got != defaultVersion {
+			t.Fatalf("expected %q, got %q", defaultVersion, got)
+		}
+	})
+
+	t.Run("in case of success", func(t *testing.T) {
+		response := &checkInFlagsWrapper{
+			Expire:   time.Now().Add(time.Hour),
+			Versions: map[string]string{"web_connectivity": "v0.5"},
+		}
+		data, err := json.Marshal(response)
+		if err != nil {
+			t.Fatal(err)
+		}
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return data, nil
+			},
+		}
+		if got := GetExperimentVersion(memstore, "web_connectivity", defaultVersion); got != "v0.5" {
+			t.Fatalf("expected v0.5, got %q", got)
+		}
+		// an experiment not in the map yields the default
+		if got := GetExperimentVersion(memstore, "facebook_messenger", defaultVersion); got != defaultVersion {
+			t.Fatalf("expected %q, got %q", defaultVersion, got)
 		}
 	})
 }
