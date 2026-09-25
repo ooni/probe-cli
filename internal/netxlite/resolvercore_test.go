@@ -1,6 +1,7 @@
 package netxlite
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -254,6 +255,60 @@ func TestResolverSystem(t *testing.T) {
 			// resolver address (and never anywhere else).
 			if dialed != address {
 				t.Fatal("did not dial the discovered system resolver address, got:", dialed)
+			}
+		})
+
+		t.Run("when the query succeeds it returns the SVCB records", func(t *testing.T) {
+			r := &resolverSystem{
+				provider: (&Netx{Underlying: &mocks.UnderlyingNetwork{
+					MockGetSystemResolverAddress: func() (string, bool) {
+						return "8.8.8.8:53", true
+					},
+				}}).MaybeCustomUnderlyingNetwork(),
+				dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+						var respReader *bytes.Reader
+						return &mocks.Conn{
+							MockSetDeadline: func(t time.Time) error { return nil },
+							MockWrite: func(b []byte) (int, error) {
+								query := &dns.Msg{}
+								if err := query.Unpack(b); err != nil {
+									return 0, err
+								}
+								reply := new(dns.Msg)
+								reply.SetReply(query)
+								reply.Answer = []dns.RR{&dns.SVCB{
+									Hdr: dns.RR_Header{
+										Name:   query.Question[0].Name,
+										Rrtype: dns.TypeSVCB,
+										Class:  dns.ClassINET,
+									},
+									Priority: 1,
+									Target:   "dns.google.",
+								}}
+								raw, err := reply.Pack()
+								if err != nil {
+									return 0, err
+								}
+								respReader = bytes.NewReader(raw)
+								return len(b), nil
+							},
+							MockRead: func(b []byte) (int, error) {
+								return respReader.Read(b)
+							},
+							MockClose:     func() error { return nil },
+							MockLocalAddr: func() net.Addr { return &net.UDPAddr{} },
+						}, nil
+					},
+				},
+				t: &mocks.DNSTransport{},
+			}
+			svcb, err := r.LookupSVCB(context.Background(), "_dns.resolver.arpa.")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(svcb) != 1 || svcb[0].TargetName != "dns.google." {
+				t.Fatal("unexpected result", svcb)
 			}
 		})
 	})
@@ -538,6 +593,76 @@ func TestResolverLogger(t *testing.T) {
 		})
 	})
 
+	t.Run("LookupSVCB", func(t *testing.T) {
+		t.Run("with success", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
+			expected := []*model.SVCB{{TargetName: "dns.google"}}
+			r := &resolverLogger{
+				Logger: lo,
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return expected, nil
+					},
+					MockNetwork: func() string {
+						return StdlibResolverGetaddrinfo
+					},
+					MockAddress: func() string {
+						return ""
+					},
+				},
+			}
+			svcb, err := r.LookupSVCB(context.Background(), "dns.google")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, svcb); diff != "" {
+				t.Fatal(diff)
+			}
+			if count != 2 {
+				t.Fatal("unexpected count")
+			}
+		})
+
+		t.Run("with failure", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
+			expected := errors.New("mocked error")
+			r := &resolverLogger{
+				Logger: lo,
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return nil, expected
+					},
+					MockNetwork: func() string {
+						return StdlibResolverGetaddrinfo
+					},
+					MockAddress: func() string {
+						return ""
+					},
+				},
+			}
+			svcb, err := r.LookupSVCB(context.Background(), "dns.google")
+			if !errors.Is(err, expected) {
+				t.Fatal("not the error we expected", err)
+			}
+			if svcb != nil {
+				t.Fatal("expected nil result here")
+			}
+			if count != 2 {
+				t.Fatal("unexpected count")
+			}
+		})
+	})
+
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		var called bool
 		child := &mocks.Resolver{
@@ -783,6 +908,32 @@ func TestResolverIDNA(t *testing.T) {
 		})
 	})
 
+	t.Run("LookupSVCB", func(t *testing.T) {
+		t.Run("passes the domain through unchanged", func(t *testing.T) {
+			expected := []*model.SVCB{{TargetName: "dns.google"}}
+			var got string
+			r := &resolverIDNA{
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						got = domain
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := r.LookupSVCB(ctx, "_dns.resolver.arpa.")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != "_dns.resolver.arpa." {
+				t.Fatal("domain was modified:", got)
+			}
+			if diff := cmp.Diff(expected, svcb); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	})
+
 	t.Run("Network", func(t *testing.T) {
 		child := &mocks.Resolver{
 			MockNetwork: func() string {
@@ -960,6 +1111,62 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 		})
 	})
 
+	t.Run("LookupSVCB", func(t *testing.T) {
+		t.Run("with IPv4 addr", func(t *testing.T) {
+			r := &ResolverShortCircuitIPAddr{
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := r.LookupSVCB(ctx, "8.8.8.8")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(svcb) != 1 || len(svcb[0].IPv4) != 1 || svcb[0].IPv4[0] != "8.8.8.8" {
+				t.Fatal("invalid result", svcb)
+			}
+		})
+
+		t.Run("with IPv6 addr", func(t *testing.T) {
+			r := &ResolverShortCircuitIPAddr{
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := r.LookupSVCB(ctx, "::1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(svcb) != 1 || len(svcb[0].IPv6) != 1 || svcb[0].IPv6[0] != "::1" {
+				t.Fatal("invalid result", svcb)
+			}
+		})
+
+		t.Run("with domain", func(t *testing.T) {
+			r := &ResolverShortCircuitIPAddr{
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := r.LookupSVCB(ctx, "dns.google")
+			if err == nil || err.Error() != "mocked error" {
+				t.Fatal("not the error we expected", err)
+			}
+			if svcb != nil {
+				t.Fatal("invalid result")
+			}
+		})
+	})
+
 	t.Run("LookupNS", func(t *testing.T) {
 		t.Run("with IPv4 addr", func(t *testing.T) {
 			r := &ResolverShortCircuitIPAddr{
@@ -1126,6 +1333,18 @@ func TestNullResolver(t *testing.T) {
 		r.CloseIdleConnections() // for coverage
 	})
 
+	t.Run("LookupSVCB", func(t *testing.T) {
+		r := &NullResolver{}
+		ctx := context.Background()
+		svcb, err := r.LookupSVCB(ctx, "dns.google")
+		if !errors.Is(err, ErrNoResolver) {
+			t.Fatal("not the error we expected", err)
+		}
+		if svcb != nil {
+			t.Fatal("expected nil result")
+		}
+	})
+
 	t.Run("LookupNS", func(t *testing.T) {
 		r := &NullResolver{}
 		ctx := context.Background()
@@ -1261,6 +1480,46 @@ func TestResolverErrWrapper(t *testing.T) {
 			}
 			if https != nil {
 				t.Fatal("unexpected addrs")
+			}
+		})
+	})
+
+	t.Run("LookupSVCB", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expected := []*model.SVCB{{TargetName: "example.com"}}
+			reso := &resolverErrWrapper{
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := reso.LookupSVCB(ctx, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, svcb); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := io.EOF
+			reso := &resolverErrWrapper{
+				Resolver: &mocks.Resolver{
+					MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+						return nil, expected
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := reso.LookupSVCB(ctx, "")
+			if err == nil || err.Error() != FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if svcb != nil {
+				t.Fatal("unexpected result")
 			}
 		})
 	})
