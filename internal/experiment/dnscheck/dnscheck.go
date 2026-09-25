@@ -80,6 +80,7 @@ type Config struct {
 	Domain        string `json:"domain" ooni:"domain to resolve using the specified resolver"`
 	HTTP3Enabled  bool   `json:"http3_enabled" ooni:"use http3 instead of http/1.1 or http2"`
 	HTTPHost      string `json:"http_host" ooni:"force using specific HTTP Host header"`
+	SVCBEnabled   bool   `json:"svcb_enabled" ooni:"probe DDR (SVCB for _dns.resolver.arpa or _dns.<hostname>) support for this resolver"`
 	TLSServerName string `json:"tls_server_name" ooni:"force TLS to using a specific SNI in Client Hello"`
 	TLSVersion    string `json:"tls_version" ooni:"Force specific TLS version (e.g. 'TLSv1.3')"`
 }
@@ -90,6 +91,7 @@ type TestKeys struct {
 	Domain           string                        `json:"domain"`
 	HTTP3Enabled     bool                          `json:"x_http3_enabled,omitempty"`
 	HTTPHost         string                        `json:"x_http_host,omitempty"`
+	SVCBEnabled      bool                          `json:"x_svcb_enabled,omitempty"`
 	TLSServerName    string                        `json:"x_tls_server_name,omitempty"`
 	TLSVersion       string                        `json:"x_tls_version,omitempty"`
 	Residual         bool                          `json:"x_residual"`
@@ -156,6 +158,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.Domain = domain
 	tk.HTTP3Enabled = config.HTTP3Enabled
 	tk.HTTPHost = config.HTTPHost
+	tk.SVCBEnabled = config.SVCBEnabled
 	tk.TLSServerName = config.TLSServerName
 	tk.TLSVersion = config.TLSVersion
 	tk.Residual = m.Endpoints != nil
@@ -168,8 +171,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if err != nil {
 		return fmt.Errorf("%w: %s", ErrInvalidURL, err.Error())
 	}
+
 	switch URL.Scheme {
-	case "https", "dot", "udp", "tcp":
+	case "https", "dot", "udp", "tcp", "system":
 		// all good
 	default:
 		return ErrUnsupportedURLScheme
@@ -177,53 +181,64 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// Implementation note: we must not return an error from now. Returning an
 	// error means that we don't have a measurement to submit.
-
-	// 4. possibly expand a domain to a list of IP addresses.
-	//
-	// Implementation note: because the resolver we constructed also deals
-	// with IP addresses successfully, we just get back the IPs when we are
-	// passing as input an IP address rather than a domain name.
 	begin := measurement.MeasurementStartTimeSaved
-	evsaver := new(tracex.Saver)
-	resolver := netx.NewResolver(netx.Config{
-		BogonIsError: true,
-		Logger:       sess.Logger(),
-		Saver:        evsaver,
-	})
-	addrs, err := m.lookupHost(ctx, URL.Hostname(), resolver)
-	queries := tracex.NewDNSQueriesList(begin, evsaver.Read())
-	tk.BootstrapFailure = tracex.NewFailure(err)
-	if len(queries) > 0 {
-		// We get no queries in case we are resolving an IP address, since
-		// the address resolver doesn't generate events
-		tk.Bootstrap = &urlgetter.TestKeys{Queries: queries}
-	}
 
-	// 5. merge default addresses for the domain with the ones that
-	// we did discover here and measure them all.
-	allAddrs := make(map[string]bool)
-	for _, addr := range addrs {
-		allAddrs[addr] = true
-	}
-	for _, addr := range strings.Split(config.DefaultAddrs, " ") {
-		if addr != "" {
+	// 4. determine the resolver endpoint URLs we need to measure.
+	var resolverURLs []string
+	if URL.Scheme == "system" {
+		// there is no domain to bootstrap
+		resolverURLs = []string{input}
+	} else {
+		// Possibly expand the resolver domain to a list of IP addresses.
+		//
+		// Implementation note: because the resolver we constructed also deals
+		// with IP addresses successfully, we just get back the IPs when we are
+		// passing as input an IP address rather than a domain name.
+		evsaver := new(tracex.Saver)
+		resolver := netx.NewResolver(netx.Config{
+			BogonIsError: true,
+			Logger:       sess.Logger(),
+			Saver:        evsaver,
+		})
+		addrs, err := m.lookupHost(ctx, URL.Hostname(), resolver)
+		queries := tracex.NewDNSQueriesList(begin, evsaver.Read())
+		tk.BootstrapFailure = tracex.NewFailure(err)
+		if len(queries) > 0 {
+			// We get no queries in case we are resolving an IP address, since
+			// the address resolver doesn't generate events
+			tk.Bootstrap = &urlgetter.TestKeys{Queries: queries}
+		}
+
+		// Merge default addresses for the domain with the ones we discovered.
+		allAddrs := make(map[string]bool)
+		for _, addr := range addrs {
 			allAddrs[addr] = true
+		}
+		for _, addr := range strings.Split(config.DefaultAddrs, " ") {
+			if addr != "" {
+				allAddrs[addr] = true
+			}
+		}
+		for addr := range allAddrs {
+			resolverURLs = append(resolverURLs, makeResolverURL(URL, addr))
 		}
 	}
 
-	// 6. determine all the domain lookups we need to perform
-	const maxParallelism = 10
-	parallelism := maxParallelism
-	if parallelism > len(allAddrs) {
-		parallelism = len(allAddrs)
+	// 5. determine the SVCB name to probe on this resolver.
+	var svcbName string
+	if config.SVCBEnabled {
+		svcbName = svcbNameForResolver(URL)
 	}
 
-	// Determine the SVCB name to probe on this resolver (empty means skip).
-	svcbName := svcbNameForResolver(URL)
-
+	// 6. build the urlgetter inputs for all the resolver endpoints.
+	const maxParallelism = 10
+	parallelism := maxParallelism
+	if parallelism > len(resolverURLs) {
+		parallelism = len(resolverURLs)
+	}
 	var inputs []urlgetter.MultiInput
 	multi := urlgetter.Multi{Begin: begin, Parallelism: parallelism, Session: sess}
-	for addr := range allAddrs {
+	for _, resolverURL := range resolverURLs {
 		inputs = append(inputs, urlgetter.MultiInput{
 			Config: urlgetter.Config{
 				DNSHTTPHost:      config.httpHost(URL.Host),
@@ -231,7 +246,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 				DNSTLSVersion:    config.TLSVersion,
 				HTTP3Enabled:     config.HTTP3Enabled,
 				RejectDNSBogons:  true, // bogons are errors in this context
-				ResolverURL:      makeResolverURL(URL, addr),
+				ResolverURL:      resolverURL,
 				Timeout:          15 * time.Second,
 				DNSSVCBName:      svcbName,
 			},
@@ -257,11 +272,11 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 // svcbNameForResolver returns the name to query via SVCB for the given resolver.
 //
-// For unencrypted Do53 resolvers we query _dns.resolver.arpa. and for
-// encrypted named resolvers we query _dns.<hostname>.
+// For unencrypted Do53 resolvers (and the system resolver) we query _dns.resolver.arpa.
+// and for encrypted named resolvers we query _dns.<hostname>.
 func svcbNameForResolver(URL *url.URL) string {
 	switch URL.Scheme {
-	case "udp", "tcp":
+	case "udp", "tcp", "system":
 		return ddrDomain
 	case "https", "dot":
 		if host := URL.Hostname(); host != "" {
