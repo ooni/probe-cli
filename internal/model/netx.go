@@ -657,6 +657,10 @@ type UnderlyingNetwork interface {
 	// GetaddrinfoResolverNetwork returns the resolver network.
 	GetaddrinfoResolverNetwork() string
 
+	// GetSystemResolverAddress returns the "host:port" address of a resolver
+	// configured on the system.
+	GetSystemResolverAddress() (address string, ok bool)
+
 	// ListenTCP is equivalent to net.ListenTCP.
 	ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error)
 

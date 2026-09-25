@@ -122,17 +122,25 @@ func TestResolverSystem(t *testing.T) {
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		var called bool
+		var transportCalled, dialerCalled bool
 		r := &resolverSystem{
+			dialer: &mocks.Dialer{
+				MockCloseIdleConnections: func() {
+					dialerCalled = true
+				},
+			},
 			t: &mocks.DNSTransport{
 				MockCloseIdleConnections: func() {
-					called = true
+					transportCalled = true
 				},
 			},
 		}
 		r.CloseIdleConnections()
-		if !called {
-			t.Fatal("not called")
+		if !transportCalled {
+			t.Fatal("transport not called")
+		}
+		if !dialerCalled {
+			t.Fatal("dialer not called")
 		}
 	})
 
@@ -199,14 +207,55 @@ func TestResolverSystem(t *testing.T) {
 	})
 
 	t.Run("LookupSVCB", func(t *testing.T) {
-		r := &resolverSystem{}
-		svcb, err := r.LookupSVCB(context.Background(), "x.org")
-		if !errors.Is(err, ErrNoDNSTransport) {
-			t.Fatal("not the error we expected")
-		}
-		if svcb != nil {
-			t.Fatal("expected nil result")
-		}
+		t.Run("when the system resolver address is not available", func(t *testing.T) {
+			r := &resolverSystem{
+				provider: (&Netx{Underlying: &mocks.UnderlyingNetwork{
+					MockGetSystemResolverAddress: func() (string, bool) {
+						return "", false
+					},
+				}}).MaybeCustomUnderlyingNetwork(),
+				dialer: &mocks.Dialer{},
+				t:      &mocks.DNSTransport{},
+			}
+			svcb, err := r.LookupSVCB(context.Background(), "x.org")
+			if !errors.Is(err, ErrNoDNSTransport) {
+				t.Fatal("not the error we expected", err)
+			}
+			if svcb != nil {
+				t.Fatal("expected nil result")
+			}
+		})
+
+		t.Run("when available it queries the discovered address over Do53", func(t *testing.T) {
+			const address = "8.8.8.8:53"
+			var dialed string
+			r := &resolverSystem{
+				provider: (&Netx{Underlying: &mocks.UnderlyingNetwork{
+					MockGetSystemResolverAddress: func() (string, bool) {
+						return address, true
+					},
+				}}).MaybeCustomUnderlyingNetwork(),
+				dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+						dialed = addr
+						return nil, errors.New("mocked")
+					},
+				},
+				t: &mocks.DNSTransport{},
+			}
+			svcb, err := r.LookupSVCB(context.Background(), "_dns.resolver.arpa")
+			if err == nil {
+				t.Fatal("expected an error here")
+			}
+			if svcb != nil {
+				t.Fatal("expected nil result")
+			}
+			// We must have issued the Do53 query to the discovered system
+			// resolver address (and never anywhere else).
+			if dialed != address {
+				t.Fatal("did not dial the discovered system resolver address, got:", dialed)
+			}
+		})
 	})
 
 	t.Run("LookupNS", func(t *testing.T) {

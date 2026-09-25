@@ -38,7 +38,9 @@ func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL 
 
 func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 	return &resolverSystem{
-		t: wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
+		dialer:   netx.NewDialerWithoutResolver(model.DiscardLogger),
+		provider: netx.MaybeCustomUnderlyingNetwork(),
+		t:        wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
 	}
 }
 
@@ -108,6 +110,14 @@ func WrapResolver(logger model.DebugLogger, resolver model.Resolver) model.Resol
 
 // resolverSystem is the system resolver.
 type resolverSystem struct {
+	// dialer dials the connections used to issue Do53 queries that the
+	// getaddrinfo API cannot express.
+	dialer model.Dialer
+
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *MaybeCustomUnderlyingNetwork
+
+	// t is the getaddrinfo-based transport used for LookupHost.
 	t model.DNSTransport
 }
 
@@ -139,6 +149,7 @@ func (r *resolverSystem) Address() string {
 
 func (r *resolverSystem) CloseIdleConnections() {
 	r.t.CloseIdleConnections()
+	r.dialer.CloseIdleConnections()
 }
 
 func (r *resolverSystem) LookupHTTPS(
@@ -148,7 +159,20 @@ func (r *resolverSystem) LookupHTTPS(
 
 func (r *resolverSystem) LookupSVCB(
 	ctx context.Context, domain string) ([]*model.SVCB, error) {
-	return nil, ErrNoDNSTransport
+	// The getaddrinfo API cannot express SVCB queries, so we issue the query over
+	// Do53 to a system-configured resolver.
+	address, ok := r.provider.Get().GetSystemResolverAddress()
+	if !ok {
+		return nil, ErrNoDNSTransport
+	}
+	txp := NewUnwrappedDNSOverUDPTransport(r.dialer, address)
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(domain, dns.TypeSVCB, txp.RequiresPadding())
+	resp, err := txp.RoundTrip(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return resp.DecodeSVCB()
 }
 
 func (r *resolverSystem) LookupNS(
