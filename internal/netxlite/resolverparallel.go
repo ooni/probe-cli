@@ -92,6 +92,18 @@ func (r *ParallelResolver) LookupHTTPS(
 	return response.DecodeHTTPS()
 }
 
+// LookupSVCB implements Resolver.LookupSVCB.
+func (r *ParallelResolver) LookupSVCB(
+	ctx context.Context, hostname string) ([]*model.SVCB, error) {
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeSVCB, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return response.DecodeSVCB()
+}
+
 // parallelResolverResult is the internal representation of a
 // lookup using either the A or the AAAA query type.
 type parallelResolverResult struct {

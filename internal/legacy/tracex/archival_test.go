@@ -2,6 +2,7 @@ package tracex
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"io"
 	"net/http"
@@ -381,6 +382,99 @@ func TestNewDNSQueriesList(t *testing.T) {
 				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
 			Hostname:  "dns.google.com",
 			QueryType: "AAAA",
+			T:         0.2,
+		}},
+	}, {
+		name: "successful SVCB run yields only an SVCB entry (no A/AAAA)",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveDone{&EventValue{
+				DNSQueryType:     "SVCB",
+				DNSSVCBResponses: []*model.SVCB{{TargetName: ".", ALPN: []string{"h2", "h3"}}},
+				Hostname:         "_dns.dns.google",
+				Time:             begin.Add(200 * time.Millisecond),
+			}}},
+		},
+		want: []DNSQueryEntry{{
+			Answers: []DNSAnswerEntry{{
+				AnswerType: "SVCB",
+				SVCB: &model.SVCBData{
+					TargetName: ".",
+					Params: map[string]string{
+						"alpn":     "h2,h3",
+						"ipv4hint": "",
+						"ipv6hint": "",
+					},
+				},
+			}},
+			Hostname:  "_dns.dns.google",
+			QueryType: "SVCB",
+			T:         0.2,
+		}},
+	}, {
+		name: "failed SVCB run records the query with a failure and no answers",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveDone{&EventValue{
+				DNSQueryType: "SVCB",
+				Err:          netxlite.FailureDNSNXDOMAINError,
+				Hostname:     "_dns.dns.google",
+				Time:         begin.Add(200 * time.Millisecond),
+			}}},
+		},
+		want: []DNSQueryEntry{{
+			Answers: nil,
+			Failure: NewFailure(
+				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
+			Hostname:  "_dns.dns.google",
+			QueryType: "SVCB",
+			T:         0.2,
+		}},
+	}, {
+		name: "SVCB run emits one answer entry per record and encodes ECH",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveDone{&EventValue{
+				DNSQueryType: "SVCB",
+				DNSSVCBResponses: []*model.SVCB{{
+					TargetName: ".",
+					ALPN:       []string{"h2", "h3"},
+					Ech:        []byte("echconfig"),
+				}, {
+					TargetName: "doh.example",
+					ALPN:       []string{"h2"},
+					Port:       8443,
+				}},
+				Hostname: "_dns.dns.google",
+				Time:     begin.Add(200 * time.Millisecond),
+			}}},
+		},
+		want: []DNSQueryEntry{{
+			Answers: []DNSAnswerEntry{{
+				AnswerType: "SVCB",
+				SVCB: &model.SVCBData{
+					TargetName: ".",
+					Params: map[string]string{
+						"alpn":     "h2,h3",
+						"ipv4hint": "",
+						"ipv6hint": "",
+						"ech":      base64.StdEncoding.EncodeToString([]byte("echconfig")),
+					},
+				},
+			}, {
+				AnswerType: "SVCB",
+				SVCB: &model.SVCBData{
+					TargetName: "doh.example",
+					Params: map[string]string{
+						"alpn":     "h2",
+						"ipv4hint": "",
+						"ipv6hint": "",
+						"port":     "8443",
+					},
+				},
+			}},
+			Hostname:  "_dns.dns.google",
+			QueryType: "SVCB",
 			T:         0.2,
 		}},
 	}}

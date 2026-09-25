@@ -5,6 +5,7 @@ package tracex
 //
 
 import (
+	"encoding/base64"
 	"errors"
 	"net"
 	"strconv"
@@ -136,14 +137,9 @@ func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 			continue
 		}
 		ev := wrapper.Value()
-		for _, qtype := range []dnsQueryType{"A", "AAAA"} {
+		for _, qtype := range dnsQueryTypesForEvent(ev) {
 			entry := qtype.makeQueryEntry(begin, ev)
-			for _, addr := range ev.Addresses {
-				if qtype.ipOfType(addr) {
-					entry.Answers = append(
-						entry.Answers, qtype.makeAnswerEntry(addr))
-				}
-			}
+			entry.Answers = qtype.makeAnswerEntries(ev)
 			if len(entry.Answers) <= 0 && ev.Err.IsNil() {
 				// This allows us to skip cases where the server does not have
 				// an IPv6 address but has an IPv4 address. Instead, when we
@@ -158,6 +154,61 @@ func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 		}
 	}
 	return
+}
+
+// dnsQueryTypesForEvent returns the archival query types to synthesize for a
+// resolve event.
+func dnsQueryTypesForEvent(ev *EventValue) []dnsQueryType {
+	if ev.DNSQueryType == "SVCB" {
+		return []dnsQueryType{"SVCB"}
+	}
+	return []dnsQueryType{"A", "AAAA"}
+}
+
+// makeAnswerEntries builds the archival answers for this query type from the
+// resolve event.
+func (qtype dnsQueryType) makeAnswerEntries(ev *EventValue) (out []DNSAnswerEntry) {
+	switch qtype {
+	case "A", "AAAA":
+		for _, addr := range ev.Addresses {
+			if qtype.ipOfType(addr) {
+				out = append(out, qtype.makeAnswerEntry(addr))
+			}
+		}
+	case "SVCB":
+		for _, record := range ev.DNSSVCBResponses {
+			out = append(out, DNSAnswerEntry{
+				AnswerType: "SVCB",
+				SVCB:       newSVCBData(record),
+			})
+		}
+	}
+	return
+}
+
+// newSVCBData converts a resolved SVCB record into its archival representation.
+func newSVCBData(record *model.SVCB) *model.SVCBData {
+	svcb := &model.SVCBData{
+		Priority:   record.Priority,
+		TargetName: record.TargetName,
+		Params:     map[string]string{},
+	}
+	svcb.Params["alpn"] = strings.Join(record.ALPN, ",")
+	svcb.Params["ipv4hint"] = strings.Join(record.IPv4, ",")
+	svcb.Params["ipv6hint"] = strings.Join(record.IPv6, ",")
+	if record.DoHPath != "" {
+		svcb.Params["dohpath"] = record.DoHPath
+	}
+	if record.OHttp {
+		svcb.Params["ohttp"] = strconv.FormatBool(record.OHttp)
+	}
+	if record.Port != 0 {
+		svcb.Params["port"] = strconv.Itoa(int(record.Port))
+	}
+	if len(record.Ech) > 0 {
+		svcb.Params["ech"] = base64.StdEncoding.EncodeToString(record.Ech)
+	}
+	return svcb
 }
 
 func (qtype dnsQueryType) ipOfType(addr string) bool {

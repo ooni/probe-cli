@@ -41,6 +41,11 @@ func (r *ContextAwareSystemResolver) LookupHTTPS(ctx context.Context, domain str
 	return r.wrap(ctx).LookupHTTPS(ctx, domain)
 }
 
+// LookupSVCB implements model.Resolver.
+func (r *ContextAwareSystemResolver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	return r.wrap(ctx).LookupSVCB(ctx, domain)
+}
+
 // LookupHost implements model.Resolver.
 func (r *ContextAwareSystemResolver) LookupHost(ctx context.Context, hostname string) (addrs []string, err error) {
 	return r.wrap(ctx).LookupHost(ctx, hostname)
@@ -104,6 +109,14 @@ func (r *resolver) CloseIdleConnections() {
 func (r *resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	r.updateCounterBytesSent(domain, 1)
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
+	r.updateCounterBytesRecv(err)
+	return out, err
+}
+
+// LookupSVCB implements model.Resolver
+func (r *resolver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	r.updateCounterBytesSent(domain, 1)
+	out, err := r.Resolver.LookupSVCB(ctx, domain)
 	r.updateCounterBytesRecv(err)
 	return out, err
 }

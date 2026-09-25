@@ -148,6 +148,10 @@ func (r *dnsOverGetaddrinfoResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
+func (r *dnsOverGetaddrinfoResponse) DecodeSVCB() ([]*model.SVCB, error) {
+	return nil, ErrNoDNSTransport
+}
+
 func (r *dnsOverGetaddrinfoResponse) DecodeLookupHost() ([]string, error) {
 	if len(r.addrs) <= 0 {
 		return nil, ErrOODNSNoAnswer

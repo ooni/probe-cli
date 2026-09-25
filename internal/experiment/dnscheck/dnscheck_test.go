@@ -45,7 +45,7 @@ func TestExperimentNameAndVersion(t *testing.T) {
 	if measurer.ExperimentName() != "dnscheck" {
 		t.Error("unexpected experiment name")
 	}
-	if measurer.ExperimentVersion() != "0.9.3" {
+	if measurer.ExperimentVersion() != "0.9.4" {
 		t.Error("unexpected experiment version")
 	}
 }
@@ -265,5 +265,31 @@ func TestDNSCheckWait(t *testing.T) {
 	run("dot://1dot1dot1dot1.cloudflare-dns.com")
 	if endpoints.count.Load() < 1 {
 		t.Fatal("did not sleep")
+	}
+}
+
+func TestSVCBNameForResolver(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"udp uses the DDR arpa domain", "udp://8.8.8.8:53", ddrDomain},
+		{"tcp uses the DDR arpa domain", "tcp://8.8.8.8:53", ddrDomain},
+		{"system uses the DDR arpa domain", "system:///", ddrDomain},
+		{"https uses the _dns service label", "https://dns.google/dns-query", "_dns.dns.google"},
+		{"dot uses the _dns service label", "dot://dns.google", "_dns.dns.google"},
+		{"unsupported scheme yields empty", "ftp://example.org", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			URL, err := url.Parse(tt.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := svcbNameForResolver(URL); got != tt.want {
+				t.Fatalf("svcbNameForResolver(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
 	}
 }
