@@ -119,4 +119,17 @@ func TestUnderlyingNetwork(t *testing.T) {
 			t.Fatal("unexpected resolver network")
 		}
 	})
+
+	t.Run("GetSystemResolverAddress", func(t *testing.T) {
+		const expect = "8.8.8.8:53"
+		un := &UnderlyingNetwork{
+			MockGetSystemResolverAddress: func() (string, bool) {
+				return expect, true
+			},
+		}
+		got, ok := un.GetSystemResolverAddress()
+		if !ok || got != expect {
+			t.Fatal("unexpected system resolver address", got, ok)
+		}
+	})
 }
