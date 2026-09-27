@@ -1,6 +1,8 @@
 package tlsmiddlebox
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
@@ -45,13 +47,33 @@ type ICMPIteration struct {
 	ICMPError *model.ArchivalICMPErrorMessage `json:"icmp_error"`
 }
 
+func errorChain(err error) []model.FailureChainData {
+	if err == nil {
+		return nil
+	}
+
+	var chain []model.FailureChainData
+
+	for err != nil {
+		chain = append(chain, model.FailureChainData{
+			Type:  fmt.Sprintf("%T", err),
+			Error: err.Error(),
+		})
+
+		err = errors.Unwrap(err)
+	}
+
+	return chain
+}
+
 // NewIterationFromHandshake returns a new iteration from a model.ArchivalTLSOrQUICHandshakeResult
 func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model.ArchivalTLSOrQUICHandshakeResult) *Iteration {
 	if err != nil {
 		return &Iteration{
 			TTL: ttl,
 			Handshake: &model.ArchivalTLSOrQUICHandshakeResult{
-				Failure: tracex.NewFailure(err),
+				Failure:      tracex.NewFailure(err),
+				FailureChain: errorChain(err),
 			},
 		}
 	}

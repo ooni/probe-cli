@@ -128,7 +128,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 4. reset the TTL value to ensure that conn closes successfully
 	// Note: Do not check for errors here
 	_ = setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
+	iteration := newIterationFromHandshake(ttl, err, soErr, trace.FirstTLSHandshakeOrNil())
 	tr.addIterations(iteration)
 }
 

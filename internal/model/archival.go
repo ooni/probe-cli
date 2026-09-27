@@ -204,6 +204,12 @@ type ArchivalICMPQuotation struct {
 	RemainingPayload []byte `json:"remaining_payload"`
 }
 
+// FailureChainData is the entire traceback of the failure, used for the tlsmiddlebox probe.
+type FailureChainData struct {
+	Type  string `json:"type"`
+	Error string `json:"error"`
+}
+
 //
 // DNS lookup
 //
@@ -276,6 +282,7 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	Address            string               `json:"address"`
 	CipherSuite        string               `json:"cipher_suite"`
 	Failure            *string              `json:"failure"`
+	FailureChain       []FailureChainData   `json:"failure_chain,omitempty"`
 	SoError            *string              `json:"so_error,omitempty"`
 	NegotiatedProtocol string               `json:"negotiated_protocol"`
 	NoTLSVerify        bool                 `json:"no_tls_verify"`
