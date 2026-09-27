@@ -53,6 +53,38 @@ func TestDNSQueryType(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("dnsQueryTypesForEvent", func(t *testing.T) {
+		tests := []struct {
+			name         string
+			dnsQueryType string
+			want         []dnsQueryType
+		}{{
+			name:         "empty query type (host lookup) yields A and AAAA",
+			dnsQueryType: "",
+			want:         []dnsQueryType{"A", "AAAA"},
+		}, {
+			name:         "ANY (system resolver host lookup) yields A and AAAA",
+			dnsQueryType: "ANY",
+			want:         []dnsQueryType{"A", "AAAA"},
+		}, {
+			name:         "SVCB is recorded under its own name",
+			dnsQueryType: "SVCB",
+			want:         []dnsQueryType{"SVCB"},
+		}, {
+			name:         "any other explicit query type is recorded verbatim",
+			dnsQueryType: "HTTPS",
+			want:         []dnsQueryType{"HTTPS"},
+		}}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				got := dnsQueryTypesForEvent(&EventValue{DNSQueryType: tt.dnsQueryType})
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
 }
 
 func TestNewTCPConnectList(t *testing.T) {

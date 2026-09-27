@@ -159,10 +159,18 @@ func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 // dnsQueryTypesForEvent returns the archival query types to synthesize for a
 // resolve event.
 func dnsQueryTypesForEvent(ev *EventValue) []dnsQueryType {
-	if ev.DNSQueryType == "SVCB" {
-		return []dnsQueryType{"SVCB"}
+	switch ev.DNSQueryType {
+	case "", "ANY":
+		// Host lookups arrive with an empty query type which means they
+		// can only be resolved to A or AAAA results. We assume that
+		// ANY satisfies the same case since it's only used for system
+		// resolvers which support A/AAAA queries only.
+		return []dnsQueryType{"A", "AAAA"}
+	default:
+		// Any other query type (e.g. SVCB) is recorded under its own name;
+		// makeAnswerEntries knows how to build answers for the types we support.
+		return []dnsQueryType{dnsQueryType(ev.DNSQueryType)}
 	}
-	return []dnsQueryType{"A", "AAAA"}
 }
 
 // makeAnswerEntries builds the archival answers for this query type from the

@@ -24,7 +24,7 @@ import (
 
 const (
 	testName      = "dnscheck"
-	testVersion   = "0.9.4"
+	testVersion   = "1.0.0"
 	defaultDomain = "example.org"
 
 	// ddrDomain is the special-use domain queried to probe DDR support.
