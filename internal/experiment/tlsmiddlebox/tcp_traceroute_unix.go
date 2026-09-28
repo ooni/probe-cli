@@ -288,7 +288,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 		asn, org, err = LookupASN(ip.String(), "")
 		country_code, err = LookupCC(ip.String(), "")
 
-		if privacyMode == "unsafe" {
+		if privacyMode == "advanced" {
 			ip_network := ip.Mask(net.CIDRMask(24, 32))
 
 			ii = &ICMPIteration{

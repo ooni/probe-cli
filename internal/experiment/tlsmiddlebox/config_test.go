@@ -151,12 +151,12 @@ func TestConfig_privacymode(t *testing.T) {
 		}
 	})
 
-	t.Run("unsafe Privacy Mode", func(t *testing.T) {
+	t.Run("advanced Privacy Mode", func(t *testing.T) {
 		c := Config{
-			PrivacyMode: "unsafe",
+			PrivacyMode: "advanced",
 		}
-		if c.privacymode() != "unsafe" {
-			t.Fatalf("expected unsafe Privacy Mode, got %s", c.privacymode())
+		if c.privacymode() != "advanced" {
+			t.Fatalf("expected advanced Privacy Mode, got %s", c.privacymode())
 		}
 	})
 
