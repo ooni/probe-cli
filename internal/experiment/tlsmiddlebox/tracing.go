@@ -101,7 +101,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil, sni)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return

@@ -131,7 +131,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 			t.Fatal("unexpected TTL value")
 		}
 		if iter.Handshake == nil || iter.Handshake.ServerName != "example.com" {
-			t.Fatal("unexpected servername")
+			t.Fatalf("unexpected servername %s", iter.Handshake.ServerName)
 		}
 		if *iter.Handshake.Failure != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected error", *iter.Handshake.Failure)
