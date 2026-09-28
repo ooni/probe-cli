@@ -100,7 +100,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement.TestKeys = tk
 	wg := new(sync.WaitGroup)
 	// 1. perform a DNSLookup
-	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), th.Hostname(), tk)
+	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), th.Hostname(), tk, config)
 	if err != nil {
 		return err
 	}
