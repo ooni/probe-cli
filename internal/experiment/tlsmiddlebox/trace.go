@@ -67,7 +67,7 @@ func errorChain(err error) []model.FailureChainData {
 }
 
 // NewIterationFromHandshake returns a new iteration from a model.ArchivalTLSOrQUICHandshakeResult
-func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model.ArchivalTLSOrQUICHandshakeResult) *Iteration {
+func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model.ArchivalTLSOrQUICHandshakeResult, sni string) *Iteration {
 	if err != nil {
 		if handshake != nil {
 			handshake = &model.ArchivalTLSOrQUICHandshakeResult{}
@@ -75,6 +75,7 @@ func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model
 
 		handshake.Failure = tracex.NewFailure(err)
 		handshake.FailureChain = errorChain(err)
+		handshake.ServerName = sni
 
 		return &Iteration{
 			TTL:       ttl,
