@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
@@ -35,20 +36,26 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 var (
-	// errNoInputProvided indicates you didn't provide any input
-	errNoInputProvided = errors.New("no input provided")
+	// ErrNoInput indicates that no input was provided
+	ErrNoInput = errors.New("no input provided")
 
-	// errInputIsNotAnURL indicates that input is not an URL
-	errInputIsNotAnURL = errors.New("input is not an URL")
+	// ErrInputIsNotAnURL indicates that the input is not an URL.
+	ErrInputIsNotAnURL = errors.New("input is not an URL")
 
-	// errInvalidInputScheme indicates that the input scheme is invalid
-	errInvalidInputScheme = errors.New("input scheme must be tlstrace")
+	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
+	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be tlstrace")
 
 	// errInvalidTestHelper indicates that the testhelper is invalid
 	errInvalidTestHelper = errors.New("invalid testhelper")
 
 	// errInvalidTHScheme indicates that the TH scheme is invalid
 	errInvalidTHScheme = errors.New("th scheme must be tlshandshake")
+
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // // Run implements ExperimentMeasurer.Run.
@@ -56,17 +63,32 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	_ = args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
-	if measurement.Input == "" {
-		return errNoInputProvided
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
 	}
-	parsed, err := url.Parse(string(measurement.Input))
+	target, ok := args.Target.(*Target)
+	config := target.Config
+
+	if !ok {
+		return ErrInvalidInputType
+	}
+
+	input := target.URL
+
+	if input == "" {
+		return ErrNoInput
+	}
+
+	URL, err := url.Parse(input)
+
 	if err != nil {
-		return errInputIsNotAnURL
+		return ErrInputIsNotAnURL
 	}
-	if parsed.Scheme != "tlstrace" {
-		return errInvalidInputScheme
+	if URL.Scheme != "tlstrace" {
+		return ErrUnsupportedInput
 	}
-	th, err := m.config.testhelper(parsed.Host)
+	th, err := target.Config.testhelper(URL.Host)
 	if err != nil {
 		return errInvalidTestHelper
 	}
@@ -85,7 +107,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	addrs = prepareAddrs(addrs, th.Port())
 	for i, addr := range addrs {
 		wg.Add(1)
-		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, parsed.Hostname(), tk, wg)
+		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, URL.Hostname(), tk, wg, config)
 	}
 	wg.Wait()
 	return nil
@@ -93,7 +115,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 // TraceAddress measures a single address after the DNSLookup
 func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, tk *TestKeys, wg *sync.WaitGroup) error {
+	address string, sni string, tk *TestKeys, wg *sync.WaitGroup, config *Config) error {
 	defer wg.Done()
 	trace := &CompleteTrace{
 		Address: address,
@@ -103,11 +125,11 @@ func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.
 	if err != nil {
 		return err // skip tracing if we cannot connect with default TTL
 	}
-	m.TLSTrace(ctx, index, zeroTime, logger, address, sni, trace)
+	m.TLSTrace(ctx, index, zeroTime, logger, address, sni, trace, config)
 	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) *Measurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() *Measurer {
+	return &Measurer{}
 }

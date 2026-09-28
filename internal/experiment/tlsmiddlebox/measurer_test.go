@@ -14,7 +14,7 @@ import (
 )
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "tlsmiddlebox" {
 		t.Fatal("unexpected ExperimentName")
 	}
@@ -25,10 +25,7 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 
 func TestMeasurer_input_failure(t *testing.T) {
 	runHelper := func(ctx context.Context, input string, th string, sniControl string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		m := NewExperimentMeasurer(Config{
-			TestHelper: th,
-			SNIControl: sniControl,
-		})
+		m := NewExperimentMeasurer()
 		meas := &model.Measurement{
 			Input: model.MeasurementInput(input),
 		}
@@ -42,6 +39,13 @@ func TestMeasurer_input_failure(t *testing.T) {
 			Callbacks:   callbacks,
 			Measurement: meas,
 			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					TestHelper: th,
+					SNIControl: sniControl,
+				},
+				URL: input,
+			},
 		}
 		err := m.Run(ctx, args)
 		return meas, m, err
@@ -49,21 +53,21 @@ func TestMeasurer_input_failure(t *testing.T) {
 
 	t.Run("with empty input", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "", "", "")
-		if !errors.Is(err, errNoInputProvided) {
+		if !errors.Is(err, ErrNoInput) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "\t", "", "")
-		if !errors.Is(err, errInputIsNotAnURL) {
+		if !errors.Is(err, ErrInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "http://8.8.8.8:443/", "", "")
-		if !errors.Is(err, errInvalidInputScheme) {
+		if !errors.Is(err, ErrUnsupportedInput) {
 			t.Fatal("unexpected error", err)
 		}
 	})

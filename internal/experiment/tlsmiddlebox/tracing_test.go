@@ -28,7 +28,7 @@ func TestStartIterativeTrace(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		zeroTime := time.Now()
 		ctx := context.Background()
 		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
@@ -57,7 +57,7 @@ func TestStartIterativeTrace(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		zeroTime := time.Now()
 		ctx := context.Background()
 		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
@@ -85,7 +85,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		tr := &IterativeTrace{}
 		zeroTime := time.Now()
 		ctx := context.Background()
@@ -116,7 +116,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		tr := &IterativeTrace{}
 		zeroTime := time.Now()
 		ctx := context.Background()

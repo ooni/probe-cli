@@ -32,17 +32,17 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 
 // TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, targetSNI string, trace *CompleteTrace) {
+	address string, targetSNI string, trace *CompleteTrace, config *Config) {
 	// perform a TCP traceroute
-	trace.TCPTraceroute = m.runTraceroute(index, zeroTime, logger, address, targetSNI)
+	trace.TCPTraceroute = m.runTraceroute(index, zeroTime, logger, address, targetSNI, config)
 	// perform an iterative trace with the control SNI
-	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
+	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, config.snicontrol())
 	// perform an iterative trace with the target SNI
 	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
 }
 
 func (m *Measurer) runTraceroute(index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string) (tr *IterativeTraceroute) {
+	address string, sni string, config *Config) (tr *IterativeTraceroute) {
 	tr = &IterativeTraceroute{
 		SNI:        sni,
 		Iterations: []*ICMPIteration{},
@@ -52,7 +52,7 @@ func (m *Measurer) runTraceroute(index int64, zeroTime time.Time, logger model.L
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		icmpIteration, err := tracerouteTCP(index, zeroTime, address, int(i), 3000, wg, logger, m.config.PrivacyMode)
+		icmpIteration, err := tracerouteTCP(index, zeroTime, address, int(i), 3000, wg, logger, config.privacymode())
 		if err != nil {
 			return
 		}
