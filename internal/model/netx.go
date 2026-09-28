@@ -201,8 +201,14 @@ type SVCB struct {
 	// TargetName is the target name of the SVCB record.
 	TargetName string
 
+	// Mandatory contains the mnemonics of the mandatory SvcParam keys.
+	Mandatory []string
+
 	// ALPN contains the ALPNs inside the SVCB reply.
 	ALPN []string
+
+	// NoDefaultALPN denotes whether the no-default-alpn SvcParam is present.
+	NoDefaultALPN bool
 
 	// IPv4 contains the IPv4 hint (which may be empty).
 	IPv4 []string
@@ -221,6 +227,9 @@ type SVCB struct {
 
 	// Ech contains the ECHConfig (Encrypted ClientHello) parameter, if present.
 	Ech []byte
+
+	// Raw contains the raw wire bytes of the SVCB resource record.
+	Raw []byte
 }
 
 // MeasuringNetwork defines the constructors required for implementing OONI experiments. All

@@ -330,6 +330,38 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				if string(firstSvcb.Ech) != "ECHCONFIG" {
 					t.Fatal("unexpected ech config")
 				}
+				if !firstSvcb.NoDefaultALPN {
+					t.Fatal("expected NoDefaultALPN to be true")
+				}
+				// mandatory lists the keys marked mandatory (order-independent)
+				gotMandatory := map[string]bool{}
+				for _, m := range firstSvcb.Mandatory {
+					gotMandatory[m] = true
+				}
+				if len(gotMandatory) != 2 || !gotMandatory["alpn"] || !gotMandatory["port"] {
+					t.Fatal("unexpected mandatory", firstSvcb.Mandatory)
+				}
+				// an unknown SvcParam key is not a typed field but must survive in Raw
+				if len(firstSvcb.Raw) <= 0 {
+					t.Fatal("expected non-empty Raw")
+				}
+				rr, _, err := dns.UnpackRR(firstSvcb.Raw, 0)
+				if err != nil {
+					t.Fatal("Raw did not re-parse:", err)
+				}
+				reparsed, ok := rr.(*dns.SVCB)
+				if !ok {
+					t.Fatal("Raw did not re-parse to *dns.SVCB")
+				}
+				var foundLocal bool
+				for _, kv := range reparsed.Value {
+					if local, ok := kv.(*dns.SVCBLocal); ok && local.KeyCode == 12345 {
+						foundLocal = true
+					}
+				}
+				if !foundLocal {
+					t.Fatal("unknown SVCBLocal key did not survive in Raw")
+				}
 			})
 		})
 
@@ -842,13 +874,22 @@ func dnsGenSVCBReplySuccess(rawQuery []byte, target string, port int, alpns []st
 		Value:    []dns.SVCBKeyValue{},
 	}
 	reply.Answer = append(reply.Answer, answer)
+	var mandatory []dns.SVCBKey
 	if port != 0 {
 		answer.Value = append(answer.Value, &dns.SVCBPort{Port: uint16(port)})
+		mandatory = append(mandatory, dns.SVCB_PORT)
 	}
 	if len(alpns) > 0 {
 		answer.Value = append(answer.Value, &dns.SVCBAlpn{Alpn: alpns})
+		mandatory = append(mandatory, dns.SVCB_ALPN)
 	}
 	answer.Value = append(answer.Value, &dns.SVCBECHConfig{ECH: []byte("ECHCONFIG")})
+	answer.Value = append(answer.Value, &dns.SVCBNoDefaultAlpn{})
+	if len(mandatory) > 0 {
+		answer.Value = append(answer.Value, &dns.SVCBMandatory{Code: mandatory})
+	}
+	// an unknown/unmodeled SvcParam key (miekg parses it as *dns.SVCBLocal)
+	answer.Value = append(answer.Value, &dns.SVCBLocal{KeyCode: 12345, Data: []byte("blob")})
 	data, err := reply.Pack()
 	runtimex.PanicOnError(err, "reply.Pack failed")
 	return data

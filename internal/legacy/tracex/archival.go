@@ -200,8 +200,15 @@ func newSVCBData(record *model.SVCB) *model.SVCBData {
 		Priority:   record.Priority,
 		TargetName: record.TargetName,
 		Params:     map[string]string{},
+		Raw:        model.ArchivalBinaryData(record.Raw),
+	}
+	if len(record.Mandatory) > 0 {
+		svcb.Params["mandatory"] = strings.Join(record.Mandatory, ",")
 	}
 	svcb.Params["alpn"] = strings.Join(record.ALPN, ",")
+	if record.NoDefaultALPN {
+		svcb.Params["no-default-alpn"] = strconv.FormatBool(record.NoDefaultALPN)
+	}
 	svcb.Params["ipv4hint"] = strings.Join(record.IPv4, ",")
 	svcb.Params["ipv6hint"] = strings.Join(record.IPv6, ",")
 	if record.DoHPath != "" {

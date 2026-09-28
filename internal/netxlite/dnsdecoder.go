@@ -146,8 +146,14 @@ func (r *dnsResponse) DecodeSVCB() ([]*model.SVCB, error) {
 			}
 			for _, v := range record.Value {
 				switch extv := v.(type) {
+				case *dns.SVCBMandatory:
+					for _, key := range extv.Code {
+						svcb.Mandatory = append(svcb.Mandatory, key.String())
+					}
 				case *dns.SVCBAlpn:
 					svcb.ALPN = extv.Alpn
+				case *dns.SVCBNoDefaultAlpn:
+					svcb.NoDefaultALPN = true
 				case *dns.SVCBIPv4Hint:
 					for _, ip := range extv.Hint {
 						svcb.IPv4 = append(svcb.IPv4, ip.String())
@@ -168,6 +174,12 @@ func (r *dnsResponse) DecodeSVCB() ([]*model.SVCB, error) {
 			}
 			svcb.Priority = record.Priority
 			svcb.TargetName = record.Target
+			// Keep the raw RR bytes so that SvcParams we don't model as typed
+			// fields can be reprocessed.
+			raw := make([]byte, dns.Len(record))
+			if off, err := dns.PackRR(record, raw, 0, nil, false); err == nil {
+				svcb.Raw = raw[:off]
+			}
 			out = append(out, svcb)
 		}
 	}

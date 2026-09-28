@@ -210,9 +210,10 @@ type ArchivalDNSAnswer struct {
 
 // SVCBData represents details of an SVCB record.
 type SVCBData struct {
-	Priority   uint16            `json:"priority"`
-	TargetName string            `json:"target_name"`
-	Params     map[string]string `json:"params,omitempty"` // SvcParams key-value pairs
+	Priority   uint16             `json:"priority"`
+	TargetName string             `json:"target_name"`
+	Params     map[string]string  `json:"params,omitempty"` // SvcParams key-value pairs
+	Raw        ArchivalBinaryData `json:"raw,omitempty"`    // raw wire bytes of the SVCB RR
 }
 
 //
