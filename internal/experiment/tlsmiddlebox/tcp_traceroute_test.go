@@ -357,7 +357,7 @@ func TestTracerouteTCP(t *testing.T) {
 
 	})
 
-	t.Run("read from Recvmsg with unsafe mode", func(t *testing.T) {
+	t.Run("read from Recvmsg with advanced mode", func(t *testing.T) {
 		wg.Add(1)
 		address := "127.0.0.1:1"
 		zeroTime := time.Date(2026, 9, 15, 11, 55, 54, 0, time.UTC)
@@ -395,7 +395,7 @@ func TestTracerouteTCP(t *testing.T) {
 
 		}
 
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "unsafe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "advanced", unixOpsImpl)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
