@@ -68,11 +68,12 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		return ErrInputRequired
 	}
 	target, ok := args.Target.(*Target)
-	config := target.Config
 
 	if !ok {
 		return ErrInvalidInputType
 	}
+
+	config := target.Config
 
 	input := target.URL
 
