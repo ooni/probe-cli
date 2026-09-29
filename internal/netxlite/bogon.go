@@ -21,8 +21,10 @@ import (
 //
 // The returned resolver returns a wrapped ErrDNSBogon if there's a bogon error.
 //
-// BUG: This resolver currently only implements LookupHost. All the other
-// lookup methods will always return ErrNoDNSTransport.
+// Bogon filtering applies to the IP addresses returned by LookupHost. LookupSVCB
+// does not return address answers to screen, so it delegates to the wrapped
+// resolver. LookupHTTPS and LookupNS remain unimplemented and return
+// ErrNoDNSTransport.
 func MaybeWrapWithBogonResolver(enabled bool, reso model.Resolver) model.Resolver {
 	if enabled {
 		reso = &bogonResolver{Resolver: reso}
@@ -57,6 +59,11 @@ func (r *bogonResolver) LookupHost(ctx context.Context, hostname string) ([]stri
 func (r *bogonResolver) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	// TODO(bassosimone): decide whether we want to implement this method or not
 	return nil, ErrNoDNSTransport
+}
+
+// LookupSVCB implements Resolver.LookupSVCB.
+func (r *bogonResolver) LookupSVCB(ctx context.Context, hostname string) ([]*model.SVCB, error) {
+	return r.Resolver.LookupSVCB(ctx, hostname)
 }
 
 // LookupNS implements Resolver.LookupNS

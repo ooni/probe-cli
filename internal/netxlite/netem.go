@@ -42,6 +42,11 @@ func (a *NetemUnderlyingNetworkAdapter) GetaddrinfoResolverNetwork() string {
 	return a.UNet.GetaddrinfoResolverNetwork()
 }
 
+// GetSystemResolverAddress implements model.UnderlyingNetwork.
+func (a *NetemUnderlyingNetworkAdapter) GetSystemResolverAddress() (string, bool) {
+	return "", false
+}
+
 // ListenTCP implements model.UnderlyingNetwork
 func (a *NetemUnderlyingNetworkAdapter) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
 	return a.UNet.ListenTCP(network, addr)

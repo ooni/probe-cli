@@ -31,6 +31,7 @@ type Config struct {
 	// settable from command line
 	DNSCache          string `ooni:"Add 'DOMAIN IP...' to cache"`
 	DNSHTTPHost       string `ooni:"Force using specific HTTP Host header for DNS requests"`
+	DNSSVCBName       string `ooni:"Also issue an SVCB query for this name during a dnslookup (e.g. '_dns.resolver.arpa.')"`
 	DNSTLSServerName  string `ooni:"Force TLS to using a specific SNI for encrypted DNS requests"`
 	DNSTLSVersion     string `ooni:"Force specific TLS version used for DoT/DoH (e.g. 'TLSv1.3')"`
 	FailOnHTTPError   bool   `ooni:"Fail HTTP request if status code is 400 or above"`
