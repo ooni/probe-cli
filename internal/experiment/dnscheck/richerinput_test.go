@@ -387,7 +387,6 @@ func TestTargetLoaderLoad(t *testing.T) {
 			expectErr:     nil,
 			expectTargets: nil,
 		},
-
 		{
 			name:    "with no options, not inputs, no files",
 			options: &Config{},
