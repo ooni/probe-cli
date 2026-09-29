@@ -32,34 +32,59 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 
 // TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, targetSNI string, trace *CompleteTrace) {
+	address string, targetSNI string, trace *CompleteTrace, config *Config) {
+	// perform a TCP traceroute
+	trace.TCPTraceroute = m.runTraceroute(index, zeroTime, logger, address, targetSNI, config)
 	// perform an iterative trace with the control SNI
-	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
+	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, config.snicontrol(), config)
 	// perform an iterative trace with the target SNI
-	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
+	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI, config)
+}
+
+func (m *Measurer) runTraceroute(index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string, config *Config) (tr *IterativeTraceroute) {
+	tr = &IterativeTraceroute{
+		SNI:        sni,
+		Iterations: []*ICMPIteration{},
+	}
+	maxTTL := config.maxttl()
+	ticker := time.NewTicker(config.delay())
+	wg := new(sync.WaitGroup)
+	for i := int64(1); i <= maxTTL; i++ {
+		wg.Add(1)
+		icmpIteration, err := tracerouteTCP(index, zeroTime, address, int(i), 3000, wg, logger, config.privacymode())
+		if err != nil {
+			return
+		}
+		tr.addIterationsTraceroute(icmpIteration)
+
+		<-ticker.C
+	}
+	wg.Wait()
+	return
 }
 
 // startIterativeTrace creates a Trace and calls iterativeTrace
 func (m *Measurer) startIterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string) (tr *IterativeTrace) {
+	address string, sni string, config *Config) (tr *IterativeTrace) {
 	tr = &IterativeTrace{
 		SNI:        sni,
 		Iterations: []*Iteration{},
 	}
-	maxTTL := m.config.maxttl()
-	m.traceWithIncreasingTTLs(ctx, index, zeroTime, logger, address, sni, maxTTL, tr)
+	maxTTL := config.maxttl()
+	m.traceWithIncreasingTTLs(ctx, index, zeroTime, logger, address, sni, maxTTL, tr, config)
 	tr.Iterations = alignIterations(tr.Iterations)
 	return
 }
 
 // traceWithIncreasingTTLs performs iterative tracing with increasing TTL values
 func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, maxTTL int64, trace *IterativeTrace) {
-	ticker := time.NewTicker(m.config.delay())
+	address string, sni string, maxTTL int64, trace *IterativeTrace, config *Config) {
+	ticker := time.NewTicker(config.delay())
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		go m.handshakeWithTTL(ctx, index, zeroTime, logger, address, sni, int(i), trace, wg)
+		go m.handshakeWithTTL(ctx, index, zeroTime, logger, address, sni, int(i), trace, wg, config)
 		<-ticker.C
 	}
 	wg.Wait()
@@ -67,7 +92,7 @@ func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zer
 
 // handshakeWithTTL performs the TLS Handshake using the passed ttl value
 func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup) {
+	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup, config *Config) {
 	defer wg.Done()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	// 1. Connect to the target IP
@@ -76,7 +101,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil, sni)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -85,7 +110,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 2. Set the TTL to the passed value
 	err = setConnTTL(conn, ttl)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil, sni)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -93,7 +118,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 3. Perform the handshake and extract the SO_ERROR value (if any)
 	// Note: we switch to a uTLS Handshaker if the configured ClientID is non-zero
 	thx := trace.NewTLSHandshakerStdlib(logger)
-	clientId := m.config.clientid()
+	clientId := config.clientid()
 	if clientId > 0 {
 		thx = trace.NewTLSHandshakerUTLS(logger, ClientIDs[clientId])
 	}
@@ -103,7 +128,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 4. reset the TTL value to ensure that conn closes successfully
 	// Note: Do not check for errors here
 	_ = setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
+	iteration := newIterationFromHandshake(ttl, err, soErr, trace.FirstTLSHandshakeOrNil(), sni)
 	tr.addIterations(iteration)
 }
 

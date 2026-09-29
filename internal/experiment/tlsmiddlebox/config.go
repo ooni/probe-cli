@@ -12,22 +12,25 @@ import (
 // Config contains the experiment configuration.
 type Config struct {
 	// ResolverURL is the default DoH resolver
-	ResolverURL string `ooni:"URL for DoH resolver"`
+	ResolverURL string `json:"resolver_url" ooni:"URL for DoH resolver"`
 
 	// SNIPass is the SNI value we don't expect to be blocked
-	SNIControl string `ooni:"control SNI value for testhelper"`
+	SNIControl string `json:"sni_control" ooni:"control SNI value for testhelper"`
 
 	// Delay is the delay between each iteration (in milliseconds).
-	Delay int64 `ooni:"delay between consecutive iterations"`
+	Delay int64 `json:"delay" ooni:"delay between consecutive iterations"`
 
 	// MaxTTL is the default number of interations we trace
-	MaxTTL int64 `ooni:"maximum TTL value to iterate upto"`
+	MaxTTL int64 `json:"maximum_ttl" ooni:"maximum TTL value to iterate upto"`
 
 	// TestHelper is the testhelper host for iterative tracing
-	TestHelper string `ooni:"testhelper URL to use for tracing"`
+	TestHelper string `json:"test_helper" ooni:"testhelper URL to use for tracing"`
 
 	// ClientId is the client fingerprint to use
-	ClientId int `ooni:"ClientHello fingerprint to use"`
+	ClientId int `json:"client_id" ooni:"ClientHello fingerprint to use"`
+
+	// PrivacyMode is whether the user only wants to reveal AS and country information or city-level geolocation and /24 prefix information with respect to traceroutes
+	PrivacyMode string `json:"privacy_mode" ooni:"privacy mode to use for traceroutes"`
 }
 
 func (c Config) resolverURL() string {
@@ -76,4 +79,12 @@ func (c Config) clientid() int {
 		return c.ClientId
 	}
 	return 0
+}
+
+func (c Config) privacymode() string {
+	if c.PrivacyMode != "" {
+		return c.PrivacyMode
+	}
+
+	return "safe"
 }
