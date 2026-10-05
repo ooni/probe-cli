@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestMaybeWrapWithBogonResolver(t *testing.T) {
@@ -100,6 +101,27 @@ func TestBogonResolver(t *testing.T) {
 		}
 		if https != nil {
 			t.Fatal("expected nil https here")
+		}
+	})
+
+	t.Run("LookupSVCB delegates to the wrapped resolver", func(t *testing.T) {
+		ctx := context.Background()
+		expected := []*model.SVCB{{}}
+		var called bool
+		reso := &bogonResolver{
+			Resolver: &mocks.Resolver{
+				MockLookupSVCB: func(ctx context.Context, domain string) ([]*model.SVCB, error) {
+					called = true
+					return expected, nil
+				},
+			},
+		}
+		svcb, err := reso.LookupSVCB(ctx, "_dns.resolver.arpa")
+		if err != nil {
+			t.Fatal("unexpected err", err)
+		}
+		if len(svcb) != 1 || !called {
+			t.Fatal("expected the call to be delegated to the wrapped resolver")
 		}
 	})
 
