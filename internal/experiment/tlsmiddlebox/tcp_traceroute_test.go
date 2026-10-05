@@ -24,6 +24,8 @@ type mockUnixOpsImpl struct {
 	GetsockoptIntFunc func(fd, level, opt int) (int, error)
 }
 
+var _ unixOps = &mockUnixOpsImpl{}
+
 func (m *mockUnixOpsImpl) Socket(domain, typ, proto int) (int, error) {
 	return m.SocketFunc(domain, typ, proto)
 }
@@ -210,8 +212,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected TTL %d, got %d", ttl, ii.TTL)
 		}
 
-		if ii.ICMPError.Timeout != "yes" {
-			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'yes', got %s", ii.ICMPError.Timeout)
+		if ii.ICMPError.Timeout != true {
+			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'true', got '%t'", ii.ICMPError.Timeout)
 		}
 	})
 
@@ -299,8 +301,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected TTL %d, got %d", ttl, ii.TTL)
 		}
 
-		if ii.ICMPError.Timeout != "no" {
-			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'no', got %s", ii.ICMPError.Timeout)
+		if ii.ICMPError.Timeout != false {
+			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'false', got '%t'", ii.ICMPError.Timeout)
 		}
 
 		if ii.ICMPError.SrcIPPrefix != "" {
@@ -413,8 +415,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected TTL %d, got %d", ttl, ii.TTL)
 		}
 
-		if ii.ICMPError.Timeout != "no" {
-			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'no', got %s", ii.ICMPError.Timeout)
+		if ii.ICMPError.Timeout != false {
+			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'false', got '%t'", ii.ICMPError.Timeout)
 		}
 
 		if ii.ICMPError.SrcIPPrefix != "10.200.2.0/24" {
@@ -500,8 +502,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected TTL %d, got %d", ttl, ii.TTL)
 		}
 
-		if ii.ICMPError.Connected != "yes" {
-			t.Fatalf("expected Connected field in ArchivalICMPErrorMessage to be 'yes', got %s", ii.ICMPError.Connected)
+		if ii.ICMPError.Connected != true {
+			t.Fatalf("expected Connected field in ArchivalICMPErrorMessage to be 'true', got '%t'", ii.ICMPError.Connected)
 		}
 
 	})

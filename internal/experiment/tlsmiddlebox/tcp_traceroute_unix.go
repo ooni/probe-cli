@@ -185,7 +185,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 		ii_timeout := &ICMPIteration{
 			TTL: ttl,
 			ICMPError: &model.ArchivalICMPErrorMessage{
-				Timeout: "yes",
+				Timeout: true,
 				T0:      t0,
 				T:       pollEndTimeFromStart,
 			},
@@ -294,7 +294,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 			ii = &ICMPIteration{
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
-					Timeout:          "no",
+					Timeout:          false,
 					SrcIPPrefix:      ip_network.String() + "/24",
 					SrcIPCountryCode: country_code,
 					SrcIPASN:         asn,
@@ -313,7 +313,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 			ii = &ICMPIteration{
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
-					Timeout:          "no",
+					Timeout:          false,
 					SrcIPCountryCode: country_code,
 					SrcIPASN:         asn,
 					SrcIPASNOrg:      org,
@@ -345,7 +345,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 			ii_connected := &ICMPIteration{
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
-					Connected: "yes",
+					Connected: true,
 					T0:        t0,
 					T:         pollOutEndTimeFromStart,
 				},

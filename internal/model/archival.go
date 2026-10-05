@@ -179,8 +179,8 @@ func (value *ArchivalScrubbedMaybeBinaryString) UnmarshalJSON(rawData []byte) er
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md. //update this, will also add timestamp info
 type ArchivalICMPErrorMessage struct {
-	Timeout          string                `json:"timeout"`
-	Connected        string                `json:"connected"`
+	Timeout          bool                  `json:"timeout"`
+	Connected        bool                  `json:"connected"`
 	Error            string                `json:"error"`
 	SrcIPPrefix      string                `json:"source_ip_prefix"`
 	SrcIPCountryCode string                `json:"source_ip_country_code"`

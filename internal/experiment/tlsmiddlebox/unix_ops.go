@@ -17,6 +17,8 @@ type unixOps interface {
 
 type unixOpsImpl struct{}
 
+var _ unixOps = &unixOpsImpl{}
+
 func (unixOpsImpl) Socket(domain, typ, proto int) (int, error) {
 	return unix.Socket(domain, typ, proto)
 }
