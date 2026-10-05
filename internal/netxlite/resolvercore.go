@@ -38,7 +38,9 @@ func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL 
 
 func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 	return &resolverSystem{
-		t: wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
+		dialer:   netx.NewDialerWithoutResolver(model.DiscardLogger),
+		provider: netx.MaybeCustomUnderlyingNetwork(),
+		t:        wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
 	}
 }
 
@@ -108,6 +110,14 @@ func WrapResolver(logger model.DebugLogger, resolver model.Resolver) model.Resol
 
 // resolverSystem is the system resolver.
 type resolverSystem struct {
+	// dialer dials the connections used to issue Do53 queries that the
+	// getaddrinfo API cannot express.
+	dialer model.Dialer
+
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *MaybeCustomUnderlyingNetwork
+
+	// t is the getaddrinfo-based transport used for LookupHost.
 	t model.DNSTransport
 }
 
@@ -139,11 +149,30 @@ func (r *resolverSystem) Address() string {
 
 func (r *resolverSystem) CloseIdleConnections() {
 	r.t.CloseIdleConnections()
+	r.dialer.CloseIdleConnections()
 }
 
 func (r *resolverSystem) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
+}
+
+func (r *resolverSystem) LookupSVCB(
+	ctx context.Context, domain string) ([]*model.SVCB, error) {
+	// The getaddrinfo API cannot express SVCB queries, so we issue the query over
+	// Do53 to a system-configured resolver.
+	address, ok := r.provider.Get().GetSystemResolverAddress()
+	if !ok {
+		return nil, ErrNoDNSTransport
+	}
+	txp := NewUnwrappedDNSOverUDPTransport(r.dialer, address)
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(domain, dns.TypeSVCB, txp.RequiresPadding())
+	resp, err := txp.RoundTrip(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return resp.DecodeSVCB()
 }
 
 func (r *resolverSystem) LookupNS(
@@ -189,6 +218,21 @@ func (r *resolverLogger) LookupHTTPS(
 	aaaa := https.IPv6
 	r.Logger.Debugf("%s... %+v %+v %+v in %s", prefix, alpn, a, aaaa, elapsed)
 	return https, nil
+}
+
+func (r *resolverLogger) LookupSVCB(
+	ctx context.Context, domain string) ([]*model.SVCB, error) {
+	prefix := fmt.Sprintf("resolve[SVCB] %s with %s (%s)", domain, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
+	start := time.Now()
+	svcb, err := r.Resolver.LookupSVCB(ctx, domain)
+	elapsed := time.Since(start)
+	if err != nil {
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
+		return nil, err
+	}
+	r.Logger.Debugf("%s... %+v in %s", prefix, svcb, elapsed)
+	return svcb, nil
 }
 
 func (r *resolverLogger) Address() string {
@@ -265,6 +309,14 @@ func (r *resolverIDNA) LookupHTTPS(
 	return r.Resolver.LookupHTTPS(ctx, query)
 }
 
+func (r *resolverIDNA) LookupSVCB(
+	ctx context.Context, domain string) ([]*model.SVCB, error) {
+	// This does not work here, since we need to query
+	// for _dns.resolver.arpa., which results in
+	// error idna: disallowed rune U+005F because of the underscore.
+	return r.Resolver.LookupSVCB(ctx, domain)
+}
+
 func (r *resolverIDNA) Network() string {
 	return r.Resolver.Network()
 }
@@ -312,6 +364,20 @@ func (r *ResolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname s
 		return https, nil
 	}
 	return r.Resolver.LookupHTTPS(ctx, hostname)
+}
+
+func (r *ResolverShortCircuitIPAddr) LookupSVCB(ctx context.Context, hostname string) ([]*model.SVCB, error) {
+	if net.ParseIP(hostname) != nil {
+		svcb := &model.SVCB{}
+		if isIPv6(hostname) {
+			svcb.IPv6 = append(svcb.IPv6, hostname)
+		} else {
+			svcb.IPv4 = append(svcb.IPv4, hostname)
+		}
+
+		return []*model.SVCB{svcb}, nil
+	}
+	return r.Resolver.LookupSVCB(ctx, hostname)
 }
 
 func (r *ResolverShortCircuitIPAddr) Network() string {
@@ -385,6 +451,11 @@ func (r *NullResolver) LookupHTTPS(
 	return nil, ErrNoResolver
 }
 
+func (r *NullResolver) LookupSVCB(
+	ctx context.Context, domain string) ([]*model.SVCB, error) {
+	return nil, ErrNoResolver
+}
+
 func (r *NullResolver) LookupNS(
 	ctx context.Context, domain string) ([]*net.NS, error) {
 	return nil, ErrNoResolver
@@ -408,6 +479,15 @@ func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([
 func (r *resolverErrWrapper) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
+	if err != nil {
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
+	}
+	return out, nil
+}
+
+func (r *resolverErrWrapper) LookupSVCB(
+	ctx context.Context, domain string) ([]*model.SVCB, error) {
+	out, err := r.Resolver.LookupSVCB(ctx, domain)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}

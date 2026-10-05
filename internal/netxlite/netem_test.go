@@ -60,4 +60,12 @@ func TestNetemUnderlyingNetworkAdapter(t *testing.T) {
 		wg.Wait()
 	})
 
+	t.Run("GetSystemResolverAddress returns false", func(t *testing.T) {
+		// The emulated network does not expose a system resolver configuration.
+		adapter := &NetemUnderlyingNetworkAdapter{}
+		if addr, ok := adapter.GetSystemResolverAddress(); ok || addr != "" {
+			t.Fatal("expected empty address and false, got:", addr, ok)
+		}
+	})
+
 }
