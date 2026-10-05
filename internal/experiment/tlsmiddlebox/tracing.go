@@ -41,6 +41,7 @@ func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time
 	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI, config)
 }
 
+// runTraceroute conducts an unrooted TCP traceroute towards the target IP
 func (m *Measurer) runTraceroute(index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string, config *Config) (tr *IterativeTraceroute) {
 	tr = &IterativeTraceroute{

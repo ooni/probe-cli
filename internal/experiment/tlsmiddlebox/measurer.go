@@ -58,7 +58,7 @@ var (
 	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
-// // Run implements ExperimentMeasurer.Run.
+// Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	_ = args.Callbacks
 	measurement := args.Measurement

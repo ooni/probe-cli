@@ -33,6 +33,7 @@ type Config struct {
 	PrivacyMode string `json:"privacy_mode" ooni:"privacy mode to use for traceroutes"`
 }
 
+// resolverURL returns the ResolverURL from the experiment's Config struct
 func (c Config) resolverURL() string {
 	if c.ResolverURL != "" {
 		return c.ResolverURL
@@ -40,6 +41,7 @@ func (c Config) resolverURL() string {
 	return "https://mozilla.cloudflare-dns.com/dns-query"
 }
 
+// snicontrol returns the SNIControl from the experiment's Config struct
 func (c Config) snicontrol() string {
 	if c.SNIControl != "" {
 		return c.SNIControl
@@ -47,6 +49,7 @@ func (c Config) snicontrol() string {
 	return "example.com"
 }
 
+// delay returns the Delay from the experiment's Config struct
 func (c Config) delay() time.Duration {
 	if c.Delay > 0 {
 		return time.Duration(c.Delay) * time.Millisecond
@@ -54,6 +57,7 @@ func (c Config) delay() time.Duration {
 	return 100 * time.Millisecond
 }
 
+// maxttl returns the MaxTTL from the experiment's Config struct
 func (c Config) maxttl() int64 {
 	if c.MaxTTL > 0 {
 		return c.MaxTTL
@@ -61,6 +65,7 @@ func (c Config) maxttl() int64 {
 	return 20
 }
 
+// testhelper returns the TestHelper from the experiment's Config struct
 func (c Config) testhelper(address string) (URL *url.URL, err error) {
 	// TODO(DecFox, bassosimone): We want to replace this with a generic input parser
 	// Issue: https://github.com/ooni/probe/issues/2239
@@ -74,6 +79,7 @@ func (c Config) testhelper(address string) (URL *url.URL, err error) {
 	return
 }
 
+// clientid returns the ClientId from the experiment's Config struct
 func (c Config) clientid() int {
 	if c.ClientId > 0 {
 		return c.ClientId
@@ -81,6 +87,7 @@ func (c Config) clientid() int {
 	return 0
 }
 
+// privacymode returns the PrivacyMode from the experiment's Config struct
 func (c Config) privacymode() string {
 	if c.PrivacyMode != "" {
 		return c.PrivacyMode

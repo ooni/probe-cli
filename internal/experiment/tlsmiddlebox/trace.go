@@ -47,6 +47,8 @@ type ICMPIteration struct {
 	ICMPError *model.ArchivalICMPErrorMessage `json:"icmp_error"`
 }
 
+// errorChain unwraps and iterates through the error list and records
+// the type and error at each step
 func errorChain(err error) []model.FailureChainData {
 	if err == nil {
 		return nil

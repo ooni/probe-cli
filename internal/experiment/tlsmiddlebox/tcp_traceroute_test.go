@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// mockUnixOpsImpl is mock implementation of the unixOps interface for testing.
 type mockUnixOpsImpl struct {
 	SocketFunc        func(domain, typ, proto int) (int, error)
 	CloseFunc         func(fd int) error
@@ -26,38 +27,47 @@ type mockUnixOpsImpl struct {
 
 var _ unixOps = &mockUnixOpsImpl{}
 
+// Socket is a mock implementation of the unix Socket function for testing
 func (m *mockUnixOpsImpl) Socket(domain, typ, proto int) (int, error) {
 	return m.SocketFunc(domain, typ, proto)
 }
 
+// Close is a mock implementation of the unix Close function for testing
 func (m *mockUnixOpsImpl) Close(fd int) error {
 	return m.CloseFunc(fd)
 }
 
+// SetsockoptInt is a mock implementation of the unix SetsockoptInt function for testing
 func (m *mockUnixOpsImpl) SetsockoptInt(fd, level, opt, value int) error {
 	return m.SetsockoptIntFunc(fd, level, opt, value)
 }
 
+// SetNonblock is a mock implementation of the unix SetNonblock function for testing
 func (m *mockUnixOpsImpl) SetNonblock(fd int, nonblocking bool) error {
 	return m.SetNonblockFunc(fd, nonblocking)
 }
 
+// Connect is a mock implementation of the unix Connect function for testing
 func (m *mockUnixOpsImpl) Connect(fd int, sa unix.Sockaddr) error {
 	return m.ConnectFunc(fd, sa)
 }
 
+// Poll is a mock implementation of the unix Poll function for testing
 func (m *mockUnixOpsImpl) Poll(fds []unix.PollFd, timeout int) (int, error) {
 	return m.PollFunc(fds, timeout)
 }
 
+// Recvmsg is a mock implementation of the unix Recvmsg function for testing
 func (m *mockUnixOpsImpl) Recvmsg(fd int, p, oob []byte, flags int) (int, int, int, unix.Sockaddr, error) {
 	return m.RecvmsgFunc(fd, p, oob, flags)
 }
 
+// GetsockoptInt is a mock implementation of the unix GetsockoptInt function for testing
 func (m *mockUnixOpsImpl) GetsockoptInt(fd, level, opt int) (int, error) {
 	return m.GetsockoptIntFunc(fd, level, opt)
 }
 
+// defineMockUnixOpsImpl returns a mockUnixOpsImpl with all mock unix functions for testing
 func defineMockUnixOpsImpl() *mockUnixOpsImpl {
 	return &mockUnixOpsImpl{
 		SocketFunc: func(domain, typ, proto int) (int, error) {
@@ -419,8 +429,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'false', got '%t'", ii.ICMPError.Timeout)
 		}
 
-		if ii.ICMPError.SrcIPPrefix != "10.200.2.0/24" {
-			t.Fatalf("expected SrcIPPrefix field in ArchivalICMPErrorMessage to be '10.200.2.0/24', got %s", ii.ICMPError.SrcIPPrefix)
+		if ii.ICMPError.SrcIPPrefix != "10.200.2.209" {
+			t.Fatalf("expected SrcIPPrefix field in ArchivalICMPErrorMessage to be '10.200.2.209', got %s", ii.ICMPError.SrcIPPrefix)
 		}
 
 		if ii.ICMPError.SrcIPCountryCode != "ZZ" {

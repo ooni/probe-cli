@@ -67,6 +67,8 @@ func LookupCC(ip string, dbPath string) (cc string, err error) {
 	return
 }
 
+// parsedQuotedPacket takes a buffer as an input that contains an ICMP quotation that starts
+// with the first bytes of the TCP header and parses out all of its fields
 func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
 	if len(buf) < 8 {
 		return nil, fmt.Errorf("tcp quote too short")
@@ -89,11 +91,13 @@ func parseQuotedPacket(buf []byte) (*model.ArchivalICMPQuotation, error) {
 	return quotedPacket, nil
 }
 
+// tracerouteTCP calls tracerouteTCPWithOps, by providing the function a struct containing unix operations as inputs
 func tracerouteTCP(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, privacyMode string) (*ICMPIteration, error) {
 	unixOpsImpl := unixOpsImpl{}
 	return tracerouteTCPWithOps(index, zeroTime, address, ttl, timeoutMS, wg, logger, privacyMode, unixOpsImpl)
 }
 
+// tracerouteTCPWithOps runs an unrooted TCP traceroute for the given TTL
 func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl int, timeoutMS int, wg *sync.WaitGroup, logger model.Logger, privacyMode string, unixOpsImpl unixOps) (*ICMPIteration, error) {
 	defer wg.Done()
 	host, portString, err := net.SplitHostPort(address)
@@ -178,6 +182,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 		return nil, err
 	}
 
+	// no response was received
 	if n == 0 {
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s TIMEOUT", index, ttl, address)
 		ol.Stop(nil)
@@ -232,12 +237,6 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 
 			for _, cm := range cms {
 
-				// // Prints the raw quote
-				// fmt.Printf("n=%d\n", n)
-				// fmt.Printf("buf=%x\n", buf[:n])
-				// fmt.Printf("oobn=%d\n", oobn)
-				// fmt.Printf("oob=%x\n", oob[:oobn])
-
 				switch {
 				case cm.Header.Level == unix.SOL_SOCKET &&
 					cm.Header.Type == unix.SO_TIMESTAMPING:
@@ -289,13 +288,12 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 		country_code, err = LookupCC(ip.String(), "")
 
 		if privacyMode == "advanced" {
-			ip_network := ip.Mask(net.CIDRMask(24, 32))
 
 			ii = &ICMPIteration{
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
 					Timeout:          false,
-					SrcIPPrefix:      ip_network.String() + "/24",
+					SrcIPPrefix:      ip.String(),
 					SrcIPCountryCode: country_code,
 					SrcIPASN:         asn,
 					SrcIPASNOrg:      org,

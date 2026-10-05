@@ -9,6 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+// tracerouteTCP returns nil, as unrooted TCP traceroutes can only be run on linux systems
 func tracerouteTCP(_ int64, _ time.Time, _ string, _ int, _ int, wg *sync.WaitGroup, _ model.Logger, _ string) (*ICMPIteration, error) {
 	defer wg.Done()
 

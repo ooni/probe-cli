@@ -19,6 +19,7 @@ import (
 
 const timeout time.Duration = 15 * time.Second
 
+// NewDialerTTLWrapper returns a wrapped Dialer via dialerTTLWrapper
 func NewDialerTTLWrapper() model.Dialer {
 	return &dialerTTLWrapper{
 		Dialer: &net.Dialer{Timeout: timeout,
