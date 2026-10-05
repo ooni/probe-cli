@@ -293,7 +293,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 				TTL: ttl,
 				ICMPError: &model.ArchivalICMPErrorMessage{
 					Timeout:          false,
-					SrcIPPrefix:      ip.String(),
+					SrcIP:            ip.String(),
 					SrcIPCountryCode: country_code,
 					SrcIPASN:         asn,
 					SrcIPASNOrg:      org,

@@ -315,8 +315,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'false', got '%t'", ii.ICMPError.Timeout)
 		}
 
-		if ii.ICMPError.SrcIPPrefix != "" {
-			t.Fatalf("expected SrcIPPrefix field in ArchivalICMPErrorMessage to be '', got %s", ii.ICMPError.SrcIPPrefix)
+		if ii.ICMPError.SrcIP != "" {
+			t.Fatalf("expected SrcIP field in ArchivalICMPErrorMessage to be '', got %s", ii.ICMPError.SrcIP)
 		}
 
 		if ii.ICMPError.SrcIPCountryCode != "ZZ" {
@@ -429,8 +429,8 @@ func TestTracerouteTCP(t *testing.T) {
 			t.Fatalf("expected Timeout field in ArchivalICMPErrorMessage to be 'false', got '%t'", ii.ICMPError.Timeout)
 		}
 
-		if ii.ICMPError.SrcIPPrefix != "10.200.2.209" {
-			t.Fatalf("expected SrcIPPrefix field in ArchivalICMPErrorMessage to be '10.200.2.209', got %s", ii.ICMPError.SrcIPPrefix)
+		if ii.ICMPError.SrcIP != "10.200.2.209" {
+			t.Fatalf("expected SrcIP field in ArchivalICMPErrorMessage to be '10.200.2.209', got %s", ii.ICMPError.SrcIP)
 		}
 
 		if ii.ICMPError.SrcIPCountryCode != "ZZ" {

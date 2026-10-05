@@ -182,7 +182,7 @@ type ArchivalICMPErrorMessage struct {
 	Timeout          bool                  `json:"timeout"`
 	Connected        bool                  `json:"connected"`
 	Error            string                `json:"error"`
-	SrcIPPrefix      string                `json:"source_ip_prefix"`
+	SrcIP            string                `json:"source_ip"`
 	SrcIPCountryCode string                `json:"source_ip_country_code"`
 	SrcIPASN         uint                  `json:"source_ip_asn"`
 	SrcIPASNOrg      string                `json:"source_ip_asn_org"`
