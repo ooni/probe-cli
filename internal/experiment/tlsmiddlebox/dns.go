@@ -15,8 +15,8 @@ import (
 
 // DNSLookup performs a DNS Lookup for the passed domain
 func (m *Measurer) DNSLookup(ctx context.Context, index int64, zeroTime time.Time,
-	logger model.Logger, domain string, tk *TestKeys) ([]string, error) {
-	url := m.config.resolverURL()
+	logger model.Logger, domain string, tk *TestKeys, config *Config) ([]string, error) {
+	url := config.resolverURL()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := logx.NewOperationLogger(logger, "DNSLookup #%d, %s, %s", index, url, domain)
 	// TODO(DecFox, bassosimone): We are currently using the DoH resolver, we will
