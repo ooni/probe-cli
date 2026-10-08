@@ -146,8 +146,8 @@ func TestConfig_privacymode(t *testing.T) {
 
 	t.Run("default Privacy Mode", func(t *testing.T) {
 		c := Config{}
-		if c.privacymode() != "safe" {
-			t.Fatalf("invalif default Privacy Mode")
+		if c.privacymode() != "default" {
+			t.Fatalf("invalid default Privacy Mode")
 		}
 	})
 

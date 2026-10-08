@@ -152,7 +152,7 @@ func TestTracerouteTCP(t *testing.T) {
 		address := "1.2.3.4"
 		zeroTime := time.Now()
 		unixOpsImpl := defineMockUnixOpsImpl()
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 		if ii != nil {
 			t.Fatalf("expected nil, got %T", ii)
 		}
@@ -167,7 +167,7 @@ func TestTracerouteTCP(t *testing.T) {
 		address := "298.125.34.4:443"
 		zeroTime := time.Now()
 		unixOpsImpl := defineMockUnixOpsImpl()
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 		if ii != nil {
 			t.Fatalf("expected nil, got %T", ii)
 		}
@@ -183,7 +183,7 @@ func TestTracerouteTCP(t *testing.T) {
 		address := "298.125.34.4:spot"
 		zeroTime := time.Now()
 		unixOpsImpl := defineMockUnixOpsImpl()
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 		if ii != nil {
 			t.Fatalf("expected nil, got %T", ii)
 		}
@@ -204,7 +204,7 @@ func TestTracerouteTCP(t *testing.T) {
 			return 0, nil
 		}
 
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -243,7 +243,7 @@ func TestTracerouteTCP(t *testing.T) {
 			return 0, 0, 0, nil, expectedErr
 		}
 
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 
 		if !errors.Is(err, expectedErr) {
 			t.Fatalf("expected error: %v, got %v", expectedErr, err)
@@ -255,7 +255,7 @@ func TestTracerouteTCP(t *testing.T) {
 
 	})
 
-	t.Run("read from Recvmsg with safe mode", func(t *testing.T) {
+	t.Run("read from Recvmsg with default mode", func(t *testing.T) {
 		wg.Add(1)
 		address := "127.0.0.1:1"
 		zeroTime := time.Now()
@@ -293,7 +293,7 @@ func TestTracerouteTCP(t *testing.T) {
 
 		}
 
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -494,7 +494,7 @@ func TestTracerouteTCP(t *testing.T) {
 			return 1, nil
 		}
 
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -533,7 +533,7 @@ func TestTracerouteTCP(t *testing.T) {
 			return int(unix.ECONNREFUSED), nil
 		}
 
-		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "safe", unixOpsImpl)
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "default", unixOpsImpl)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
