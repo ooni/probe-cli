@@ -73,14 +73,14 @@ func TestMeasurer_input_failure(t *testing.T) {
 	})
 
 	t.Run("with invalid testhelper", func(t *testing.T) {
-		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "\t", "")
+		_, _, err := runHelper(context.Background(), "https://example.com", "\t", "")
 		if !errors.Is(err, errInvalidTestHelper) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid TH scheme", func(t *testing.T) {
-		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "http://google.com", "")
+		_, _, err := runHelper(context.Background(), "https://example.com", "http://google.com", "")
 		if !errors.Is(err, errInvalidTHScheme) {
 			t.Fatal("unexpected error", err)
 		}
@@ -99,7 +99,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -146,7 +146,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -193,7 +193,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
