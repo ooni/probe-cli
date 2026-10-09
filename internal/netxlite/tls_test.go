@@ -55,6 +55,23 @@ func TestNewMozillaCertPoolWorks(t *testing.T) {
 	}
 }
 
+func TestDefaultCertPool(t *testing.T) {
+	if DefaultCertPool() != tproxyDefaultCertPool {
+		t.Fatal("expected the default cert pool")
+	}
+	custom := x509.NewCertPool()
+	tproxy := &mocks.UnderlyingNetwork{
+		MockDefaultCertPool: func() *x509.CertPool {
+			return custom
+		},
+	}
+	WithCustomTProxy(tproxy, func() {
+		if DefaultCertPool() != custom {
+			t.Fatal("expected the custom cert pool")
+		}
+	})
+}
+
 func TestConfigureTLSVersion(t *testing.T) {
 	tests := []struct {
 		name       string

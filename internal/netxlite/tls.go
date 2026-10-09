@@ -116,6 +116,14 @@ func NewMozillaCertPool() *x509.CertPool {
 	return pool
 }
 
+// DefaultCertPool returns the cert pool used when the RootCAs field
+// of a [*tls.Config] is nil. This is the Mozilla pool unless tests
+// replaced the underlying network (e.g., using netem). Use it when
+// you verify certificates yourself and do not modify it.
+func DefaultCertPool() *x509.CertPool {
+	return tproxySingleton().DefaultCertPool()
+}
+
 // MaybeTLSConnectionState is a convenience function that returns an
 // empty [tls.ConnectionState] when the [model.TLSConn] is nil.
 func MaybeTLSConnectionState(conn model.TLSConn) (state tls.ConnectionState) {

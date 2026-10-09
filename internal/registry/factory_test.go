@@ -667,6 +667,10 @@ func TestNewFactory(t *testing.T) {
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrQueryBackend,
 		},
+		"sni_throttling": {
+			enabledByDefault: true,
+			inputPolicy:      model.InputNone,
+		},
 		"stunreachability": {
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrStaticDefault,
