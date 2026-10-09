@@ -27,7 +27,7 @@ type Config struct {
 	TestHelper string `json:"test_helper" ooni:"testhelper URL to use for tracing"`
 
 	// ClientId is the client fingerprint to use
-	ClientId int `json:"client_id" ooni:"ClientHello fingerprint to use"`
+	ClientId int64 `json:"client_id" ooni:"ClientHello fingerprint to use"`
 
 	// PrivacyMode is whether the user only wants to reveal AS and country information or city-level geolocation and /24 prefix information with respect to traceroutes
 	PrivacyMode string `json:"privacy_mode" ooni:"privacy mode to use for traceroutes"`
@@ -82,7 +82,7 @@ func (c Config) testhelper(address string) (URL *url.URL, err error) {
 // clientid returns the ClientId from the experiment's Config struct
 func (c Config) clientid() int {
 	if c.ClientId > 0 {
-		return c.ClientId
+		return int(c.ClientId)
 	}
 	return 0
 }
