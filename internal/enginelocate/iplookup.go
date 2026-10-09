@@ -42,8 +42,8 @@ var (
 			fn:   cloudflareIPLookup,
 		},
 		{
-			name: "stun_ekiga",
-			fn:   stunEkigaIPLookup,
+			name: "stun_cloudflare",
+			fn:   stunCloudflareIPLookup,
 		},
 		{
 			name: "stun_google",
