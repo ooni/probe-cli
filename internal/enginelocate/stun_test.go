@@ -147,13 +147,13 @@ func TestSTUNIPLookupCannotDecodeMessage(t *testing.T) {
 	}
 }
 
-func TestIPLookupWorksUsingSTUNEkiga(t *testing.T) {
+func TestIPLookupWorksUsingSTUNCloudflare(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
 
 	netx := &netxlite.Netx{}
-	ip, err := stunEkigaIPLookup(
+	ip, err := stunCloudflareIPLookup(
 		context.Background(),
 		http.DefaultClient,
 		log.Log,

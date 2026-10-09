@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultEndpoint = "stun.ekiga.net:3478"
+	defaultEndpoint = "stun.cloudflare.com:3478"
 	defaultInput    = "stun://" + defaultEndpoint
 )
 

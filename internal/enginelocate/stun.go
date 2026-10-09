@@ -83,7 +83,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 	return ip, nil
 }
 
-func stunEkigaIPLookup(
+func stunCloudflareIPLookup(
 	ctx context.Context,
 	httpClient model.HTTPClient,
 	logger model.Logger,
@@ -91,7 +91,7 @@ func stunEkigaIPLookup(
 	resolver model.Resolver,
 ) (string, error) {
 	return stunIPLookup(ctx, stunConfig{
-		Endpoint: "stun.ekiga.net:3478",
+		Endpoint: "stun.cloudflare.com:3478",
 		Logger:   logger,
 		Resolver: resolver,
 	})
