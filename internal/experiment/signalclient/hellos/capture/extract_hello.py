@@ -6,30 +6,86 @@ The per-connection random values (client random, legacy session id, key share pu
 zeroed, keeping their lengths, so a refresh changes the file only when the handshake changes. uTLS
 generates fresh values for each of them anyway.
 
-Usage: extract_hello.py PCAP SNI OUT.bin
+Usage: extract_hello.py PCAP SNI OUT.bin             (PCAP may also be pcapng)
        extract_hello.py --normalize FILE.bin...   (zero the random values of existing files)
-Standalone (Python 3 standard library only). Link types: Ethernet (pasta's --pcap), Linux cooked v1/v2, raw IP.
+Standalone (Python 3 standard library only). Link types: Ethernet (pasta's --pcap), Linux cooked v1/v2,
+raw IP, BSD/macOS loopback (DLT_NULL, DLT_LOOP). Flows whose SYN was not captured are reassembled from
+their first data segment.
 """
 import hashlib, ipaddress, struct, sys
 
 GREASE = lambda v: (v & 0x0F0F) == 0x0A0A and (v >> 8) == (v & 0xFF)
 
 
-def packets(path):
+LINK_OFFSETS = {1: 14, 113: 16, 276: 20, 101: 0, 228: 0, 229: 0, 0: 4, 108: 4}  # 0/108: BSD/macOS loopback
+
+def pcapng_packets(d):
+    """Yield (timestamp, linktype, frame) from a pcapng file: SHB, IDB, EPB and SPB blocks."""
+    i, e, ifaces = 0, "<", []
+    while i + 12 <= len(d):
+        btype = struct.unpack(e + "I", d[i:i + 4])[0]
+        if btype == 0x0A0D0D0A:  # section header: its byte-order magic sets the endianness
+            e = "<" if d[i + 8:i + 12] == b"\x4d\x3c\x2b\x1a" else ">"
+            ifaces = []
+        blen = struct.unpack(e + "I", d[i + 4:i + 8])[0]
+        if blen < 12 or i + blen > len(d):
+            break
+        body = d[i + 8:i + blen - 4]
+        if btype == 1:  # interface description: link type, then options (if_tsresol = 9)
+            linktype, resol, j = struct.unpack(e + "H", body[:2])[0], 1e-6, 8
+            while j + 4 <= len(body):
+                code, olen = struct.unpack(e + "HH", body[j:j + 4])
+                if code == 0:
+                    break
+                if code == 9 and olen >= 1:
+                    v = body[j + 4]
+                    resol = 2.0 ** -(v & 0x7F) if v & 0x80 else 10.0 ** -v
+                j += 4 + olen + (-olen % 4)
+            ifaces.append((linktype, resol))
+        elif btype == 6 and len(body) >= 20:  # enhanced packet
+            iface, hi, lo, caplen = struct.unpack(e + "IIII", body[:16])
+            if iface < len(ifaces):
+                linktype, resol = ifaces[iface]
+                yield ((hi << 32) | lo) * resol, linktype, body[20:20 + caplen]
+        elif btype == 3 and len(body) >= 4 and ifaces:  # simple packet
+            yield 0.0, ifaces[0][0], body[4:]
+        i += blen
+
+
+def frames(path):
+    """Yield (linktype, frame) from a pcap or pcapng file."""
     d = open(path, "rb").read()
+    if d[:4] == b"\x0a\x0d\x0d\x0a":
+        for _, linktype, frame in pcapng_packets(d):
+            yield linktype, frame
+        return
     e = {b"\xd4\xc3\xb2\xa1": "<", b"\x4d\x3c\xb2\xa1": "<", b"\xa1\xb2\xc3\xd4": ">", b"\xa1\xb2\x3c\x4d": ">"}.get(d[:4])
     if not e:
-        sys.exit("not a pcap file (pcapng is not supported)")
-    off = {1: 14, 113: 16, 276: 20, 101: 0, 228: 0, 229: 0}[struct.unpack(e + "I", d[20:24])[0]]
+        sys.exit("not a pcap or pcapng file")
+    linktype = struct.unpack(e + "I", d[20:24])[0]
     i = 24
     while i + 16 <= len(d):
         incl = struct.unpack(e + "I", d[i + 8:i + 12])[0]
-        pkt = d[i + 16:i + 16 + incl]; i += 16 + incl
+        yield linktype, d[i + 16:i + 16 + incl]
+        i += 16 + incl
+
+
+def packets(path):
+    for linktype, pkt in frames(path):
+        off = LINK_OFFSETS.get(linktype)
+        if off is None:
+            sys.exit(f"unsupported link type {linktype}")
         ip = pkt[off:]
+        if linktype == 1 and pkt[12:14] == b"\x81\x00":  # VLAN
+            ip = pkt[18:]
         if not ip: continue
-        if ip[0] >> 4 == 4:
+        if ip[0] >> 4 == 4 and len(ip) >= 20:
+            n = struct.unpack(">H", ip[2:4])[0]  # drop link-layer padding (0: segmentation offload)
+            ip = ip[:n] if n >= 20 else ip
             proto, src, dst, l4 = ip[9], ip[12:16], ip[16:20], ip[(ip[0] & 15) * 4:]
-        elif ip[0] >> 4 == 6:
+        elif ip[0] >> 4 == 6 and len(ip) >= 40:
+            n = struct.unpack(">H", ip[4:6])[0]  # 0: jumbogram or offload
+            ip = ip[:40 + n] if n else ip
             proto, src, dst, l4 = ip[6], ip[8:24], ip[24:40], ip[40:]
         else:
             continue
@@ -43,11 +99,14 @@ def client_streams(path):
         sp, dp, seq = struct.unpack(">HHI", l4[:8]); flags = l4[13]; payload = l4[(l4[12] >> 4) * 4:]
         key = (src, sp, dst, dp)
         if flags & 0x02 and not flags & 0x10:
-            flows[key] = {"next": seq + 1, "segs": {}}
-        elif key in flows and payload:
-            flows[key]["segs"][seq] = payload
+            flows[key] = {"base": (seq + 1) & 0xFFFFFFFF, "segs": {}}
+        elif payload:
+            if key not in flows:  # SYN not captured: start at the first data segment
+                flows[key] = {"base": seq, "segs": {}}
+            f = flows[key]  # offsets from the stream's start, so sequence numbers may wrap
+            f["segs"].setdefault((seq - f["base"]) & 0xFFFFFFFF, payload)
     for f in flows.values():
-        data, nxt = b"", f["next"]
+        data, nxt = b"", 0
         for s in sorted(f["segs"]):
             seg = f["segs"][s]
             if s <= nxt < s + len(seg):

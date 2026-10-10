@@ -49,3 +49,25 @@ write the `.bin` files here. If a file changes:
 **Cost:** `libsignal.sh` builds libsignal's Rust example, which takes several minutes and up to
 8 GB of RAM (`BUILD_MEMORY`). The others take seconds. Downloads and build caches go in
 `~/.cache/ooni-signal-hellos` (`WORK_DIR`), outside the source tree.
+
+## Checking the extractor
+
+`capture/extract_hello.py` turns a capture into the `.bin` files, so it is tested against known
+values two ways:
+
+```sh
+cd capture
+python3 -m unittest test_extract_hello   # offline, seconds
+./check_extract.py                       # real connections; needs podman with pasta and network
+```
+
+- `test_extract_hello.py` writes the committed hellos (with fresh random values) into synthetic
+  captures and expects them back byte for byte. The captures cover reordered, retransmitted and
+  overlapping segments; flows without their SYN; sequence numbers wrapping past 2^32; Ethernet
+  padding and VLAN tags; every supported link type, over IPv4 and IPv6; and pcap and pcapng.
+- `check_extract.py` uses ground truth. `openssl s_client -msg` prints the ClientHello it sent,
+  pasta captures the same connection, and the extractor must agree with OpenSSL. Cases cover
+  hellos split over two and three TCP segments, a hello in four TLS records, a HelloRetryRequest,
+  and decoy connections. Each case also checks that it exercised what it is for.
+
+Run both after changing the extractor.
