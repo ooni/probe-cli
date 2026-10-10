@@ -1,24 +1,50 @@
 # Captured Signal ClientHellos
 
 Each `.bin` file is a TLS ClientHello handshake message (starting with type 1, without a record
-header), captured from the client's own network code from an unfiltered network on 2026-10-09.
-`hellos.go` turns them into uTLS specs.
+header), captured from the client's own network code from an unfiltered network. `hellos.go` turns
+each into a uTLS spec.
 
-| File | Client | How captured | JA4 |
+- **Normalized:** the per-connection random values (client random, legacy session id, key share
+  public keys) are zeroed, keeping their lengths. uTLS generates fresh ones, and the files change
+  only when the handshake does.
+- **Tests:** `hellos_test.go` checks that uTLS reproduces each hello's cipher suites, extension
+  order, groups, signature algorithms, ALPN and size.
+
+| File | Client (version captured) | How | JA4 |
 |---|---|---|---|
-| `libsignal-0.105.0.bin` | libsignal 0.105.0 direct route to grpc.chat.signal.org (pinned by Signal-Android, Signal-iOS and Signal-Desktop) | libsignal's own `chat_smoke_test` example (`rust/net/examples`), tcpdump | `t13d0307h2_55b375c5d22e_3df4dd8a7a2a` |
-| `android-okhttp-websocket.bin` | Signal-Android 8.29.3 provisioning WebSocket to chat.signal.org | the app's OkHttp 5.3.2 + Conscrypt 2.6.2 configuration rebuilt on the JVM (`SignalUrlExtensions.buildOkHttpClient`, `Tls12SocketFactory`, `ProvisioningSocket`); Conscrypt openjdk-uber 2.6.2, the same version the app bundles | `t13d0911h1_f91f431d341e_86dd91ae2a36` |
-| `android-okhttp-rest.bin` | the same client, HTTPS GET to cdn2.signal.org | as above | `t13d0911h2_f91f431d341e_86dd91ae2a36` |
+| `libsignal.bin` | libsignal v0.105.0, direct route to grpc.chat.signal.org. Pinned by Signal-Android, Signal-iOS and Signal-Desktop; chat on all three, provisioning on iOS and Desktop | libsignal's own `chat_smoke_test` example | `t13d0307h2_55b375c5d22e_3df4dd8a7a2a` |
+| `android-okhttp-websocket.bin` | Signal-Android (OkHttp 5.3.2 + Conscrypt 2.6.2), provisioning WebSocket to chat.signal.org | the app's client configuration (`SignalUrlExtensions.buildOkHttpClient`, `Tls12SocketFactory`, `ProvisioningSocket`) rebuilt on the JVM in `capture/SignalAndroidHello.java`, with the same library versions; Conscrypt's openjdk-uber build | `t13d0911h1_f91f431d341e_86dd91ae2a36` |
+| `android-okhttp-rest.bin` | the same client, HTTPS to storage and the CDNs (ALPN h2,http/1.1) | as above, a GET to cdn2.signal.org | `t13d0911h2_f91f431d341e_86dd91ae2a36` |
+| `desktop-electron.bin` | Signal-Desktop's own fetches (updater, WebAPI agent) through Electron 44.4.5 (Node + BoringSSL): no ALPN, X25519MLKEM768 + x25519 key shares, session_ticket | `capture/desktop-fetch.js` under the pinned Electron, with `createHTTPSAgent`'s TLS options (Signal's RSA root as `ca`) | `t13d181000_5d04281c6031_78e6aca7449b` |
 
 **Derived, not captured:** libsignal's enclave connections (CDSI, SVR2, SVR-B) use the same
-`ssl_config` with ALPN `http/1.1`, so `HelloLibsignalEnclave` is the libsignal hello with its
-ALPN replaced.
+`ssl_config` with ALPN `http/1.1` (`rust/net/src/env.rs`), so `HelloLibsignalEnclave` is the
+libsignal hello with its ALPN replaced.
 
-**Not yet available:** iOS `URLSession` (Apple's TLS stack, for CDNs and storage) needs an iPhone
-or a Mac. Signal-Desktop's own fetches (Electron) need a Desktop capture.
+**Not available:** iOS `URLSession` (Apple's TLS stack, used by Signal-iOS for the CDNs and
+storage) can only be captured on an iPhone or a Mac. Desktop's hello comes from Electron, not the
+packaged app; the TLS stack and options are the same.
 
-The roots are Signal's RSA root (`signal.cer`) and its Ed25519 root (`signal-ed25519.cer`),
-copied from libsignal `rust/net/res/`.
+**Roots:** Signal's RSA root (`signal.cer`) and Ed25519 root (`signal-ed25519.cer`), copied from
+libsignal `rust/net/res/`.
 
-**Refreshing:** re-capture whenever the pinned libsignal, OkHttp or Conscrypt version changes, and
-update this table.
+## Refreshing
+
+When Signal bumps libsignal, OkHttp, Conscrypt or Electron:
+
+```
+cd capture
+./versions.sh                 # versions Signal currently pins, read from its repositories
+./refresh.sh                  # or any subset: ./refresh.sh libsignal android desktop
+go test ./internal/experiment/signalclient/
+```
+
+The scripts run the real client code in rootless containers (podman; pasta writes the pcaps) and
+write the `.bin` files here. If a file changes:
+1. update the `Hello` name in `hellos.go` with the new version;
+2. update this table, including the new JA4 printed by the scripts;
+3. bump the experiment version.
+
+**Cost:** `libsignal.sh` builds libsignal's Rust example, which takes several minutes and up to
+8 GB of RAM (`BUILD_MEMORY`). The others take seconds. Downloads and build caches go in
+`~/.cache/ooni-signal-hellos` (`WORK_DIR`), outside the source tree.

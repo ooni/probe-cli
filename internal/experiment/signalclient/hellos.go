@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	//go:embed hellos/libsignal-0.105.0.bin
+	//go:embed hellos/libsignal.bin
 	rawHelloLibsignal []byte
 
 	//go:embed hellos/android-okhttp-websocket.bin
@@ -26,6 +26,9 @@ var (
 
 	//go:embed hellos/android-okhttp-rest.bin
 	rawHelloAndroidREST []byte
+
+	//go:embed hellos/desktop-electron.bin
+	rawHelloDesktop []byte
 
 	//go:embed hellos/signal.cer
 	signalRSARootDER []byte
@@ -62,6 +65,10 @@ var (
 
 	// HelloAndroidREST is the same client's hello for HTTPS (storage, CDNs): ALPN h2,http/1.1.
 	HelloAndroidREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2", raw: rawHelloAndroidREST}
+
+	// HelloDesktop is Signal-Desktop's own fetches (updater, WebAPI's agent) through Electron
+	// 44.4.5's Node and BoringSSL: no ALPN, X25519MLKEM768 + x25519 key shares (1475 bytes).
+	HelloDesktop = Hello{Name: "desktop-electron-44.4.5", raw: rawHelloDesktop}
 )
 
 // errNoALPN means a hello has no ALPN extension to replace.

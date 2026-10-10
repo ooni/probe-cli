@@ -14,6 +14,7 @@ var captureSNI = map[string]string{
 	HelloLibsignalEnclave.Name: "grpc.chat.signal.org",
 	HelloAndroidWebSocket.Name: "chat.signal.org",
 	HelloAndroidREST.Name:      "cdn2.signal.org",
+	HelloDesktop.Name:          "updates2.signal.org",
 }
 
 // generatedHello builds the ClientHello uTLS would send for h.
@@ -84,7 +85,7 @@ func extensionOrder(t *testing.T, b []byte) (out []uint16) {
 }
 
 func TestHellosReproduceTheCapturedOnes(t *testing.T) {
-	for _, h := range []Hello{HelloLibsignal, HelloAndroidWebSocket, HelloAndroidREST} {
+	for _, h := range []Hello{HelloLibsignal, HelloAndroidWebSocket, HelloAndroidREST, HelloDesktop} {
 		t.Run(h.Name, func(t *testing.T) {
 			want, got := shapeOf(t, h.raw), shapeOf(t, generatedHello(t, h))
 			if !reflect.DeepEqual(want, got) {
@@ -108,7 +109,7 @@ func TestEnclaveHelloOnlyChangesALPN(t *testing.T) {
 
 func TestCapturedHelloSizes(t *testing.T) {
 	// the sizes are part of the fingerprint: the Android hello spans two TCP segments
-	for h, size := range map[*Hello]int{&HelloLibsignal: 212, &HelloAndroidWebSocket: 1473, &HelloAndroidREST: 1476} {
+	for h, size := range map[*Hello]int{&HelloLibsignal: 212, &HelloAndroidWebSocket: 1473, &HelloAndroidREST: 1476, &HelloDesktop: 1475} {
 		if got := len(generatedHello(t, *h)); got != size {
 			t.Errorf("%s: generated %d bytes, captured %d", h.Name, got, size)
 		}

@@ -64,6 +64,7 @@ var DefaultTargets = []Target{
 	{"cdn2", "cdn2.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
 	{"cdn3", "cdn3.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
 	{"updates2", "updates2.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"updates2_desktop", "updates2.signal.org", HelloDesktop, MethodHTTPSGet, "/desktop/latest-linux.yml"},
 	{"sfu", "sfu.voip.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
 }
 
