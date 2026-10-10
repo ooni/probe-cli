@@ -138,8 +138,29 @@ func (m *Measurer) ExperimentName() string { return testName }
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string { return testVersion }
 
+// Experiment-specific failure strings (in addition to df-007's).
+const (
+	// FailureExtendedConnectNotSupported: the HTTP/2 server did not offer RFC 8441 extended CONNECT.
+	FailureExtendedConnectNotSupported = "extended_connect_not_supported"
+
+	// FailureWebSocketUpgradeRefused: the server answered the WebSocket upgrade or extended
+	// CONNECT with a status other than success (see the target's status).
+	FailureWebSocketUpgradeRefused = "websocket_upgrade_refused"
+
+	// FailureUnexpectedMessage: the server sent a WebSocket message the flow does not allow.
+	FailureUnexpectedMessage = "unexpected_message"
+
+	// FailureMalformedMessage: a WebSocket message was not a valid WebSocketMessage protobuf.
+	FailureMalformedMessage = "malformed_message"
+)
+
+// newFailure wraps err so that it is recorded with the given failure string.
+func newFailure(failure, operation string, err error) error {
+	return &netxlite.ErrWrapper{Failure: failure, Operation: operation, WrappedErr: err}
+}
+
 // errNoAddress means DNS returned no usable address.
-var errNoAddress = errors.New("dns_no_answer")
+var errNoAddress = newFailure(netxlite.FailureDNSNoAnswer, netxlite.ResolveOperation, errors.New("no usable address"))
 
 // Run implements model.ExperimentMeasurer.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {

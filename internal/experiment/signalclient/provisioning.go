@@ -62,7 +62,12 @@ var (
 var errTimeout = context.DeadlineExceeded
 
 // errUnexpectedMessage means the server sent something the flow does not allow.
-var errUnexpectedMessage = errors.New("signal_client: unexpected message")
+var errUnexpectedMessage = newFailure(FailureUnexpectedMessage, netxlite.ReadOperation, errors.New("signal_client: unexpected message"))
+
+// malformed records a protobuf parse error with its failure string.
+func malformed(err error) error {
+	return newFailure(FailureMalformedMessage, netxlite.ReadOperation, err)
+}
 
 type frame struct {
 	op      byte
@@ -138,7 +143,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 		}
 		msg, err := parseMessage(f.payload)
 		if err != nil {
-			return fail("provisioning_address", err)
+			return fail("provisioning_address", malformed(err))
 		}
 		if msg.Request == nil || msg.Request.Verb != "PUT" || msg.Request.Path != "/v1/address" {
 			return fail("provisioning_address", errUnexpectedMessage)
@@ -147,7 +152,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 	}
 	addr, err := provisioningAddress(req.Body)
 	if err != nil {
-		return fail("provisioning_address", err)
+		return fail("provisioning_address", malformed(err))
 	}
 	res.AddressReceived, res.AddressLength, res.AddressT = true, len(addr), time.Since(zero).Seconds()
 

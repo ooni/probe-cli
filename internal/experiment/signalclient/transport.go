@@ -17,6 +17,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -109,7 +110,12 @@ type upgradeResult struct {
 }
 
 // errUpgradeRefused means the server answered the upgrade with something other than success.
-var errUpgradeRefused = errors.New("websocket_upgrade_refused")
+var errUpgradeRefused = errors.New("signal_client: websocket upgrade refused")
+
+// upgradeRefused records errUpgradeRefused with its failure string.
+func upgradeRefused() error {
+	return newFailure(FailureWebSocketUpgradeRefused, netxlite.HTTPRoundTripOperation, errUpgradeRefused)
+}
 
 // websocketH1 performs Android OkHttp's HTTP/1.1 WebSocket upgrade on an established TLS conn.
 func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
@@ -145,7 +151,7 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 		extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		resp.Body.Close()
-		return out, errUpgradeRefused
+		return out, upgradeRefused()
 	}
 	out.ws = newWSConn(br, conn)
 	out.closer = conn
@@ -180,6 +186,9 @@ func websocketH2(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	if err != nil {
 		pw.Close()
 		cc.Close()
+		if strings.Contains(err.Error(), "extended connect not supported") { // x/net's error is unexported
+			return nil, newFailure(FailureExtendedConnectNotSupported, netxlite.HTTPRoundTripOperation, err)
+		}
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 	}
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
@@ -187,7 +196,7 @@ func websocketH2(ctx context.Context, conn net.Conn, host, path, userAgent strin
 		resp.Body.Close()
 		pw.Close()
 		cc.Close()
-		return out, errUpgradeRefused
+		return out, upgradeRefused()
 	}
 	out.ws = newWSConn(resp.Body, pw)
 	out.closer = closerFunc(func() error { pw.Close(); resp.Body.Close(); return cc.Close() })

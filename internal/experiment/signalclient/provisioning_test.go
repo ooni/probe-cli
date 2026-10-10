@@ -2,6 +2,7 @@ package signalclient
 
 import (
 	"context"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -17,11 +18,17 @@ type fakeServer struct {
 
 func (f fakeServer) run(t *testing.T, conn net.Conn) {
 	defer conn.Close()
+	f.serve(t, conn, conn)
+}
+
+// serve runs the server side of the provisioning flow over any byte stream (an HTTP/1.1
+// connection after the upgrade, or an HTTP/2 stream), until the client closes.
+func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 	if f.closeAtStart {
 		return
 	}
-	ws := newWSConn(conn, conn) // reads the client's masked frames
-	send := func(op byte, p []byte) { conn.Write(serverFrame(true, false, op, p)) }
+	ws := newWSConn(r, w) // reads the client's masked frames
+	send := func(op byte, p []byte) { w.Write(serverFrame(true, false, op, p)) }
 	if f.sendAddress {
 		addr := append([]byte{0x0a, 24}, []byte("abcdefghijklmnopqrstuvwx")...)
 		send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: addr, ID: 7}).marshal())
