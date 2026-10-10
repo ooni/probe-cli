@@ -75,6 +75,7 @@ var keepalivePaddings = []int{0, 1024, 16384}
 type Config struct {
 	// IdleSeconds keeps each provisioning socket idle this long before the keepalives,
 	// to detect middleboxes that kill idle sessions (libsignal pings after 31 s, drops after 45 s).
+	// It is capped at maxIdleSeconds: Signal-Server closes provisioning sockets 90 s after they open.
 	IdleSeconds int64 `ooni:"seconds of idle time on provisioning sockets before keepalives (0 = none)"`
 
 	// AppUserAgent sends each real client's User-Agent instead of identifying as OONI Probe.
@@ -224,7 +225,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		res.FailedOperation, res.Failure = op, measurexlite.NewFailure(err)
 		return res
 	}
-	idle := time.Duration(max(m.config.IdleSeconds, 0)) * time.Second
+	idle := idleDuration(m.config.IdleSeconds)
 	ctx, cancel := context.WithTimeout(ctx, targetTimeout(target.Method, idle))
 	defer cancel()
 	// DNS, TCP, TLS and the upgrade or GET share the connect budget; only the provisioning flow
@@ -316,6 +317,16 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 // connectBudget bounds DNS, TCP, TLS and the upgrade or GET of one target (a variable so tests
 // can shorten it).
 var connectBudget = 30 * time.Second
+
+// maxIdleSeconds bounds IdleSeconds. Signal-Server closes provisioning sockets 90 s after they
+// open (ProvisioningConnectListener's timeout); a longer idle would record Signal's own close as
+// a failure. 60 s leaves room for the address, the keepalives and the ping.
+const maxIdleSeconds = 60
+
+// idleDuration converts IdleSeconds, clamped to [0, maxIdleSeconds].
+func idleDuration(seconds int64) time.Duration {
+	return time.Duration(min(max(seconds, 0), maxIdleSeconds)) * time.Second
+}
 
 // targetTimeout is the time budget for one target: the connect budget, plus, on provisioning
 // sockets, every step's own timeout and the idle time, so that a slow but working server is never
