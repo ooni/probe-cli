@@ -113,7 +113,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 				}
 				switch f.op {
 				case opPing:
-					ws.writeFrame(opPong, f.payload)
+					_ = ws.writeFrame(opPong, f.payload)
 					continue
 				case opClose:
 					return f, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF)
@@ -179,7 +179,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 					timer.Stop()
 					return fail("idle", netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF))
 				case f.op == opPing:
-					ws.writeFrame(opPong, f.payload)
+					_ = ws.writeFrame(opPong, f.payload)
 				}
 			case <-timer.C:
 				idling = false
@@ -248,13 +248,13 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 				echoed := bytes.Equal(f.payload, payload)
 				res.PingEchoed = &echoed
 			case opPing:
-				ws.writeFrame(opPong, f.payload)
+				_ = ws.writeFrame(opPong, f.payload)
 			}
 		case <-timer.C:
 			return fail("ping", errTimeout)
 		}
 	}
 
-	ws.writeFrame(opClose, []byte{0x03, 0xe8}) // 1000, normal closure
+	_ = ws.writeFrame(opClose, []byte{0x03, 0xe8}) // 1000, normal closure; the flow already succeeded
 	return res
 }

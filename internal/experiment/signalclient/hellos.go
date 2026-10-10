@@ -11,8 +11,10 @@ package signalclient
 import (
 	"crypto/x509"
 	_ "embed"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 
 	utls "github.com/refraction-networking/utls"
 )
@@ -87,11 +89,12 @@ var errNoALPN = errors.New("signal_client: captured hello has no ALPN extension"
 
 // Spec returns a uTLS spec that reproduces the captured hello.
 func (h Hello) Spec() (*utls.ClientHelloSpec, error) {
-	if len(h.raw) < 4 || h.raw[0] != 0x01 {
+	if len(h.raw) < 4 || h.raw[0] != 0x01 || len(h.raw) > math.MaxUint16 {
 		return nil, fmt.Errorf("signal_client: %s: not a ClientHello handshake message", h.Name)
 	}
 	// the fingerprinter expects a TLS record around the handshake message
-	record := append([]byte{0x16, 0x03, 0x01, byte(len(h.raw) >> 8), byte(len(h.raw))}, h.raw...)
+	record := binary.BigEndian.AppendUint16([]byte{0x16, 0x03, 0x01}, uint16(len(h.raw))) // #nosec G115 -- bounded above
+	record = append(record, h.raw...)
 	spec, err := (&utls.Fingerprinter{}).FingerprintClientHello(record)
 	if err != nil {
 		return nil, fmt.Errorf("signal_client: %s: %w", h.Name, err)

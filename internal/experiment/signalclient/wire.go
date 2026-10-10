@@ -9,13 +9,16 @@ import (
 	"bufio"
 	"bytes"
 	"compress/flate"
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
@@ -55,7 +58,7 @@ type wsConn struct {
 func (c *wsConn) inflate(p []byte) ([]byte, error) {
 	tail := []byte{0x00, 0x00, 0xff, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff} // sync flush + final empty block
 	r := flate.NewReaderDict(io.MultiReader(bytes.NewReader(p), bytes.NewReader(tail)), c.window)
-	out, err := io.ReadAll(io.LimitReader(r, maxFramePayload+1))
+	out, err := netxlite.ReadAllContext(context.Background(), io.LimitReader(r, maxFramePayload+1)) // in memory
 	if err != nil {
 		return nil, fmt.Errorf("signal_client: inflating websocket message: %w", err)
 	}
@@ -330,7 +333,7 @@ func parseMessage(b []byte) (*wsMessage, error) {
 			case 1:
 				r.ID = v
 			case 2:
-				r.Status = uint32(v)
+				r.Status = uint32(min(v, math.MaxUint32)) // #nosec G115 -- clamped; HTTP statuses are tiny
 			case 3:
 				r.Message = string(bs)
 			case 4:

@@ -280,7 +280,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 				return res
 			}
 			if err == nil { // accepted without credentials: unexpected, but Signal answered
-				up.closer.Close()
+				_ = up.closer.Close()
 				return res
 			}
 			return fail("websocket_upgrade", err)

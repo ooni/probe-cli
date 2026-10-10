@@ -1,6 +1,7 @@
 package signalclient
 
 import (
+	"crypto/x509"
 	"net"
 	"reflect"
 	"testing"
@@ -121,7 +122,13 @@ func TestSignalRoots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := len(pool.Subjects()); n != 2 { //nolint:staticcheck // fine for a count
-		t.Fatalf("expected 2 roots, got %d", n)
+	for _, der := range [][]byte{signalRSARootDER, signalEd25519RootDER} {
+		cert, err := x509.ParseCertificate(der)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := cert.Verify(x509.VerifyOptions{Roots: pool}); err != nil {
+			t.Fatalf("%s does not verify against the pool: %v", cert.Subject, err)
+		}
 	}
 }

@@ -56,13 +56,13 @@ func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger
 	}
 	spec, err := hello.Spec()
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, err)
 	}
 	config := &utls.Config{ServerName: sni, RootCAs: roots}
 	uconn := utls.UClient(conn, config, utls.HelloCustom)
 	if err := uconn.ApplyPreset(spec); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation,
 			fmt.Errorf("signal_client: %s: %w", hello.Name, err))
 	}
@@ -76,7 +76,7 @@ func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger
 	hs := measurexlite.NewArchivalTLSOrQUICHandshakeResult(trace.Index(), started, "tcp", address,
 		&tls.Config{ServerName: sni, NextProtos: hello.ALPN()}, state, err, finished, hello.Name)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return &tlsResult{handshake: hs}, err
 	}
 	return &tlsResult{conn: uconn, alpn: state.NegotiatedProtocol, leafKey: leafKeyType(state), handshake: hs}, nil
@@ -137,8 +137,8 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 		"Host: " + host + "\r\n" +
 		"Accept-Encoding: gzip\r\n\r\n"
 	if deadline, ok := ctx.Deadline(); ok {
-		conn.SetDeadline(deadline)
-		defer conn.SetDeadline(time.Time{})
+		_ = conn.SetDeadline(deadline)
+		defer func() { _ = conn.SetDeadline(time.Time{}) }()
 	}
 	if _, err := io.WriteString(conn, req); err != nil {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err)
@@ -151,7 +151,7 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != "",
 		extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return out, upgradeRefused()
 	}
 	out.ws = newWSConn(br, conn)
@@ -185,8 +185,8 @@ func websocketH2(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	req.Header.Set("Sec-WebSocket-Version", "13")
 	resp, err := cc.RoundTrip(req)
 	if err != nil {
-		pw.Close()
-		cc.Close()
+		_ = pw.Close()
+		_ = cc.Close()
 		if strings.Contains(err.Error(), "extended connect not supported") { // x/net's error is unexported
 			return nil, newFailure(FailureExtendedConnectNotSupported, netxlite.HTTPRoundTripOperation, err)
 		}
@@ -194,13 +194,13 @@ func websocketH2(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	}
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
 	if resp.StatusCode/100 != 2 { // libsignal accepts any 2xx
-		resp.Body.Close()
-		pw.Close()
-		cc.Close()
+		_ = resp.Body.Close()
+		_ = pw.Close()
+		_ = cc.Close()
 		return out, upgradeRefused()
 	}
 	out.ws = newWSConn(resp.Body, pw)
-	out.closer = closerFunc(func() error { pw.Close(); resp.Body.Close(); return cc.Close() })
+	out.closer = closerFunc(func() error { _ = pw.Close(); _ = resp.Body.Close(); return cc.Close() })
 	return out, nil
 }
 
@@ -223,14 +223,14 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 		if err != nil {
 			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 		}
-		defer cc.Close()
+		defer func() { _ = cc.Close() }()
 		resp, err = cc.RoundTrip(req)
 		if err != nil {
 			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 		}
 	} else {
 		if deadline, ok := ctx.Deadline(); ok {
-			conn.SetDeadline(deadline)
+			_ = conn.SetDeadline(deadline)
 		}
 		req.Header.Set("Connection", "close")
 		if err := req.Write(conn); err != nil {
@@ -241,7 +241,7 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
 		}
 	}
-	io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
-	resp.Body.Close()
+	_, _ = netxlite.CopyContext(ctx, io.Discard, io.LimitReader(resp.Body, 1<<16)) // drain: the status is what we record
+	_ = resp.Body.Close()
 	return resp.StatusCode, resp.Header.Get("X-Signal-Timestamp") != "", nil
 }
