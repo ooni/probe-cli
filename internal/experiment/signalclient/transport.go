@@ -18,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -48,7 +49,7 @@ type tlsResult struct {
 // dialTLS connects to address and handshakes with the given hello, verifying the chain against
 // roots for sni. Events go to trace. It returns a nil *tlsResult only when the TCP connect failed.
 func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger, zero time.Time,
-	address, sni string, hello Hello, roots *x509.CertPool) (*tlsResult, error) {
+	address, sni string, hello Hello, roots *x509.CertPool, tag string) (*tlsResult, error) {
 	dialer := trace.NewDialerWithoutResolver(logger)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	if err != nil {
@@ -74,7 +75,7 @@ func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger
 	}
 	state := stdlibState(uconn.ConnectionState())
 	hs := measurexlite.NewArchivalTLSOrQUICHandshakeResult(trace.Index(), started, "tcp", address,
-		&tls.Config{ServerName: sni, NextProtos: hello.ALPN()}, state, err, finished, hello.Name)
+		&tls.Config{ServerName: sni, NextProtos: hello.ALPN()}, state, err, finished, tag)
 	if err != nil {
 		_ = conn.Close()
 		return &tlsResult{handshake: hs}, err
@@ -151,6 +152,7 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != "",
 		extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
+		_ = conn.Close() // first: Body.Close would otherwise drain an endless body until the deadline
 		_ = resp.Body.Close()
 		return out, upgradeRefused()
 	}
@@ -159,34 +161,50 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	return out, nil
 }
 
-// websocketH2 performs libsignal's RFC 8441 extended CONNECT on an established TLS conn.
-func websocketH2(ctx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
+// websocketH2 performs libsignal's RFC 8441 extended CONNECT on an established TLS conn. The
+// stream lives as long as ctx; waiting for the response headers is bounded by connectCtx.
+func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
 	t1 := &http.Transport{HTTP2: &http.HTTP2Config{
 		MaxReceiveBufferPerStream:     libsignalStreamWindow,
 		MaxReceiveBufferPerConnection: libsignalConnWindowUpdate,
 		MaxReadFrameSize:              libsignalMaxFrameSize,
 	}}
+	//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
 	t2, err := http2.ConfigureTransports(t1)
 	if err != nil {
 		return nil, netxlite.NewTopLevelGenericErrWrapper(err)
 	}
+	//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
 	t2.MaxHeaderListSize = libsignalMaxHeaderList
-	cc, err := t2.NewClientConn(conn)
+	cconn := &causeConn{Conn: conn}
+	//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
+	cc, err := t2.NewClientConn(cconn)
 	if err != nil {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 	}
 	pr, pw := io.Pipe()
-	req, err := http.NewRequestWithContext(ctx, http.MethodConnect, "https://"+host+path, pr)
+	reqCtx, cancelReq := context.WithCancel(ctx)
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodConnect, "https://"+host+path, pr)
 	if err != nil {
+		cancelReq()
 		return nil, netxlite.NewTopLevelGenericErrWrapper(err)
 	}
 	req.Header[":protocol"] = []string{"websocket"}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Sec-WebSocket-Version", "13")
+	stopHeaderTimer := context.AfterFunc(connectCtx, cancelReq) // no headers within the connect budget
 	resp, err := cc.RoundTrip(req)
+	headerTimeout := !stopHeaderTimer() && ctx.Err() == nil // the timer fired, not the parent ctx
+	if headerTimeout {
+		err = context.DeadlineExceeded
+	}
 	if err != nil {
+		cancelReq()
+		_ = cc.Close() // before closing any response body (it may wait for the write lock)
 		_ = pw.Close()
-		_ = cc.Close()
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
 		if strings.Contains(err.Error(), "extended connect not supported") { // x/net's error is unexported
 			return nil, newFailure(FailureExtendedConnectNotSupported, netxlite.HTTPRoundTripOperation, err)
 		}
@@ -194,14 +212,71 @@ func websocketH2(ctx context.Context, conn net.Conn, host, path, userAgent strin
 	}
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
 	if resp.StatusCode/100 != 2 { // libsignal accepts any 2xx
-		_ = resp.Body.Close()
+		cancelReq()
+		_ = cc.Close() // first: closing the body may wait for the connection's write lock
 		_ = pw.Close()
-		_ = cc.Close()
+		_ = resp.Body.Close()
 		return out, upgradeRefused()
 	}
 	out.ws = newWSConn(resp.Body, pw)
-	out.closer = closerFunc(func() error { _ = pw.Close(); _ = resp.Body.Close(); return cc.Close() })
+	out.ws.cause = cconn.cause
+	out.closer = closerFunc(func() error {
+		cancelReq()
+		err := cc.Close() // first, for the same reason
+		_ = pw.Close()
+		_ = resp.Body.Close()
+		return err
+	})
 	return out, nil
+}
+
+// causeConn remembers the first error the network returned on Read. When the peer closes or
+// resets the connection, x/net closes its own socket in reaction, and later reads and writes see
+// that local close ("use of closed network connection", "client conn is closed") instead of the
+// peer's action. The recorded cause lets us report what happened on the wire.
+type causeConn struct {
+	net.Conn
+	mu  sync.Mutex
+	err error
+}
+
+func (c *causeConn) Read(p []byte) (int, error) {
+	n, err := c.Conn.Read(p)
+	if err != nil {
+		c.mu.Lock()
+		if c.err == nil {
+			c.err = err
+		}
+		c.mu.Unlock()
+	}
+	return n, err
+}
+
+// cause returns the first read error from the network, or nil.
+func (c *causeConn) cause() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.err
+}
+
+// isLocalCloseError reports errors that only say our side of the connection is closed.
+func isLocalCloseError(err error) bool {
+	return errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) ||
+		strings.Contains(err.Error(), "http2: client conn is closed")
+}
+
+// classifyHTTP2 gives HTTP/2 stream and connection failures their failure strings: x/net reports
+// a peer's RST_STREAM as a StreamError, and a connection that died under the client as the
+// unexported "client conn is closed". It returns nil for other errors.
+func classifyHTTP2(err error, operation string) error {
+	var se http2.StreamError
+	switch {
+	case errors.As(err, &se):
+		return newFailure(FailureHTTP2StreamReset, operation, err)
+	case strings.Contains(err.Error(), "http2: client conn is closed"):
+		return newFailure(netxlite.FailureEOFError, operation, err)
+	}
+	return nil
 }
 
 type closerFunc func() error
@@ -210,6 +285,8 @@ func (f closerFunc) Close() error { return f() }
 
 // httpsGet sends one GET over an established TLS conn, using HTTP/2 when it was negotiated,
 // as OkHttp does, and returns the status and whether Signal's timestamp header was present.
+// It reads at most 64 KiB of the body; an error while reading it is returned with the status.
+// It consumes conn: the conn is closed before returning.
 func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent string) (int, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+host+path, nil)
 	if err != nil {
@@ -219,6 +296,7 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 	req.Header.Set("Accept-Encoding", "gzip")
 	var resp *http.Response
 	if alpn == "h2" {
+		//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
 		cc, err := (&http2.Transport{}).NewClientConn(conn)
 		if err != nil {
 			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
@@ -241,7 +319,12 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
 		}
 	}
-	_, _ = netxlite.CopyContext(ctx, io.Discard, io.LimitReader(resp.Body, 1<<16)) // drain: the status is what we record
+	_, bodyErr := netxlite.CopyContext(ctx, io.Discard, io.LimitReader(resp.Body, 1<<16))
+	_ = conn.Close() // first: Body.Close would otherwise drain an endless body until the deadline
 	_ = resp.Body.Close()
-	return resp.StatusCode, resp.Header.Get("X-Signal-Timestamp") != "", nil
+	ts := resp.Header.Get("X-Signal-Timestamp") != ""
+	if bodyErr != nil {
+		return resp.StatusCode, ts, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, bodyErr)
+	}
+	return resp.StatusCode, ts, nil
 }

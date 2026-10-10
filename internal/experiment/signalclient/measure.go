@@ -167,8 +167,12 @@ const (
 	// FailureUnexpectedMessage: the server sent a WebSocket message the flow does not allow.
 	FailureUnexpectedMessage = "unexpected_message"
 
-	// FailureMalformedMessage: a WebSocket message was not a valid WebSocketMessage protobuf.
+	// FailureMalformedMessage: a WebSocket message was not a valid WebSocketMessage protobuf, could
+	// not be inflated, or exceeded the size limit.
 	FailureMalformedMessage = "malformed_message"
+
+	// FailureHTTP2StreamReset: the peer reset the HTTP/2 stream carrying the WebSocket.
+	FailureHTTP2StreamReset = "http2_stream_reset"
 )
 
 // newFailure wraps err so that it is recorded with the given failure string.
@@ -220,14 +224,19 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		res.FailedOperation, res.Failure = op, measurexlite.NewFailure(err)
 		return res
 	}
-	ctx, cancel := context.WithTimeout(ctx, targetTimeout(target.Method, time.Duration(m.config.IdleSeconds)*time.Second))
+	idle := time.Duration(max(m.config.IdleSeconds, 0)) * time.Second
+	ctx, cancel := context.WithTimeout(ctx, targetTimeout(target.Method, idle))
 	defer cancel()
+	// DNS, TCP, TLS and the upgrade or GET share the connect budget; only the provisioning flow
+	// that follows uses the rest of ctx.
+	connectCtx, cancelConnect := context.WithTimeout(ctx, connectBudget)
+	defer cancelConnect()
 
 	trace := measurexlite.NewTrace(index, zero, target.Name)
 	ol := logx.NewOperationLogger(logger, "signal_client: %s %s", target.Name, target.Hostname)
 	defer func() { ol.Stop(errorOrNil(res.Failure)) }()
 
-	addrs, err := trace.NewStdlibResolver(logger).LookupHost(ctx, target.Hostname)
+	addrs, err := trace.NewStdlibResolver(logger).LookupHost(connectCtx, target.Hostname)
 	tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
 	if err != nil {
 		return fail(netxlite.ResolveOperation, err)
@@ -238,7 +247,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	}
 	res.Address = net.JoinHostPort(ip, "443")
 
-	tr, err := dialTLS(ctx, trace, logger, zero, res.Address, target.Hostname, target.Hello, roots)
+	tr, err := dialTLS(connectCtx, trace, logger, zero, res.Address, target.Hostname, target.Hello, roots, target.Name)
 	tk.TCPConnect = append(tk.TCPConnect, trace.TCPConnects()...)
 	defer func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) }()
 	if tr != nil && tr.handshake != nil {
@@ -251,14 +260,18 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		}
 		return fail(op, err)
 	}
-	defer tr.conn.Close()
+	defer func() { _ = tr.conn.Close() }()
+	// when ctx ends, close the conn: this unblocks any read or write, including HTTP/2 writes
+	// waiting for flow control, which do not watch ctx themselves
+	stopCloser := context.AfterFunc(ctx, func() { _ = tr.conn.Close() })
+	defer stopCloser()
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
 
 	ua := m.config.userAgent(target.Hello)
 	res.UserAgent = ua
 	switch target.Method {
 	case MethodHTTPSGet:
-		status, ts, err := httpsGet(ctx, tr.conn, tr.alpn, target.Hostname, target.Path, ua)
+		status, ts, err := httpsGet(connectCtx, tr.conn, tr.alpn, target.Hostname, target.Path, ua)
 		res.Status, res.SignalTimestamp = int64(status), ts
 		if err != nil {
 			return fail(netxlite.HTTPRoundTripOperation, err)
@@ -267,9 +280,9 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	case MethodEnclaveH1, MethodProvisioningH1, MethodProvisioningH2:
 		var up *upgradeResult
 		if target.Method == MethodProvisioningH2 {
-			up, err = websocketH2(ctx, tr.conn, target.Hostname, target.Path, ua)
+			up, err = websocketH2(ctx, connectCtx, tr.conn, target.Hostname, target.Path, ua)
 		} else {
-			up, err = websocketH1(ctx, tr.conn, target.Hostname, target.Path, ua)
+			up, err = websocketH1(connectCtx, tr.conn, target.Hostname, target.Path, ua)
 		}
 		if up != nil {
 			res.Status, res.SignalTimestamp, res.WSExtensions = int64(up.status), up.signalTimestamp, up.extensions
@@ -289,7 +302,9 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 			return fail("websocket_upgrade", err)
 		}
 		defer up.closer.Close()
-		res.Provisioning = runProvisioning(ctx, up.ws, zero, keepalivePaddings, time.Duration(m.config.IdleSeconds)*time.Second)
+		drain := func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) } // the buffer holds 64
+		drain()
+		res.Provisioning = runProvisioning(ctx, up.ws, zero, keepalivePaddings, idle, drain)
 		if res.Provisioning.Failure != nil {
 			res.Failure, res.FailedOperation = res.Provisioning.Failure, res.Provisioning.FailedStep
 		}
@@ -298,8 +313,9 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	return fail(netxlite.TopLevelOperation, errors.New("signal_client: unknown method"))
 }
 
-// connectBudget bounds DNS, TCP, TLS and the upgrade or GET of one target.
-const connectBudget = 30 * time.Second
+// connectBudget bounds DNS, TCP, TLS and the upgrade or GET of one target (a variable so tests
+// can shorten it).
+var connectBudget = 30 * time.Second
 
 // targetTimeout is the time budget for one target: the connect budget, plus, on provisioning
 // sockets, every step's own timeout and the idle time, so that a slow but working server is never

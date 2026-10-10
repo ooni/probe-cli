@@ -37,6 +37,9 @@ const maxFramePayload = 1 << 20
 // errFrameTooLarge means the server sent a frame larger than maxFramePayload.
 var errFrameTooLarge = errors.New("signal_client: websocket frame too large")
 
+// errInflate means a permessage-deflate message could not be decompressed.
+var errInflate = errors.New("signal_client: cannot inflate websocket message")
+
 // wsConn is a minimal client-side WebSocket over any byte stream (an HTTP/1.1 upgraded
 // connection or an RFC 8441 HTTP/2 stream). Client frames are masked, as RFC 6455 and 8441 require.
 type wsConn struct {
@@ -49,6 +52,10 @@ type wsConn struct {
 	partialOp         byte
 	partialCompressed bool
 
+	// cause, when set, returns the first error the network returned under this WebSocket (see
+	// causeConn): it explains local-close errors seen by later reads and writes.
+	cause func() error
+
 	// window holds the last 32 KiB the server sent compressed (RFC 7692 permessage-deflate
 	// with context takeover): each message is inflated with it as the dictionary.
 	window []byte
@@ -60,7 +67,7 @@ func (c *wsConn) inflate(p []byte) ([]byte, error) {
 	r := flate.NewReaderDict(io.MultiReader(bytes.NewReader(p), bytes.NewReader(tail)), c.window)
 	out, err := netxlite.ReadAllContext(context.Background(), io.LimitReader(r, maxFramePayload+1)) // in memory
 	if err != nil {
-		return nil, fmt.Errorf("signal_client: inflating websocket message: %w", err)
+		return nil, fmt.Errorf("%w: %v", errInflate, err)
 	}
 	if len(out) > maxFramePayload {
 		return nil, errFrameTooLarge
@@ -352,13 +359,20 @@ func parseMessage(b []byte) (*wsMessage, error) {
 	return msg, nil
 }
 
-// provisioningAddress extracts ProvisioningAddress.address (field 1).
+// errNoProvisioningAddress means a ProvisioningAddress had no address field.
+var errNoProvisioningAddress = errors.New("signal_client: ProvisioningAddress without an address")
+
+// provisioningAddress extracts ProvisioningAddress.address (field 1), which must be present.
 func provisioningAddress(body []byte) (string, error) {
 	var addr string
+	found := false
 	err := fields(body, func(num protowire.Number, _ uint64, bs []byte) {
 		if num == 1 {
-			addr = string(bs)
+			addr, found = string(bs), true
 		}
 	})
+	if err == nil && !found {
+		err = errNoProvisioningAddress
+	}
 	return addr, err
 }

@@ -48,6 +48,11 @@ type qaBehavior struct {
 	noConnectProtocol bool // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
 	refuseUpgrade     bool // answer the provisioning upgrade with 403, as a blockpage would
 	enclaveAccepts    bool // accept enclave upgrades without credentials (101)
+	enclave401        bool // answer enclave upgrades 401, as for a real enclave id without credentials
+	deflate           bool // accept permessage-deflate (HTTP/1.1) and compress every message
+	resetAfterAddress bool // HTTP/2: RST_STREAM right after sending the address
+	killAfterAddress  bool // close the TCP connection right after sending the address
+	truncateBody      bool // GET responses: promise 1000 bytes, send 5, close the connection
 }
 
 // qaUserAgents records the User-Agent of every request the fake front ends receive, by host.
@@ -138,7 +143,8 @@ func (s *qaSignalServer) serve(conn *tls.Conn) {
 
 func (s *qaSignalServer) provisioning() fakeServer {
 	b := s.factory.behavior
-	return fakeServer{sendAddress: !b.noAddress, closeAtStart: b.closeAfterUpgrade, noTimestamp: b.noTimestamp}
+	return fakeServer{sendAddress: !b.noAddress, closeAtStart: b.closeAfterUpgrade, noTimestamp: b.noTimestamp,
+		compress: b.deflate, stopAfterAddress: b.resetAfterAddress || b.killAfterAddress}
 }
 
 func (s *qaSignalServer) timestampHeader() string {
@@ -162,13 +168,21 @@ func (s *qaSignalServer) serveH1(conn net.Conn) {
 		fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 	case upgrade && req.URL.Path == "/v1/websocket/provisioning/":
 		sum := sha1.Sum([]byte(req.Header.Get("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+		ext := ""
+		if s.factory.behavior.deflate {
+			ext = "Sec-WebSocket-Extensions: permessage-deflate\r\n"
+		}
 		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
-			"Sec-WebSocket-Accept: %s\r\n%s\r\n", base64.StdEncoding.EncodeToString(sum[:]), s.timestampHeader())
+			"Sec-WebSocket-Accept: %s\r\n%s%s\r\n", base64.StdEncoding.EncodeToString(sum[:]), s.timestampHeader(), ext)
 		s.provisioning().serve(s.factory.t, br, conn)
+	case upgrade && s.factory.behavior.enclave401:
+		fmt.Fprintf(conn, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 	case upgrade && s.factory.behavior.enclaveAccepts:
 		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n")
 	case upgrade: // an enclave path without credentials
 		fmt.Fprintf(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+	case s.factory.behavior.truncateBody:
+		fmt.Fprintf(conn, "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\nshort")
 	default:
 		fmt.Fprintf(conn, "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n%s\r\nok", s.timestampHeader())
 	}
@@ -234,9 +248,22 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 				w := &qaStreamWriter{fr: fr, mu: &wmu, stream: f.StreamID}
 				go func() {
 					s.provisioning().serve(s.factory.t, pr, w)
-					locked(func() error { return fr.WriteData(f.StreamID, true, nil) })
+					switch {
+					case s.factory.behavior.resetAfterAddress:
+						locked(func() error { return fr.WriteRSTStream(f.StreamID, http2.ErrCodeCancel) })
+					case s.factory.behavior.killAfterAddress:
+						conn.Close()
+					default:
+						locked(func() error { return fr.WriteData(f.StreamID, true, nil) })
+					}
 				}()
 				continue
+			}
+			if s.factory.behavior.truncateBody {
+				respond(f.StreamID, 200, false)
+				locked(func() error { return fr.WriteData(f.StreamID, false, []byte("short")) })
+				conn.Close()
+				return
 			}
 			respond(f.StreamID, 404, true)
 		case *http2.DataFrame:
@@ -568,5 +595,102 @@ func TestQABrokenHelloIsATLSFailure(t *testing.T) {
 	r := byName["broken"]
 	if r.FailedOperation != "tls_handshake" || r.Failure == nil {
 		t.Fatalf("expected a tls_handshake failure, got op %q failure %q", r.FailedOperation, deref(r.Failure))
+	}
+}
+
+func TestQAEnclave401IsReached(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaEnclaveAddr: {enclave401: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	for _, name := range []string{"cdsi", "svr2", "svrb"} {
+		if r := byName[name]; r.Failure != nil || r.Status != 401 {
+			t.Errorf("%s: status %d failure %q", name, r.Status, deref(r.Failure))
+		}
+	}
+}
+
+func TestQAPermessageDeflateNegotiated(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {deflate: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	r := byName["chat_android"]
+	if r.Failure != nil || r.WSExtensions != "permessage-deflate" || r.Provisioning == nil || !r.Provisioning.AddressReceived ||
+		len(r.Provisioning.Keepalives) != 3 {
+		t.Fatalf("deflate flow: %+v failure=%q", r, deref(r.Failure))
+	}
+}
+
+func TestQAStreamResetAfterAddress(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {resetAfterAddress: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	r := byName["chat_libsignal"]
+	if r.Failure == nil || r.Provisioning == nil || !r.Provisioning.AddressReceived {
+		t.Fatalf("expected a failure after the address, got %+v", r)
+	}
+	if deref(r.Failure) != FailureHTTP2StreamReset {
+		t.Errorf("stream reset recorded as %q at %q", deref(r.Failure), r.FailedOperation)
+	}
+}
+
+func TestQAConnectionKilledAfterAddress(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {killAfterAddress: true}, qaChatAddr: {killAfterAddress: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	for _, name := range []string{"chat_libsignal", "chat_android"} {
+		r := byName[name]
+		if r.Failure == nil || !r.Provisioning.AddressReceived {
+			t.Errorf("%s: expected a failure after the address, got %+v", name, r)
+			continue
+		}
+		if f := deref(r.Failure); f != "eof_error" && f != "connection_reset" {
+			t.Errorf("%s: kill recorded as %q at %q", name, f, r.FailedOperation)
+		}
+	}
+}
+
+func TestQATruncatedBodyIsAFailure(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaCDNAddr: {truncateBody: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	for _, name := range []string{"storage", "updates2_desktop"} { // HTTP/2 and HTTP/1.1
+		r := byName[name]
+		if r.Failure == nil || r.Status != 200 {
+			t.Errorf("%s: expected status 200 with a body failure, got status %d failure %q", name, r.Status, deref(r.Failure))
+		}
+	}
+}
+
+// A TLS blackhole costs the connect budget, not the whole provisioning budget.
+func TestQAConnectBudgetIsEnforced(t *testing.T) {
+	defer func(d time.Duration) { connectBudget = d }(connectBudget)
+	connectBudget = 2 * time.Second
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "chat.signal.org"})
+	_, byName := runQA(t, env)
+	r := byName["chat_android"]
+	expectFailure(t, r, "tls_handshake", "generic_timeout_error")
+	if took := r.T - r.T0; took > connectBudget.Seconds()+1 {
+		t.Errorf("chat_android took %.1f s with a %v connect budget", took, connectBudget)
+	}
+	expectOK(t, byName, "chat_libsignal")
+}
+
+func TestQATLSRecordsAreTaggedWithTheTarget(t *testing.T) {
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	tk, _ := runQA(t, env)
+	seen := map[string]bool{}
+	for _, hs := range tk.TLSHandshakes {
+		if len(hs.Tags) != 1 {
+			t.Fatalf("tags %v", hs.Tags)
+		}
+		seen[hs.Tags[0]] = true
+	}
+	for _, name := range allTargets {
+		if !seen[name] {
+			t.Errorf("no TLS record tagged %q (tags seen: %v)", name, seen)
+		}
 	}
 }

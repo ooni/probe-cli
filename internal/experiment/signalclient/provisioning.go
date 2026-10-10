@@ -76,19 +76,56 @@ type frame struct {
 	err     error
 }
 
+// withCause replaces an error that only says our side is closed by the network error that caused
+// the close, when ws knows it.
+func withCause(ws *wsConn, err error) error {
+	if ws.cause != nil && isLocalCloseError(err) {
+		if cause := ws.cause(); cause != nil && !isLocalCloseError(cause) {
+			return cause
+		}
+	}
+	return err
+}
+
+// readFailure wraps an error from reading the WebSocket with its failure string.
+func readFailure(err error) error {
+	if errors.Is(err, errFrameTooLarge) || errors.Is(err, errInflate) {
+		return malformed(err)
+	}
+	if h2err := classifyHTTP2(err, netxlite.ReadOperation); h2err != nil {
+		return h2err
+	}
+	return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
+}
+
+// eofFailure is a WebSocket close from the server.
+func eofFailure() error {
+	return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF)
+}
+
+// pendingReadErrorWait is how long a failed write waits for the read error that explains it.
+const pendingReadErrorWait = 200 * time.Millisecond
+
 // runProvisioning drives the flow on an upgraded WebSocket. paddings lists the keepalive body
-// sizes; idle is how long to stay quiet after the ack (0: not at all).
-func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings []int, idle time.Duration) *ProvisioningResult {
+// sizes; idle is how long to stay quiet after the ack (0: not at all); checkpoint, when not nil,
+// is called after each step (the caller drains its trace's bounded event buffers there).
+//
+// Each step has one deadline, so frames the step ignores cannot extend it.
+func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings []int, idle time.Duration,
+	checkpoint func()) *ProvisioningResult {
 	res := &ProvisioningResult{IdleSeconds: int64(idle / time.Second)}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	if checkpoint == nil {
+		checkpoint = func() {}
+	}
 
 	frames := make(chan frame, 16)
 	go func() {
 		for {
 			op, p, err := ws.readFrame()
 			if err != nil {
-				err = netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
+				err = readFailure(withCause(ws, err))
 			}
 			select {
 			case frames <- frame{op, p, err}:
@@ -101,9 +138,9 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 		}
 	}()
 
-	// next returns the next data or pong frame, answering pings on the way.
-	next := func(timeout time.Duration) (frame, error) {
-		timer := time.NewTimer(timeout)
+	// next returns the next data or pong frame before deadline, answering pings on the way.
+	next := func(deadline time.Time) (frame, error) {
+		timer := time.NewTimer(time.Until(deadline))
 		defer timer.Stop()
 		for {
 			select {
@@ -116,7 +153,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 					_ = ws.writeFrame(opPong, f.payload)
 					continue
 				case opClose:
-					return f, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF)
+					return f, eofFailure()
 				}
 				return f, nil
 			case <-timer.C:
@@ -126,6 +163,22 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 			}
 		}
 	}
+	// writeFailure explains a failed write by the read error that usually caused it (a reset
+	// stream or connection), when one arrives shortly; otherwise it reports the write error.
+	writeFailure := func(err error) error {
+		select {
+		case f := <-frames:
+			if f.err != nil {
+				return f.err
+			}
+		case <-time.After(pendingReadErrorWait):
+		}
+		err = withCause(ws, err)
+		if h2err := classifyHTTP2(err, netxlite.WriteOperation); h2err != nil {
+			return h2err
+		}
+		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err)
+	}
 	fail := func(step string, err error) *ProvisioningResult {
 		res.FailedStep = step
 		res.Failure = measurexlite.NewFailure(err)
@@ -134,8 +187,9 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 
 	// 1. the server's provisioning address
 	var req *wsRequest
+	deadline := time.Now().Add(addressTimeout)
 	for req == nil {
-		f, err := next(addressTimeout)
+		f, err := next(deadline)
 		if err != nil {
 			return fail("provisioning_address", err)
 		}
@@ -160,9 +214,10 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 	// 2. ack, as the apps do
 	ack := &wsResponse{ID: req.ID, Status: 200, Message: "OK"}
 	if err := ws.writeFrame(opBinary, ack.marshal()); err != nil {
-		return fail("ack", netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err))
+		return fail("ack", writeFailure(err))
 	}
 	res.Acked = true
+	checkpoint()
 
 	if idle > 0 {
 		// stay quiet for the full idle time: answer pings, ignore other messages, stop only on
@@ -177,7 +232,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 					return fail("idle", f.err)
 				case f.op == opClose:
 					timer.Stop()
-					return fail("idle", netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF))
+					return fail("idle", eofFailure())
 				case f.op == opPing:
 					_ = ws.writeFrame(opPong, f.payload)
 				}
@@ -188,28 +243,32 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 				return fail("idle", ctx.Err())
 			}
 		}
+		checkpoint()
 	}
 
 	// 3. keepalives, some padded
 	for i, pad := range paddings {
 		kr := &KeepaliveResult{Padding: pad}
 		res.Keepalives = append(res.Keepalives, kr)
-		id := uint64(time.Now().UnixMilli())*100 + uint64(i) // the apps use millisecond timestamps
+		id := uint64(time.Now().UnixMilli())*100 + uint64(i) // #nosec G115 -- the apps use millisecond timestamps
 		r := &wsRequest{Verb: "GET", Path: "/v1/keepalive", ID: id}
 		if pad > 0 {
 			r.Body = make([]byte, pad)
-			rand.Read(r.Body)
+			_, _ = rand.Read(r.Body)
 		}
 		kr.T0 = time.Since(zero).Seconds()
-		if err := ws.writeFrame(opBinary, r.marshal()); err != nil {
-			kr.Failure = measurexlite.NewFailure(netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err))
+		keepaliveFail := func(err error) *ProvisioningResult {
+			kr.T, kr.Failure = time.Since(zero).Seconds(), measurexlite.NewFailure(err)
 			return fail("keepalive", err)
 		}
+		if err := ws.writeFrame(opBinary, r.marshal()); err != nil {
+			return keepaliveFail(writeFailure(err))
+		}
+		deadline := time.Now().Add(keepaliveTimeout)
 		for {
-			f, err := next(keepaliveTimeout)
+			f, err := next(deadline)
 			if err != nil {
-				kr.Failure = measurexlite.NewFailure(err)
-				return fail("keepalive", err)
+				return keepaliveFail(err)
 			}
 			if f.op != opBinary {
 				continue
@@ -227,33 +286,46 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 			}
 			break
 		}
+		checkpoint()
 	}
 
-	// 4. a PING whose payload the PONG must echo
+	// 4. a PING whose payload a PONG must echo. Unsolicited pongs (RFC 6455 allows them) are
+	// skipped; ping_echoed is false only if pongs arrived but none echoed the payload.
 	payload := make([]byte, 125)
-	rand.Read(payload)
+	_, _ = rand.Read(payload)
 	if err := ws.writeFrame(opPing, payload); err != nil {
-		return fail("ping", netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err))
+		return fail("ping", writeFailure(err))
 	}
+	sawOtherPong := false
 	timer := time.NewTimer(keepaliveTimeout)
 	defer timer.Stop()
 	for res.PingEchoed == nil {
 		select {
 		case f := <-frames:
-			if f.err != nil {
+			switch {
+			case f.err != nil:
 				return fail("ping", f.err)
-			}
-			switch f.op {
-			case opPong:
-				echoed := bytes.Equal(f.payload, payload)
+			case f.op == opClose:
+				return fail("ping", eofFailure())
+			case f.op == opPong && bytes.Equal(f.payload, payload):
+				echoed := true
 				res.PingEchoed = &echoed
-			case opPing:
+			case f.op == opPong:
+				sawOtherPong = true
+			case f.op == opPing:
 				_ = ws.writeFrame(opPong, f.payload)
 			}
 		case <-timer.C:
-			return fail("ping", errTimeout)
+			if !sawOtherPong {
+				return fail("ping", errTimeout)
+			}
+			echoed := false
+			res.PingEchoed = &echoed
+		case <-ctx.Done():
+			return fail("ping", ctx.Err())
 		}
 	}
+	checkpoint()
 
 	_ = ws.writeFrame(opClose, []byte{0x03, 0xe8}) // 1000, normal closure; the flow already succeeded
 	return res

@@ -1,7 +1,10 @@
 package signalclient
 
 import (
+	"bytes"
+	"compress/flate"
 	"context"
+	"encoding/binary"
 	"io"
 	"net"
 	"sync/atomic"
@@ -18,6 +21,18 @@ type fakeServer struct {
 	pingAfterAck    bool         // send a PING right after the client's ack (during idle)
 	gotPong         *atomic.Bool // set when the client answers that PING
 	timestampHeader string       // replaces the X-Signal-Timestamp header line when set
+
+	spamPongs          bool   // send unsolicited pongs every 50 ms instead of the address
+	closeOnPing        bool   // answer the client's PING with a close frame (TCP stays open)
+	junkPongFirst      bool   // answer the client's PING with an unrelated pong, then the echo
+	keepaliveWrongID   bool   // answer keepalives with a different id
+	keepaliveStatus    uint32 // answer keepalives with this status (default 200)
+	compress           bool   // send every message with permessage-deflate (RSV1, shared context)
+	corruptCompressed  bool   // send the address as an RSV1 frame that does not inflate
+	addressWithoutAddr bool   // send a ProvisioningAddress with no address field
+	oversizedFrame     bool   // send a frame header announcing more than maxFramePayload
+	stopAfterAddress   bool   // return right after sending the address (the caller then kills the stream)
+	ignoreKeepalives   bool   // stay connected but never answer keepalives
 }
 
 func (f fakeServer) run(t *testing.T, conn net.Conn) {
@@ -32,10 +47,41 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		return
 	}
 	ws := newWSConn(r, w) // reads the client's masked frames
-	send := func(op byte, p []byte) { w.Write(serverFrame(true, false, op, p)) }
-	if f.sendAddress {
+	var deflated bytes.Buffer
+	deflater, _ := flate.NewWriter(&deflated, flate.BestSpeed)
+	send := func(op byte, p []byte) {
+		if f.compress && op == opBinary {
+			deflated.Reset()
+			deflater.Write(p)
+			deflater.Flush()
+			w.Write(serverFrame(true, true, op, bytes.TrimSuffix(deflated.Bytes(), []byte{0, 0, 0xff, 0xff})))
+			return
+		}
+		w.Write(serverFrame(true, false, op, p))
+	}
+	switch {
+	case f.spamPongs:
+		for i := 0; i < 40; i++ {
+			send(opPong, []byte("unsolicited"))
+			time.Sleep(50 * time.Millisecond)
+		}
+		return
+	case f.oversizedFrame:
+		var l [8]byte
+		binary.BigEndian.PutUint64(l[:], maxFramePayload+1)
+		w.Write(append([]byte{0x82, 127}, l[:]...))
+		return
+	case f.corruptCompressed:
+		w.Write(serverFrame(true, true, opBinary, []byte{0xff, 0xff, 0xff, 0xff, 0x00}))
+		return
+	case f.addressWithoutAddr:
+		send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: []byte{0x10, 0x01}, ID: 7}).marshal())
+	case f.sendAddress:
 		addr := append([]byte{0x0a, 24}, []byte("abcdefghijklmnopqrstuvwx")...)
 		send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: addr, ID: 7}).marshal())
+		if f.stopAfterAddress {
+			return
+		}
 	}
 	for {
 		op, p, err := ws.readFrame()
@@ -44,7 +90,13 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		}
 		switch op {
 		case opPing:
-			if f.badPong {
+			switch {
+			case f.closeOnPing:
+				send(opClose, []byte{0x03, 0xe8})
+				continue
+			case f.junkPongFirst:
+				send(opPong, []byte("not the payload"))
+			case f.badPong:
 				p = []byte("not the payload")
 			}
 			send(opPong, p)
@@ -66,7 +118,7 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 			if msg.Response != nil && f.pingAfterAck {
 				send(opPing, []byte("server-ping"))
 			}
-			if msg.Request != nil && msg.Request.Path == "/v1/keepalive" {
+			if msg.Request != nil && msg.Request.Path == "/v1/keepalive" && !f.ignoreKeepalives {
 				h := []string{"X-Signal-Timestamp:1791563494213", "Content-Length:0"}
 				if f.timestampHeader != "" {
 					h[0] = f.timestampHeader
@@ -74,7 +126,14 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 				if f.noTimestamp {
 					h = h[1:]
 				}
-				send(opBinary, (&wsResponse{ID: msg.Request.ID, Status: 200, Message: "OK", Headers: h}).marshal())
+				id, status := msg.Request.ID, f.keepaliveStatus
+				if f.keepaliveWrongID {
+					id++
+				}
+				if status == 0 {
+					status = 200
+				}
+				send(opBinary, (&wsResponse{ID: id, Status: status, Message: "OK", Headers: h}).marshal())
 			}
 		}
 	}
@@ -92,7 +151,7 @@ func runAgainstIdle(t *testing.T, f fakeServer, idle time.Duration) *Provisionin
 	go f.run(t, server)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return runProvisioning(ctx, newWSConn(client, client), time.Now(), []int{0, 1024, 16384}, idle)
+	return runProvisioning(ctx, newWSConn(client, client), time.Now(), []int{0, 1024, 16384}, idle, nil)
 }
 
 func TestProvisioningHappyPath(t *testing.T) {
@@ -142,6 +201,8 @@ func TestProvisioningReplyWithoutTimestamp(t *testing.T) {
 }
 
 func TestProvisioningPongMismatch(t *testing.T) {
+	defer func(d time.Duration) { keepaliveTimeout = d }(keepaliveTimeout)
+	keepaliveTimeout = 300 * time.Millisecond
 	r := runAgainst(t, fakeServer{sendAddress: true, badPong: true})
 	if r.PingEchoed == nil || *r.PingEchoed {
 		t.Fatalf("expected ping_echoed=false, got %v", r.PingEchoed)
@@ -193,5 +254,78 @@ func TestTargetTimeoutCoversEveryStep(t *testing.T) {
 	}
 	if got := targetTimeout(MethodHTTPSGet, time.Hour); got != connectBudget {
 		t.Errorf("https_get budget %v should not include idle", got)
+	}
+}
+
+// Ignored frames must not extend a step: the address step fails at its deadline even though
+// the server keeps sending unsolicited pongs.
+func TestProvisioningStepDeadlineIsNotExtendedByIgnoredFrames(t *testing.T) {
+	defer func(d time.Duration) { addressTimeout = d }(addressTimeout)
+	addressTimeout = 300 * time.Millisecond
+	start := time.Now()
+	r := runAgainst(t, fakeServer{spamPongs: true})
+	if r.FailedStep != "provisioning_address" || deref(r.Failure) != "generic_timeout_error" {
+		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("the step took %v despite its %v deadline", elapsed, addressTimeout)
+	}
+}
+
+func TestProvisioningCloseDuringPing(t *testing.T) {
+	r := runAgainst(t, fakeServer{sendAddress: true, closeOnPing: true})
+	if r.FailedStep != "ping" || deref(r.Failure) != "eof_error" {
+		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
+	}
+}
+
+func TestProvisioningUnsolicitedPongBeforeEcho(t *testing.T) {
+	r := runAgainst(t, fakeServer{sendAddress: true, junkPongFirst: true})
+	if r.Failure != nil || r.PingEchoed == nil || !*r.PingEchoed {
+		t.Fatalf("expected the echo to be found after a junk pong: echoed=%v failure=%q", r.PingEchoed, deref(r.Failure))
+	}
+}
+
+func TestProvisioningKeepaliveWrongIDAndStatus(t *testing.T) {
+	r := runAgainst(t, fakeServer{sendAddress: true, keepaliveWrongID: true, keepaliveStatus: 500})
+	if r.Failure != nil {
+		t.Fatal(deref(r.Failure))
+	}
+	for _, k := range r.Keepalives {
+		if k.IDMatch || k.Status != 500 {
+			t.Fatalf("expected id mismatch and status 500, got %+v", k)
+		}
+	}
+}
+
+func TestProvisioningCompressedMessages(t *testing.T) {
+	r := runAgainst(t, fakeServer{sendAddress: true, compress: true})
+	if r.Failure != nil || !r.AddressReceived || len(r.Keepalives) != 3 || !r.Keepalives[2].SignalTimestamp {
+		t.Fatalf("compressed flow failed: %+v failure=%q", r, deref(r.Failure))
+	}
+}
+
+func TestProvisioningMalformedInputs(t *testing.T) {
+	for name, f := range map[string]fakeServer{
+		"corrupt deflate":            {corruptCompressed: true},
+		"address without address":    {addressWithoutAddr: true},
+		"frame above the size limit": {oversizedFrame: true},
+	} {
+		r := runAgainst(t, f)
+		if r.FailedStep != "provisioning_address" || deref(r.Failure) != FailureMalformedMessage {
+			t.Errorf("%s: got %q/%q", name, r.FailedStep, deref(r.Failure))
+		}
+	}
+}
+
+func TestProvisioningKeepaliveFailureSetsT(t *testing.T) {
+	defer func(d time.Duration) { keepaliveTimeout = d }(keepaliveTimeout)
+	keepaliveTimeout = 200 * time.Millisecond
+	r := runAgainst(t, fakeServer{sendAddress: true, ignoreKeepalives: true})
+	if r.FailedStep != "keepalive" || len(r.Keepalives) != 1 {
+		t.Fatalf("expected the first keepalive to fail, got step %q with %d keepalives", r.FailedStep, len(r.Keepalives))
+	}
+	if k := r.Keepalives[0]; k.Failure == nil || k.T < k.T0+0.15 {
+		t.Fatalf("failed keepalive: failure=%q t=%v t0=%v", deref(k.Failure), k.T, k.T0)
 	}
 }
