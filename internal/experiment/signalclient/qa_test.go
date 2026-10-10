@@ -49,11 +49,37 @@ type qaBehavior struct {
 	refuseUpgrade     bool // answer the provisioning upgrade with 403, as a blockpage would
 }
 
+// qaUserAgents records the User-Agent of every request the fake front ends receive, by host.
+type qaUserAgents struct {
+	mu   sync.Mutex
+	byUA map[string][]string // User-Agent -> hosts
+}
+
+func (u *qaUserAgents) add(ua, host string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.byUA[ua] = append(u.byUA[ua], host)
+}
+
+func (u *qaUserAgents) seen() map[string][]string {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	out := map[string][]string{}
+	for k, v := range u.byUA {
+		out[k] = append([]string(nil), v...)
+	}
+	return out
+}
+
+// qaSeenUserAgents belongs to the most recent newQAEnv (the QA tests do not run in parallel).
+var qaSeenUserAgents *qaUserAgents
+
 // qaSignalServerFactory is a netemx server factory for a fake Signal front end.
 type qaSignalServerFactory struct {
 	t        *testing.T
 	names    []string
 	behavior qaBehavior
+	uas      *qaUserAgents
 }
 
 var _ netemx.NetStackServerFactory = &qaSignalServerFactory{}
@@ -128,6 +154,7 @@ func (s *qaSignalServer) serveH1(conn net.Conn) {
 	if err != nil {
 		return
 	}
+	s.factory.uas.add(req.UserAgent(), req.Host)
 	upgrade := strings.EqualFold(req.Header.Get("Upgrade"), "websocket")
 	switch {
 	case upgrade && s.factory.behavior.refuseUpgrade:
@@ -188,6 +215,11 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 				locked(fr.WriteSettingsAck)
 			}
 		case *http2.MetaHeadersFrame:
+			for _, hf := range f.RegularFields() {
+				if hf.Name == "user-agent" {
+					s.factory.uas.add(hf.Value, f.PseudoValue("authority"))
+				}
+			}
 			if f.PseudoValue("method") == "CONNECT" && f.PseudoValue("protocol") == "websocket" {
 				if s.factory.behavior.refuseUpgrade {
 					respond(f.StreamID, 403, true)
@@ -249,8 +281,9 @@ func (w *qaStreamWriter) Write(p []byte) (int, error) {
 
 // qaEnv is a network where every Signal target resolves to a fake front end.
 func newQAEnv(t *testing.T, behaviors map[string]qaBehavior) *netemx.QAEnv {
+	qaSeenUserAgents = &qaUserAgents{byUA: map[string][]string{}}
 	front := func(addr string, names ...string) netemx.QAEnvOption {
-		return netemx.QAEnvOptionNetStack(addr, &qaSignalServerFactory{t: t, names: names, behavior: behaviors[addr]})
+		return netemx.QAEnvOptionNetStack(addr, &qaSignalServerFactory{t: t, names: names, behavior: behaviors[addr], uas: qaSeenUserAgents})
 	}
 	env := netemx.MustNewQAEnv(
 		front(qaGRPCChatAddr, "grpc.chat.signal.org"),
@@ -275,9 +308,15 @@ func newQAEnv(t *testing.T, behaviors map[string]qaBehavior) *netemx.QAEnv {
 // runQA runs the experiment inside env and returns its test keys by target name.
 func runQA(t *testing.T, env *netemx.QAEnv) (*TestKeys, map[string]*TargetResult) {
 	t.Helper()
+	return runQAWith(t, env, Config{})
+}
+
+// runQAWith is runQA with a config.
+func runQAWith(t *testing.T, env *netemx.QAEnv, config Config) (*TestKeys, map[string]*TargetResult) {
+	t.Helper()
 	var tk *TestKeys
 	env.Do(func() {
-		m := NewExperimentMeasurer(Config{}).(*Measurer)
+		m := NewExperimentMeasurer(config).(*Measurer)
 		m.roots = func() (*x509.CertPool, error) { return env.ClientStack.DefaultCertPool(), nil }
 		meas := &model.Measurement{MeasurementStartTimeSaved: time.Now()}
 		args := &model.ExperimentArgs{
@@ -453,4 +492,46 @@ func TestQAUpgradeRefused(t *testing.T) {
 		}
 	}
 	expectOK(t, byName, "cdsi", "storage")
+}
+
+func TestQAUserAgentIdentifiesOONIByDefault(t *testing.T) {
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	_, byName := runQA(t, env)
+	seen := qaSeenUserAgents.seen()
+	for ua := range seen {
+		if !strings.HasPrefix(ua, "ooniprobe-signal_client/") || !strings.Contains(ua, "(+https://ooni.org)") {
+			t.Errorf("server saw a non-identifying User-Agent %q from %v", ua, seen[ua])
+		}
+	}
+	if got := byName["chat_libsignal"].UserAgent; !strings.HasSuffix(got, " libsignal/0.105.0") {
+		t.Errorf("chat_libsignal recorded %q", got)
+	}
+	if len(seen) != 2 { // with and without libsignal's token
+		t.Errorf("expected 2 distinct User-Agents, got %v", seen)
+	}
+}
+
+func TestQAAppUserAgent(t *testing.T) {
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	_, byName := runQAWith(t, env, Config{AppUserAgent: true})
+	seen := qaSeenUserAgents.seen()
+	for ua, hosts := range seen {
+		if strings.Contains(ua, "ooniprobe") {
+			t.Errorf("AppUserAgent still identified as OONI to %v: %q", hosts, ua)
+		}
+	}
+	for name, want := range map[string]string{
+		"chat_libsignal":   "Signal-Android/8.29.3 Android/34 libsignal/0.105.0",
+		"chat_android":     "Signal-Android/8.29.3 Android/34",
+		"updates2_desktop": "Signal-Desktop/8.33.0 Linux",
+	} {
+		if got := byName[name].UserAgent; got != want {
+			t.Errorf("%s: recorded %q, want %q", name, got, want)
+		}
+		if _, ok := seen[want]; !ok {
+			t.Errorf("%s: server never saw %q (saw %v)", name, want, seen)
+		}
+	}
 }

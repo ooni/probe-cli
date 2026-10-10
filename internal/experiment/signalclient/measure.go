@@ -77,15 +77,31 @@ type Config struct {
 	// to detect middleboxes that kill idle sessions (libsignal pings after 31 s, drops after 45 s).
 	IdleSeconds int64 `ooni:"seconds of idle time on provisioning sockets before keepalives (0 = none)"`
 
-	// UserAgent is sent inside TLS, so it does not change what the network sees.
-	UserAgent string `ooni:"User-Agent sent inside TLS"`
+	// AppUserAgent sends each real client's User-Agent instead of identifying as OONI Probe.
+	// By default the test identifies itself (see ooniUserAgent), so that Signal can recognize
+	// and filter its traffic. The User-Agent travels inside TLS: either way, the network sees
+	// the same bytes.
+	AppUserAgent bool `ooni:"send the Signal apps' User-Agents instead of identifying as OONI Probe"`
+
+	// UserAgent, when set, is sent instead of either.
+	UserAgent string `ooni:"User-Agent to send instead of the default"`
 }
 
-func (c *Config) userAgent() string {
-	if c.UserAgent != "" {
+// ooniUserAgent identifies this test to Signal's servers.
+const ooniUserAgent = "ooniprobe-" + testName + "/" + testVersion + " (+https://ooni.org)"
+
+// userAgent is the User-Agent to send with hello.
+func (c *Config) userAgent(hello Hello) string {
+	switch {
+	case c.UserAgent != "":
 		return c.UserAgent
+	case c.AppUserAgent && hello.appUserAgent != "":
+		return hello.appUserAgent
+	case hello.libsignal: // libsignal appends its own token, as it does for the apps
+		return ooniUserAgent + " libsignal/0.105.0"
+	default:
+		return ooniUserAgent
 	}
-	return "ooniprobe-" + testName + "/" + testVersion
 }
 
 // TargetResult is the outcome for one target.
@@ -95,6 +111,7 @@ type TargetResult struct {
 	Address         string              `json:"address"`
 	ClientHello     string              `json:"client_hello"`
 	Method          Method              `json:"method"`
+	UserAgent       string              `json:"user_agent"`
 	ALPN            string              `json:"alpn"`
 	LeafKeyType     string              `json:"leaf_key_type"`
 	Status          int64               `json:"status"`
@@ -237,7 +254,8 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	defer tr.conn.Close()
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
 
-	ua := m.config.userAgent()
+	ua := m.config.userAgent(target.Hello)
+	res.UserAgent = ua
 	switch target.Method {
 	case MethodHTTPSGet:
 		status, ts, err := httpsGet(ctx, tr.conn, tr.alpn, target.Hostname, target.Path, ua)
@@ -249,7 +267,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	case MethodEnclaveH1, MethodProvisioningH1, MethodProvisioningH2:
 		var up *upgradeResult
 		if target.Method == MethodProvisioningH2 {
-			up, err = websocketH2(ctx, tr.conn, target.Hostname, target.Path, ua+" libsignal/0.105.0")
+			up, err = websocketH2(ctx, tr.conn, target.Hostname, target.Path, ua)
 		} else {
 			up, err = websocketH1(ctx, tr.conn, target.Hostname, target.Path, ua)
 		}

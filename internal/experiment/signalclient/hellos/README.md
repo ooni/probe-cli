@@ -41,7 +41,8 @@ go test ./internal/experiment/signalclient/
 
 The scripts run the real client code in rootless containers (podman; pasta writes the pcaps) and
 write the `.bin` files here. If a file changes:
-1. update the `Hello` name in `hellos.go` with the new version;
+1. update the `Hello` name in `hellos.go` with the new version, and its `appUserAgent` (the app
+   User-Agent sent with `AppUserAgent`);
 2. update this table, including the new JA4 printed by the scripts;
 3. bump the experiment version.
 

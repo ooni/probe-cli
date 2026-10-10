@@ -48,27 +48,38 @@ type Hello struct {
 	// alpn, when not nil, replaces the captured ALPN protocols. Only used where the client
 	// sends the same hello with a different ALPN (libsignal's enclave connections).
 	alpn []string
+
+	// appUserAgent is the User-Agent the real client sends (used with Config.AppUserAgent).
+	appUserAgent string
+
+	// libsignal is true for libsignal's routes, whose User-Agent ends in " libsignal/<version>".
+	libsignal bool
 }
 
 var (
 	// HelloLibsignal is libsignal 0.105.0's direct-route hello (Android and iOS chat, iOS and
 	// Desktop provisioning): TLS 1.3 only, x25519, Ed25519 first, ALPN h2.
-	HelloLibsignal = Hello{Name: "libsignal-0.105.0", raw: rawHelloLibsignal}
+	HelloLibsignal = Hello{Name: "libsignal-0.105.0", raw: rawHelloLibsignal, libsignal: true,
+		appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
 
 	// HelloLibsignalEnclave is the same hello with ALPN http/1.1, which libsignal uses for the
 	// CDSI, SVR2 and SVR-B enclaves (same ssl_config, alpn parameter differs; net/src/env.rs).
-	HelloLibsignalEnclave = Hello{Name: "libsignal-0.105.0-enclave", raw: rawHelloLibsignal, alpn: []string{"http/1.1"}}
+	HelloLibsignalEnclave = Hello{Name: "libsignal-0.105.0-enclave", raw: rawHelloLibsignal, alpn: []string{"http/1.1"},
+		libsignal: true, appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
 
 	// HelloAndroidWebSocket is Signal-Android 8.29.3's OkHttp 5.3.2 + Conscrypt 2.6.2 hello for
 	// WebSockets (provisioning): ALPN http/1.1, X25519MLKEM768 key share (1473 bytes).
-	HelloAndroidWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-websocket", raw: rawHelloAndroidWebSocket}
+	HelloAndroidWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-websocket", raw: rawHelloAndroidWebSocket,
+		appUserAgent: "Signal-Android/8.29.3 Android/34"}
 
 	// HelloAndroidREST is the same client's hello for HTTPS (storage, CDNs): ALPN h2,http/1.1.
-	HelloAndroidREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2", raw: rawHelloAndroidREST}
+	HelloAndroidREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2", raw: rawHelloAndroidREST,
+		appUserAgent: "Signal-Android/8.29.3 Android/34"}
 
 	// HelloDesktop is Signal-Desktop's own fetches (updater, WebAPI's agent) through Electron
 	// 44.4.5's Node and BoringSSL: no ALPN, X25519MLKEM768 + x25519 key shares (1475 bytes).
-	HelloDesktop = Hello{Name: "desktop-electron-44.4.5", raw: rawHelloDesktop}
+	HelloDesktop = Hello{Name: "desktop-electron-44.4.5", raw: rawHelloDesktop,
+		appUserAgent: "Signal-Desktop/8.33.0 Linux"}
 )
 
 // errNoALPN means a hello has no ALPN extension to replace.
