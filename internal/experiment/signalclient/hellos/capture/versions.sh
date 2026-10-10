@@ -21,6 +21,14 @@ libsignal=$(grep -m1 "pod 'LibSignalClient'" <<<"$podfile" | sed -E "s/.*tag: '(
 pkg=$(raw Signal-Desktop/main/package.json)
 electron=$(python3 -I -c 'import json,sys; p=json.load(sys.stdin); print((p.get("devDependencies") or {}).get("electron") or p["dependencies"]["electron"])' <<<"$pkg")
 desktop_version=$(python3 -I -c 'import json,sys; print(json.load(sys.stdin)["version"])' <<<"$pkg")
+# The apps pin libsignal separately and not always to the same version: LIBSIGNAL_TAG follows
+# Signal-iOS; report the other pins so a difference is noticed (each would need its own capture).
+desktop_libsignal=$(python3 -I -c 'import json,sys; print(json.load(sys.stdin)["dependencies"]["@signalapp/libsignal-client"])' <<<"$pkg")
+catalog=$(raw Signal-Android/main/gradle/libs.versions.toml)  # read whole: grep -m1 on a pipe makes curl fail
+android_libsignal=$(grep -m1 -E '^libsignal-client *=' <<<"$catalog" | sed -E 's/.*"([^"]+)".*/\1/')
+for p in "Signal-Android:$android_libsignal" "Signal-Desktop:$desktop_libsignal"; do
+  [ "v${p#*:}" = "$libsignal" ] || echo "versions.sh: ${p%%:*} pins libsignal ${p#*:}, not $libsignal (LIBSIGNAL_TAG follows Signal-iOS)" >&2
+done
 
 cat <<OUT
 LIBSIGNAL_TAG=${LIBSIGNAL_TAG:-$libsignal}

@@ -12,7 +12,7 @@ each into a uTLS spec.
 
 | File | Client (version captured) | How | JA4 |
 |---|---|---|---|
-| `libsignal.bin` | libsignal v0.105.0, direct route to grpc.chat.signal.org. Pinned by Signal-Android, Signal-iOS and Signal-Desktop; chat on all three, provisioning on iOS and Desktop | libsignal's own `chat_smoke_test` example | `t13d0307h2_55b375c5d22e_3df4dd8a7a2a` |
+| `libsignal.bin` | libsignal v0.105.0, direct route to grpc.chat.signal.org. Pinned by Signal-Android and Signal-iOS (chat on both, provisioning on iOS). Signal-Desktop pinned v0.103.0 (chat and provisioning), not captured separately; `versions.sh` warns when the pins differ | libsignal's own `chat_smoke_test` example | `t13d0307h2_55b375c5d22e_3df4dd8a7a2a` |
 | `android-okhttp-websocket.bin` | Signal-Android (OkHttp 5.3.2 + Conscrypt 2.6.2), provisioning WebSocket to chat.signal.org | the app's client configuration (`SignalUrlExtensions.buildOkHttpClient`, `Tls12SocketFactory`, `ProvisioningSocket`) rebuilt on the JVM in `capture/SignalAndroidHello.java`, with the same library versions; Conscrypt's openjdk-uber build | `t13d0911h1_f91f431d341e_86dd91ae2a36` |
 | `android-okhttp-rest.bin` | the same client, HTTPS to storage and the CDNs (ALPN h2,http/1.1) | as above, a GET to cdn2.signal.org | `t13d0911h2_f91f431d341e_86dd91ae2a36` |
 | `desktop-electron.bin` | Signal-Desktop's own fetches (updater, WebAPI agent) through Electron 44.4.5 (Node + BoringSSL): no ALPN, X25519MLKEM768 + x25519 key shares, session_ticket | `capture/desktop-fetch.js` under the pinned Electron, with `createHTTPSAgent`'s TLS options (Signal's RSA root as `ca`) | `t13d181000_5d04281c6031_78e6aca7449b` |
