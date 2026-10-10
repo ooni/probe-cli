@@ -2,6 +2,7 @@ package signalclient
 
 import (
 	"crypto/x509"
+	"io"
 	"net"
 	"reflect"
 	"testing"
@@ -130,5 +131,49 @@ func TestSignalRoots(t *testing.T) {
 		if _, err := cert.Verify(x509.VerifyOptions{Roots: pool}); err != nil {
 			t.Fatalf("%s does not verify against the pool: %v", cert.Subject, err)
 		}
+	}
+}
+
+// sentHello runs a real handshake with h and returns the ClientHello bytes actually written to
+// the connection (the first handshake message), not uTLS's pre-built copy.
+func sentHello(t *testing.T, h Hello) []byte {
+	t.Helper()
+	spec, err := h.Spec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, server := net.Pipe()
+	defer client.Close()
+	go func() {
+		uconn := utls.UClient(client, &utls.Config{ServerName: captureSNI[h.Name]}, utls.HelloCustom)
+		if err := uconn.ApplyPreset(spec); err == nil {
+			_ = uconn.Handshake() // fails when the server side closes; we only want its first flight
+		}
+	}()
+	// read TLS records until the handshake message is complete (a large hello may span records)
+	var hs []byte
+	for len(hs) < 4 || len(hs) < 4+int(hs[1])<<16|int(hs[2])<<8|int(hs[3]) {
+		var hdr [5]byte
+		if _, err := io.ReadFull(server, hdr[:]); err != nil {
+			t.Fatal(err)
+		}
+		body := make([]byte, int(hdr[3])<<8|int(hdr[4]))
+		if _, err := io.ReadFull(server, body); err != nil {
+			t.Fatal(err)
+		}
+		hs = append(hs, body...)
+	}
+	server.Close()
+	return hs[:4+(int(hs[1])<<16|int(hs[2])<<8|int(hs[3]))]
+}
+
+func TestHandshakeSendsTheCapturedHellos(t *testing.T) {
+	for _, h := range []Hello{HelloLibsignal, HelloAndroidWebSocket, HelloAndroidREST, HelloDesktop} {
+		t.Run(h.Name, func(t *testing.T) {
+			want, got := shapeOf(t, h.raw), shapeOf(t, sentHello(t, h))
+			if !reflect.DeepEqual(want, got) {
+				t.Fatalf("the hello sent on the wire differs from the capture:\nwant %+v\ngot  %+v", want, got)
+			}
+		})
 	}
 }

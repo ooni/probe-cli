@@ -142,3 +142,32 @@ func TestPermessageDeflateWithContextTakeover(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteFrameLengthEncodings(t *testing.T) {
+	for _, n := range []int{0, 125, 126, 65535, 65536, 70000} {
+		var out bytes.Buffer
+		ws := newWSConn(bytes.NewReader(nil), &out)
+		payload := bytes.Repeat([]byte{0x5a}, n)
+		if err := ws.writeFrame(opBinary, payload); err != nil {
+			t.Fatal(err)
+		}
+		b := out.Bytes()
+		var got, off int
+		switch l := int(b[1] & 0x7f); {
+		case l < 126:
+			got, off = l, 2
+		case l == 126:
+			got, off = int(binary.BigEndian.Uint16(b[2:4])), 4
+		default:
+			got, off = int(binary.BigEndian.Uint64(b[2:10])), 10
+		}
+		if b[0] != 0x82 || b[1]&0x80 == 0 || got != n || len(b) != off+4+n {
+			t.Fatalf("n=%d: header % x decodes to length %d (frame %d bytes)", n, b[:off], got, len(b))
+		}
+		// round trip through the reader, which tolerates masked frames
+		_, back, err := newWSConn(bytes.NewReader(b), io.Discard).readFrame()
+		if err != nil || !bytes.Equal(back, payload) {
+			t.Fatalf("n=%d: round trip failed: %v", n, err)
+		}
+	}
+}
