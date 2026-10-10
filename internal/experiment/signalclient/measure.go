@@ -220,7 +220,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		res.FailedOperation, res.Failure = op, measurexlite.NewFailure(err)
 		return res
 	}
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second+time.Duration(m.config.IdleSeconds)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, targetTimeout(target.Method, time.Duration(m.config.IdleSeconds)*time.Second))
 	defer cancel()
 
 	trace := measurexlite.NewTrace(index, zero, target.Name)
@@ -279,8 +279,9 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 			if errors.Is(err, errUpgradeRefused) && (res.Status == 401 || res.Status == 404) {
 				return res
 			}
-			if err == nil {
+			if err == nil { // accepted without credentials: unexpected, but Signal answered
 				up.closer.Close()
+				return res
 			}
 			return fail("websocket_upgrade", err)
 		}
@@ -295,6 +296,20 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		return res
 	}
 	return fail(netxlite.TopLevelOperation, errors.New("signal_client: unknown method"))
+}
+
+// connectBudget bounds DNS, TCP, TLS and the upgrade or GET of one target.
+const connectBudget = 30 * time.Second
+
+// targetTimeout is the time budget for one target: the connect budget, plus, on provisioning
+// sockets, every step's own timeout and the idle time, so that a slow but working server is never
+// cut off by the overall budget before a step's own timeout would fire.
+func targetTimeout(method Method, idle time.Duration) time.Duration {
+	if method != MethodProvisioningH1 && method != MethodProvisioningH2 {
+		return connectBudget
+	}
+	steps := addressTimeout + time.Duration(len(keepalivePaddings))*keepaliveTimeout + keepaliveTimeout // + ping
+	return connectBudget + steps + idle
 }
 
 func firstIPv4(addrs []string) string {

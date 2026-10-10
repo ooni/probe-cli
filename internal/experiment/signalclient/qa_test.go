@@ -47,6 +47,7 @@ type qaBehavior struct {
 	closeAfterUpgrade bool // the stream ends right after the upgrade
 	noConnectProtocol bool // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
 	refuseUpgrade     bool // answer the provisioning upgrade with 403, as a blockpage would
+	enclaveAccepts    bool // accept enclave upgrades without credentials (101)
 }
 
 // qaUserAgents records the User-Agent of every request the fake front ends receive, by host.
@@ -164,6 +165,8 @@ func (s *qaSignalServer) serveH1(conn net.Conn) {
 		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
 			"Sec-WebSocket-Accept: %s\r\n%s\r\n", base64.StdEncoding.EncodeToString(sum[:]), s.timestampHeader())
 		s.provisioning().serve(s.factory.t, br, conn)
+	case upgrade && s.factory.behavior.enclaveAccepts:
+		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n")
 	case upgrade: // an enclave path without credentials
 		fmt.Fprintf(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 	default:
@@ -314,9 +317,16 @@ func runQA(t *testing.T, env *netemx.QAEnv) (*TestKeys, map[string]*TargetResult
 // runQAWith is runQA with a config.
 func runQAWith(t *testing.T, env *netemx.QAEnv, config Config) (*TestKeys, map[string]*TargetResult) {
 	t.Helper()
+	return runQATargets(t, env, config, DefaultTargets)
+}
+
+// runQATargets is runQAWith with a target list.
+func runQATargets(t *testing.T, env *netemx.QAEnv, config Config, targets []Target) (*TestKeys, map[string]*TargetResult) {
+	t.Helper()
 	var tk *TestKeys
 	env.Do(func() {
 		m := NewExperimentMeasurer(config).(*Measurer)
+		m.targets = targets
 		m.roots = func() (*x509.CertPool, error) { return env.ClientStack.DefaultCertPool(), nil }
 		meas := &model.Measurement{MeasurementStartTimeSaved: time.Now()}
 		args := &model.ExperimentArgs{
@@ -533,5 +543,30 @@ func TestQAAppUserAgent(t *testing.T) {
 		if _, ok := seen[want]; !ok {
 			t.Errorf("%s: server never saw %q (saw %v)", name, want, seen)
 		}
+	}
+}
+
+// An enclave accepting the upgrade without credentials is unexpected, but Signal answered.
+func TestQAEnclaveAcceptingUpgradeIsReached(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaEnclaveAddr: {enclaveAccepts: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	for _, name := range []string{"cdsi", "svr2", "svrb"} {
+		r := byName[name]
+		if r.Failure != nil || r.FailedOperation != "" || r.Status != 101 {
+			t.Errorf("%s: expected reached with 101, got status %d op %q failure %q", name, r.Status, r.FailedOperation, deref(r.Failure))
+		}
+	}
+}
+
+// A hello that cannot be turned into a spec fails at the TLS step, after TCP connected.
+func TestQABrokenHelloIsATLSFailure(t *testing.T) {
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	broken := Hello{Name: "broken", raw: []byte{0x01, 0x00, 0x00, 0x01, 0x00}}
+	_, byName := runQATargets(t, env, Config{}, []Target{{"broken", "storage.signal.org", broken, MethodHTTPSGet, "/"}})
+	r := byName["broken"]
+	if r.FailedOperation != "tls_handshake" || r.Failure == nil {
+		t.Fatalf("expected a tls_handshake failure, got op %q failure %q", r.FailedOperation, deref(r.Failure))
 	}
 }

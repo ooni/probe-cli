@@ -46,7 +46,7 @@ type tlsResult struct {
 }
 
 // dialTLS connects to address and handshakes with the given hello, verifying the chain against
-// roots for sni. Events go to trace.
+// roots for sni. Events go to trace. It returns a nil *tlsResult only when the TCP connect failed.
 func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger, zero time.Time,
 	address, sni string, hello Hello, roots *x509.CertPool) (*tlsResult, error) {
 	dialer := trace.NewDialerWithoutResolver(logger)
@@ -57,13 +57,14 @@ func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger
 	spec, err := hello.Spec()
 	if err != nil {
 		conn.Close()
-		return nil, netxlite.NewTopLevelGenericErrWrapper(err)
+		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, err)
 	}
 	config := &utls.Config{ServerName: sni, RootCAs: roots}
 	uconn := utls.UClient(conn, config, utls.HelloCustom)
 	if err := uconn.ApplyPreset(spec); err != nil {
 		conn.Close()
-		return nil, netxlite.NewTopLevelGenericErrWrapper(fmt.Errorf("signal_client: %s: %w", hello.Name, err))
+		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation,
+			fmt.Errorf("signal_client: %s: %w", hello.Name, err))
 	}
 	started := time.Since(zero)
 	err = uconn.HandshakeContext(ctx)

@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -164,17 +165,28 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 	res.Acked = true
 
 	if idle > 0 {
-		select {
-		case f := <-frames: // anything arriving while idle (a close, an error) ends the session
-			if f.err != nil {
-				return fail("idle", f.err)
+		// stay quiet for the full idle time: answer pings, ignore other messages, stop only on
+		// a close, an error or cancellation
+		timer := time.NewTimer(idle)
+		for idling := true; idling; {
+			select {
+			case f := <-frames:
+				switch {
+				case f.err != nil:
+					timer.Stop()
+					return fail("idle", f.err)
+				case f.op == opClose:
+					timer.Stop()
+					return fail("idle", netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF))
+				case f.op == opPing:
+					ws.writeFrame(opPong, f.payload)
+				}
+			case <-timer.C:
+				idling = false
+			case <-ctx.Done():
+				timer.Stop()
+				return fail("idle", ctx.Err())
 			}
-			if f.op == opClose {
-				return fail("idle", netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF))
-			}
-		case <-time.After(idle):
-		case <-ctx.Done():
-			return fail("idle", ctx.Err())
 		}
 	}
 
@@ -209,7 +221,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 			kr.T = time.Since(zero).Seconds()
 			kr.Status, kr.IDMatch = int64(msg.Response.Status), msg.Response.ID == id
 			for _, h := range msg.Response.Headers {
-				if len(h) >= 18 && bytes.EqualFold([]byte(h[:18]), []byte("x-signal-timestamp")) {
+				if name, _, ok := strings.Cut(h, ":"); ok && strings.EqualFold(strings.TrimSpace(name), "X-Signal-Timestamp") {
 					kr.SignalTimestamp = true
 				}
 			}
