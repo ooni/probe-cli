@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"encoding/binary"
+	"errors"
 	"io"
 	"testing"
 )
@@ -91,6 +92,43 @@ func TestReadFrameTooLarge(t *testing.T) {
 	}
 }
 
+// Frames RFC 6455 and RFC 7692 forbid are errors, as in the apps' WebSocket clients.
+func TestReadFrameRejectsProtocolViolations(t *testing.T) {
+	ping126 := serverFrame(true, false, opPing, bytes.Repeat([]byte{1}, 126))
+	rsv2 := serverFrame(true, false, opBinary, []byte("x"))
+	rsv2[0] |= 0x20
+	rsv3 := serverFrame(true, false, opBinary, []byte("x"))
+	rsv3[0] |= 0x10
+	for name, tc := range map[string]struct {
+		stream  []byte
+		deflate bool
+	}{
+		"control frame over 125 bytes": {ping126, false},
+		"fragmented control frame":     {serverFrame(false, false, opPing, []byte("p")), false},
+		"RSV2":                         {rsv2, true},
+		"RSV3":                         {rsv3, true},
+		"RSV1 without deflate":         {serverFrame(true, true, opBinary, []byte{0x02, 0x00}), false},
+		"RSV1 on a control frame":      {serverFrame(true, true, opPing, []byte("p")), true},
+		"RSV1 on a continuation": {append(serverFrame(false, true, opBinary, []byte{0x02}),
+			serverFrame(true, true, opContinuation, []byte{0x00})...), true},
+		"reserved data opcode":    {serverFrame(true, false, 0x3, []byte("x")), false},
+		"reserved control opcode": {serverFrame(true, false, 0xB, []byte("x")), false},
+		"continuation first":      {serverFrame(true, false, opContinuation, []byte("x")), false},
+		"new message mid-message": {append(serverFrame(false, false, opBinary, []byte("ab")),
+			serverFrame(true, false, opBinary, []byte("cd"))...), false},
+	} {
+		ws := newWSConn(bytes.NewReader(tc.stream), io.Discard)
+		ws.deflate = tc.deflate
+		var err error
+		for err == nil {
+			_, _, err = ws.readFrame()
+		}
+		if !errors.Is(err, errProtocolViolation) {
+			t.Errorf("%s: got %v", name, err)
+		}
+	}
+}
+
 func TestWriteFrameIsMasked(t *testing.T) {
 	var out bytes.Buffer
 	ws := newWSConn(bytes.NewReader(nil), &out)
@@ -135,6 +173,7 @@ func TestPermessageDeflateWithContextTakeover(t *testing.T) {
 		stream.Write(serverFrame(true, true, opBinary, c))
 	}
 	ws := newWSConn(&stream, io.Discard)
+	ws.deflate = true
 	for _, want := range [][]byte{m1, m2} {
 		_, got, err := ws.readFrame()
 		if err != nil || !bytes.Equal(got, want) {

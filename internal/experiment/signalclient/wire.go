@@ -40,6 +40,11 @@ var errFrameTooLarge = errors.New("signal_client: websocket frame too large")
 // errInflate means a permessage-deflate message could not be decompressed.
 var errInflate = errors.New("signal_client: cannot inflate websocket message")
 
+// errProtocolViolation means the server sent a frame RFC 6455 or RFC 7692 forbids, which the
+// apps' WebSocket clients reject: a reserved opcode or bit, an oversized or fragmented control
+// frame, a compressed frame where compression is not allowed, or fragments out of order.
+var errProtocolViolation = errors.New("signal_client: websocket protocol violation")
+
 // wsConn is a minimal client-side WebSocket over any byte stream (an HTTP/1.1 upgraded
 // connection or an RFC 8441 HTTP/2 stream). Client frames are masked, as RFC 6455 and 8441 require.
 type wsConn struct {
@@ -47,7 +52,11 @@ type wsConn struct {
 	w  io.Writer
 	mu sync.Mutex
 
+	// deflate is whether permessage-deflate was negotiated: only then may messages be compressed
+	deflate bool
+
 	// a message whose final fragment has not arrived yet (control frames may come in between)
+	fragmenting       bool
 	partial           []byte
 	partialOp         byte
 	partialCompressed bool
@@ -129,7 +138,21 @@ func (c *wsConn) readFrame() (byte, []byte, error) {
 		if _, err := io.ReadFull(c.r, h[:]); err != nil {
 			return 0, nil, err
 		}
-		fin, op, masked := h[0]&0x80 != 0, h[0]&0x0F, h[1]&0x80 != 0
+		fin, rsv1, op, masked := h[0]&0x80 != 0, h[0]&0x40 != 0, h[0]&0x0F, h[1]&0x80 != 0
+		switch {
+		case h[0]&0x30 != 0: // RSV2, RSV3: no extension we negotiate defines them
+			return 0, nil, fmt.Errorf("%w: RSV2 or RSV3 set", errProtocolViolation)
+		case op > opBinary && op < opClose, op > opPong:
+			return 0, nil, fmt.Errorf("%w: reserved opcode %#x", errProtocolViolation, op)
+		case op >= opClose && (!fin || h[1]&0x7F > 125):
+			return 0, nil, fmt.Errorf("%w: fragmented or oversized control frame", errProtocolViolation)
+		case rsv1 && (!c.deflate || op == opContinuation || op >= opClose): // RFC 7692 section 6
+			return 0, nil, fmt.Errorf("%w: RSV1 set where compression is not allowed", errProtocolViolation)
+		case op == opContinuation && !c.fragmenting:
+			return 0, nil, fmt.Errorf("%w: continuation frame without a message", errProtocolViolation)
+		case op != opContinuation && op < opClose && c.fragmenting:
+			return 0, nil, fmt.Errorf("%w: new message before the previous one ended", errProtocolViolation)
+		}
 		n := uint64(h[1] & 0x7F)
 		switch n {
 		case 126:
@@ -167,14 +190,15 @@ func (c *wsConn) readFrame() (byte, []byte, error) {
 			return op, data, nil
 		}
 		if op != opContinuation { // first fragment of a new message
-			c.partial, c.partialOp, c.partialCompressed = nil, op, h[0]&0x40 != 0
+			c.partial, c.partialOp, c.partialCompressed = nil, op, rsv1
 		}
 		c.partial = append(c.partial, data...)
 		if !fin {
+			c.fragmenting = true
 			continue
 		}
 		op, payload, compressed := c.partialOp, c.partial, c.partialCompressed
-		c.partial = nil
+		c.partial, c.fragmenting = nil, false
 		if compressed {
 			out, err := c.inflate(payload)
 			return op, out, err

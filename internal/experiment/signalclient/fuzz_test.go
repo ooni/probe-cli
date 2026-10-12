@@ -16,6 +16,7 @@ func FuzzReadFrame(f *testing.F) {
 	f.Add([]byte{0x82, 127, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
 	f.Fuzz(func(t *testing.T, stream []byte) {
 		ws := newWSConn(bytes.NewReader(stream), io.Discard)
+		ws.deflate = true // so compressed messages are parsed too
 		for i := 0; i < 64; i++ {
 			_, payload, err := ws.readFrame()
 			if err != nil {

@@ -31,6 +31,7 @@ type fakeServer struct {
 	corruptCompressed  bool   // send the address as an RSV1 frame that does not inflate
 	addressWithoutAddr bool   // send a ProvisioningAddress with no address field
 	oversizedFrame     bool   // send a frame header announcing more than maxFramePayload
+	reservedOpcode     bool   // send a frame with reserved opcode 0x3 instead of the address
 	stopAfterAddress   bool   // return right after sending the address (the caller then kills the stream)
 	extraAfterAddress  bool   // send another binary message right after the address
 	ignoreKeepalives   bool   // stay connected but never answer keepalives
@@ -71,6 +72,9 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		var l [8]byte
 		binary.BigEndian.PutUint64(l[:], maxFramePayload+1)
 		w.Write(append([]byte{0x82, 127}, l[:]...))
+		return
+	case f.reservedOpcode:
+		w.Write(serverFrame(true, false, 0x3, []byte("x")))
 		return
 	case f.corruptCompressed:
 		w.Write(serverFrame(true, true, opBinary, []byte{0xff, 0xff, 0xff, 0xff, 0x00}))
@@ -155,7 +159,9 @@ func runAgainstIdle(t *testing.T, f fakeServer, idle time.Duration) *Provisionin
 	go f.run(t, server)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return runProvisioning(ctx, newWSConn(client, client), time.Now(), []int{0, 1024, 16384}, idle, nil)
+	ws := newWSConn(client, client)
+	ws.deflate = f.compress || f.corruptCompressed // as if negotiated
+	return runProvisioning(ctx, ws, time.Now(), []int{0, 1024, 16384}, idle, nil)
 }
 
 func TestProvisioningHappyPath(t *testing.T) {
@@ -314,6 +320,7 @@ func TestProvisioningMalformedInputs(t *testing.T) {
 		"corrupt deflate":            {corruptCompressed: true},
 		"address without address":    {addressWithoutAddr: true},
 		"frame above the size limit": {oversizedFrame: true},
+		"reserved opcode":            {reservedOpcode: true},
 	} {
 		r := runAgainst(t, f)
 		if r.FailedStep != "provisioning_address" || deref(r.Failure) != FailureMalformedMessage {

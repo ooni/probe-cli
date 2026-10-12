@@ -174,7 +174,7 @@ const (
 	FailureUnexpectedMessage = "unexpected_message"
 
 	// FailureMalformedMessage: a WebSocket message was not a valid WebSocketMessage protobuf, could
-	// not be inflated, or exceeded the size limit.
+	// not be inflated, or exceeded the size limit, or a frame violated RFC 6455 or RFC 7692.
 	FailureMalformedMessage = "malformed_message"
 
 	// FailureHTTP2StreamReset: the peer reset the HTTP/2 stream carrying the WebSocket.

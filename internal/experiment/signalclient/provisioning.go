@@ -65,7 +65,7 @@ var errTimeout = context.DeadlineExceeded
 // errUnexpectedMessage means the server sent something the flow does not allow.
 var errUnexpectedMessage = newFailure(FailureUnexpectedMessage, netxlite.ReadOperation, errors.New("signal_client: unexpected message"))
 
-// malformed records a protobuf parse error with its failure string.
+// malformed records an invalid message or frame with its failure string.
 func malformed(err error) error {
 	return newFailure(FailureMalformedMessage, netxlite.ReadOperation, err)
 }
@@ -89,7 +89,7 @@ func withCause(ws *wsConn, err error) error {
 
 // readFailure wraps an error from reading the WebSocket with its failure string.
 func readFailure(err error) error {
-	if errors.Is(err, errFrameTooLarge) || errors.Is(err, errInflate) {
+	if errors.Is(err, errFrameTooLarge) || errors.Is(err, errInflate) || errors.Is(err, errProtocolViolation) {
 		return malformed(err)
 	}
 	if h2err := classifyHTTP2(err, netxlite.ReadOperation); h2err != nil {

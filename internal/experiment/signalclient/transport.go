@@ -121,6 +121,17 @@ func upgradeRefused() error {
 	return newFailure(FailureWebSocketUpgradeRefused, netxlite.HTTPRoundTripOperation, errUpgradeRefused)
 }
 
+// deflateAccepted is whether a Sec-WebSocket-Extensions answer accepts permessage-deflate.
+func deflateAccepted(extensions string) bool {
+	for _, ext := range strings.Split(extensions, ",") {
+		name, _, _ := strings.Cut(ext, ";")
+		if strings.EqualFold(strings.TrimSpace(name), "permessage-deflate") {
+			return true
+		}
+	}
+	return false
+}
+
 // errUpgradeInvalid means a 101 answer lacked the headers RFC 6455 section 4.1 requires.
 var errUpgradeInvalid = errors.New("signal_client: invalid websocket upgrade response")
 
@@ -176,6 +187,7 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 		return out, newFailure(FailureWebSocketUpgradeInvalid, netxlite.HTTPRoundTripOperation, errUpgradeInvalid)
 	}
 	out.ws = newWSConn(br, conn)
+	out.ws.deflate = deflateAccepted(out.extensions)
 	out.closer = conn
 	return out, nil
 }
