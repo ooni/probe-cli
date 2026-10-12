@@ -32,6 +32,7 @@ type fakeServer struct {
 	addressWithoutAddr bool   // send a ProvisioningAddress with no address field
 	oversizedFrame     bool   // send a frame header announcing more than maxFramePayload
 	stopAfterAddress   bool   // return right after sending the address (the caller then kills the stream)
+	extraAfterAddress  bool   // send another binary message right after the address
 	ignoreKeepalives   bool   // stay connected but never answer keepalives
 }
 
@@ -79,6 +80,9 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 	case f.sendAddress:
 		addr := append([]byte{0x0a, 24}, []byte("abcdefghijklmnopqrstuvwx")...)
 		send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: addr, ID: 7}).marshal())
+		if f.extraAfterAddress {
+			send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/message", ID: 8}).marshal())
+		}
 		if f.stopAfterAddress {
 			return
 		}
@@ -327,5 +331,15 @@ func TestProvisioningKeepaliveFailureSetsT(t *testing.T) {
 	}
 	if k := r.Keepalives[0]; k.Failure == nil || k.T < k.T0+0.15 {
 		t.Fatalf("failed keepalive: failure=%q t=%v t0=%v", deref(k.Failure), k.T, k.T0)
+	}
+}
+
+// A failed write is explained by the read error behind it even when other messages arrived first:
+// the server sends a message after the address and closes, so the ack's write fails, and the EOF
+// queued behind that message is the reason.
+func TestProvisioningWriteFailureSkipsQueuedMessages(t *testing.T) {
+	r := runAgainst(t, fakeServer{sendAddress: true, extraAfterAddress: true, stopAfterAddress: true})
+	if r.FailedStep != "ack" || deref(r.Failure) != "eof_error" {
+		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
 	}
 }

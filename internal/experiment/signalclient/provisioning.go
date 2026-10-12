@@ -165,13 +165,25 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 	}
 	// writeFailure explains a failed write by the read error that usually caused it (a reset
 	// stream or connection), when one arrives shortly; otherwise it reports the write error.
+	// Messages queued before that error are skipped: the flow fails here either way.
 	writeFailure := func(err error) error {
-		select {
-		case f := <-frames:
-			if f.err != nil {
-				return f.err
+		timer := time.NewTimer(pendingReadErrorWait)
+		defer timer.Stop()
+	wait:
+		for {
+			select {
+			case f := <-frames:
+				if f.err != nil {
+					return f.err
+				}
+				if f.op == opClose {
+					return eofFailure()
+				}
+			case <-timer.C:
+				break wait
+			case <-ctx.Done():
+				break wait
 			}
-		case <-time.After(pendingReadErrorWait):
 		}
 		err = withCause(ws, err)
 		if h2err := classifyHTTP2(err, netxlite.WriteOperation); h2err != nil {
