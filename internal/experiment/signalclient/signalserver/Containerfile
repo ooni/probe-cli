@@ -1,0 +1,14 @@
+# Signal-Server's JDK plus a Docker engine, so Testcontainers (Redis cluster via Compose, DynamoDB
+# Local, FoundationDB) can start its containers inside this one. Run with --privileged, which for
+# rootless podman grants privileges only inside the user namespace. Docker rather than podman inside:
+# Testcontainers' Compose support starts a socat "ambassador" that uses container links, which
+# podman's API rejects ("link is not supported").
+FROM docker.io/library/eclipse-temurin:26-jdk AS jdk
+FROM docker.io/library/fedora:44
+RUN dnf -y -q install moby-engine docker-compose iptables-nft procps-ng && dnf clean all
+COPY --from=jdk /opt/java/openjdk /opt/java/openjdk
+ENV JAVA_HOME=/opt/java/openjdk PATH=/opt/java/openjdk/bin:$PATH \
+    DOCKER_HOST=unix:///run/docker.sock \
+    TESTCONTAINERS_RYUK_DISABLED=true
+COPY entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
