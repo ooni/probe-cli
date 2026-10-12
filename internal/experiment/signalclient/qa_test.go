@@ -250,6 +250,8 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 				streams[f.StreamID] = pw
 				w := &qaStreamWriter{fr: fr, mu: &wmu, stream: f.StreamID}
 				go func() {
+					// close pr when done, or the main loop's pw.Write blocks on the stream's next DATA
+					defer pr.Close()
 					s.provisioning().serve(s.factory.t, pr, w)
 					switch {
 					case s.factory.behavior.resetAfterAddress:
@@ -668,8 +670,11 @@ func TestQATruncatedBodyIsAFailure(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaCDNAddr: {truncateBody: true}})
 	defer env.Close()
 	_, byName := runQA(t, env)
-	for _, name := range []string{"storage", "updates2_desktop"} { // HTTP/2 and HTTP/1.1
+	for name, alpn := range map[string]string{"storage": "h2", "updates2_desktop": ""} { // both protocols
 		r := byName[name]
+		if r.ALPN != alpn {
+			t.Errorf("%s: negotiated ALPN %q, so the test no longer covers %q", name, r.ALPN, alpn)
+		}
 		if r.Failure == nil || r.Status != 200 {
 			t.Errorf("%s: expected status 200 with a body failure, got status %d failure %q", name, r.Status, deref(r.Failure))
 		}
