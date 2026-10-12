@@ -653,6 +653,12 @@ func TestNewFactory(t *testing.T) {
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
 		},
+		"signal_client": {
+			// Note: signal_client is not enabled by default: it is gated by the
+			// signal_client_enabled check-in flag until its staged rollout.
+			//enabledByDefault: false,
+			inputPolicy: model.InputNone,
+		},
 		"simple_sni": {
 			// Note: simple_sni is not enabled by default because it has only been
 			// introduced for writing tutorials and should not be used.

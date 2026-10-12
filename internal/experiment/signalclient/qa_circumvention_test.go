@@ -384,3 +384,30 @@ func TestQACircumventionFrontDoesNotResolve(t *testing.T) {
 		t.Errorf("tunnel_status missing: %s", data)
 	}
 }
+
+// A route's connect budget is shared by its connections: once a blackholed front has used it,
+// the second tunnel fails at once instead of waiting a budget of its own.
+func TestQACircumventionConnectBudgetIsPerRoute(t *testing.T) {
+	defer func(d time.Duration) { routeConnectBudget = d }(routeConnectBudget)
+	routeConnectBudget = 2 * time.Second
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "pinterest.com"})
+	tk, _ := runQAWith(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff,
+		Fronts: "reflector_f=reflector-signal.global.ssl.fastly.net@pinterest.com"})
+	r := byRoute(tk)[RouteReflectorF]
+	inner := innerByName(r)
+	chat, cdsi := inner["chat_libsignal"], inner["cdsi"]
+	if chat.FailedOperation != "tls_handshake" || deref(chat.Failure) != "generic_timeout_error" {
+		t.Errorf("chat_libsignal: %q %q", chat.FailedOperation, deref(chat.Failure))
+	}
+	if deref(cdsi.Failure) != "generic_timeout_error" || cdsi.T-cdsi.T0 > 0.5 {
+		t.Errorf("cdsi: %q %q after %.2f s", cdsi.FailedOperation, deref(cdsi.Failure), cdsi.T-cdsi.T0)
+	}
+	if took := r.T - r.T0; took > routeConnectBudget.Seconds()+1 {
+		t.Errorf("route took %.1f s with a %v budget", took, routeConnectBudget)
+	}
+	if r.FailedOperation != "tls_handshake" {
+		t.Errorf("route: %q %q", r.FailedOperation, deref(r.Failure))
+	}
+}
