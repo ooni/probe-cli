@@ -82,13 +82,9 @@ func handshakeTLS(ctx context.Context, trace *measurexlite.Trace, zero time.Time
 			MinVersion: tls.VersionTLS12, MaxVersion: tls.VersionTLS12, NextProtos: hello.alpn})
 		tconn, connState = c, c.ConnectionState
 	} else {
-		spec, err := hello.Spec()
-		if err != nil {
-			return tlsFailure(err)
-		}
 		config := &utls.Config{ServerName: sni, RootCAs: roots, InsecureSkipVerify: roots == nil} // #nosec G402 -- recorded, not trusted
 		uconn := utls.UClient(conn, config, utls.HelloCustom)
-		if err := uconn.ApplyPreset(spec); err != nil {
+		if err := hello.apply(uconn); err != nil {
 			return tlsFailure(err)
 		}
 		tconn, connState = uconn, func() tls.ConnectionState { return stdlibState(uconn.ConnectionState()) }

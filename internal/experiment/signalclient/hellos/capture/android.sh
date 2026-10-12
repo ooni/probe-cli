@@ -1,7 +1,10 @@
 #!/bin/bash
 # Capture Signal-Android's two ClientHellos (provisioning WebSocket, REST/CDN) by running the
 # app's OkHttp + Conscrypt configuration on the JVM (SignalAndroidHello.java), rootless, with
-# pasta writing the pcap. Writes ../android-okhttp-websocket.bin and ../android-okhttp-rest.bin.
+# pasta writing the pcap. Writes ../android-okhttp-websocket.bin and ../android-okhttp-rest.bin, and
+# the same two through each of the app's domain-front configurations (../android-okhttp-front-*.bin).
+# The front captures go through Google's and Fastly's servers to Signal's relays, as the app does
+# with censorship circumvention on.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}
@@ -38,4 +41,19 @@ run websocket                               # provisioning socket on chat.signal
 run rest --get https://cdn2.signal.org/     # the same client builder for HTTPS
 python3 -I "$HERE/extract_hello.py" "$WORK/android/websocket.pcap" chat.signal.org "$HELLOS/android-okhttp-websocket.bin"
 python3 -I "$HERE/extract_hello.py" "$WORK/android/rest.pcap" cdn2.signal.org "$HELLOS/android-okhttp-rest.bin"
+
+# Domain fronting (SignalServiceNetworkAccess.kt): the provisioning socket and a storage GET through
+# each front configuration, with the relay's Host header. Gmail's spec serves www.google.com,
+# googlemail.com, android.clients.google.com and the countries' domains; Maps' clients3 and clients4.
+G=reflector-nrgwuv7kwq-uc.a.run.app
+front() {  # name spec sni ws_path ws_host get_path get_host
+  run "front-$1-websocket" --spec "$2" --ws "wss://$3$4" --host "$5"
+  run "front-$1-rest" --spec "$2" --get "https://$3$6" --host "$7"
+  python3 -I "$HERE/extract_hello.py" "$WORK/android/front-$1-websocket.pcap" "$3" "$HELLOS/android-okhttp-front-$1-websocket.bin"
+  python3 -I "$HERE/extract_hello.py" "$WORK/android/front-$1-rest.pcap" "$3" "$HELLOS/android-okhttp-front-$1-rest.bin"
+}
+front g-gmail gmail www.google.com /service/v1/websocket/provisioning/ $G /storage/ping $G
+front g-gmaps gmaps clients3.google.com /service/v1/websocket/provisioning/ $G /storage/ping $G
+front f modern github.githubassets.com /v1/websocket/provisioning/ chat-signal.global.ssl.fastly.net \
+  /ping storage.signal.org.global.prod.fastly.net
 echo "Captured with OkHttp $OKHTTP_VERSION + Conscrypt $CONSCRYPT_VERSION: update Hello names in hellos.go and the table in hellos/README.md"

@@ -1,7 +1,10 @@
 #!/bin/bash
-# Capture libsignal's direct-route ClientHello by building libsignal's own chat_smoke_test example
-# at the tag Signal's apps pin and running it once against production (an unauthenticated chat
-# connection, then disconnect), rootless, with pasta writing the pcap. Writes ../libsignal.bin.
+# Capture libsignal's ClientHellos by building libsignal's own chat_smoke_test example at the tag
+# Signal's apps pin and running it against production (unauthenticated chat connections, then
+# disconnect), rootless, with pasta writing the pcaps:
+#   ../libsignal.bin            the direct route to grpc.chat.signal.org;
+#   ../libsignal-reflector.bin  the connection to a front on the reflector routes (proxyf, proxyg),
+#                               captured on every front and checked to be the same hello on each.
 # The build takes several minutes and a few GB (BoringSSL, Rust); caches persist in $WORK.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
@@ -24,4 +27,24 @@ pcap="$WORK/libsignal/libsignal.pcap"; rm -f "$pcap"
   /src/target/debug/examples/chat_smoke_test production --limit-to-routes direct 2>&1 | tail -2
 chmod 644 "$pcap"
 python3 -I "$HERE/extract_hello.py" "$pcap" grpc.chat.signal.org "$HELLOS/libsignal.bin"
-echo "Captured with libsignal $LIBSIGNAL_TAG: update HelloLibsignal's name in hellos.go and the table in hellos/README.md"
+
+# The reflector routes: --try-all-routes connects through each front of the route in turn. The fronts
+# are libsignal's (rust/net/src/env.rs, PROXY_CONFIG_F_PROD and PROXY_CONFIG_G); the hello to a front
+# does not depend on whether the tunnel then works.
+fronts_proxyf="github.githubassets.com pinterest.com www.redditstatic.com"
+fronts_proxyg="www.google.com android.clients.google.com clients3.google.com clients4.google.com googlemail.com"
+bins=()
+for route in proxyf proxyg; do
+  pcap="$WORK/libsignal/reflector-$route.pcap"; rm -f "$pcap"
+  "$CTR" run --rm --network "pasta:--pcap,$pcap" -v "$SRC:/src:ro,Z" docker.io/library/rust:1-bookworm \
+    /src/target/debug/examples/chat_smoke_test production --limit-to-routes "$route" --try-all-routes 2>&1 | tail -2 || true
+  chmod 644 "$pcap"
+  eval "fronts=\$fronts_$route"
+  for sni in $fronts; do
+    python3 -I "$HERE/extract_hello.py" "$pcap" "$sni" "$WORK/libsignal/reflector-$sni.bin"
+    bins+=("$WORK/libsignal/reflector-$sni.bin")
+  done
+done
+python3 -I "$HERE/same_hello.py" "${bins[@]}"
+cp "${bins[0]}" "$HELLOS/libsignal-reflector.bin"
+echo "Captured with libsignal $LIBSIGNAL_TAG: update HelloLibsignal's and HelloLibsignalReflector's names in hellos.go and the table in hellos/README.md"

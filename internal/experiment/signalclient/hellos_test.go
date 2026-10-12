@@ -18,20 +18,35 @@ var captureSNI = map[string]string{
 	HelloAndroidWebSocket.Name: "chat.signal.org",
 	HelloAndroidREST.Name:      "cdn2.signal.org",
 	HelloDesktop.Name:          "updates2.signal.org",
+
+	HelloLibsignalReflector.Name:     "github.githubassets.com",
+	HelloAndroidGmailWebSocket.Name:  "www.google.com",
+	HelloAndroidGmailREST.Name:       "www.google.com",
+	HelloAndroidGmapsWebSocket.Name:  "clients3.google.com",
+	HelloAndroidGmapsREST.Name:       "clients3.google.com",
+	HelloAndroidModernWebSocket.Name: "github.githubassets.com",
+	HelloAndroidModernREST.Name:      "github.githubassets.com",
 }
 
-// generatedHello builds the ClientHello uTLS would send for h.
+// capturedHellos are all the hellos captured from Signal's clients.
+var capturedHellos = []Hello{HelloLibsignal, HelloLibsignalEnclave, HelloLibsignalReflector, HelloAndroidWebSocket,
+	HelloAndroidREST, HelloAndroidGmailWebSocket, HelloAndroidGmailREST, HelloAndroidGmapsWebSocket, HelloAndroidGmapsREST,
+	HelloAndroidModernWebSocket, HelloAndroidModernREST, HelloDesktop}
+
+// generatedHello builds the ClientHello uTLS would send for h, with the SNI it was captured with.
 func generatedHello(t *testing.T, h Hello) []byte {
 	t.Helper()
-	spec, err := h.Spec()
-	if err != nil {
-		t.Fatal(err)
-	}
+	return generatedHelloFor(t, h, captureSNI[h.Name])
+}
+
+// generatedHelloFor builds the ClientHello uTLS would send for h to sni.
+func generatedHelloFor(t *testing.T, h Hello, sni string) []byte {
+	t.Helper()
 	client, server := net.Pipe()
 	defer client.Close()
 	defer server.Close()
-	uconn := utls.UClient(client, &utls.Config{ServerName: captureSNI[h.Name]}, utls.HelloCustom)
-	if err := uconn.ApplyPreset(spec); err != nil {
+	uconn := utls.UClient(client, &utls.Config{ServerName: sni}, utls.HelloCustom)
+	if err := h.apply(uconn); err != nil {
 		t.Fatal(err)
 	}
 	if err := uconn.BuildHandshakeState(); err != nil {
@@ -44,6 +59,7 @@ func generatedHello(t *testing.T, h Hello) []byte {
 // except the random, session id and key share values.
 type helloShape struct {
 	size       int
+	sessionID  int // the legacy session id's length
 	ciphers    []uint16
 	extensions []uint16
 	groups     []utls.CurveID
@@ -58,7 +74,7 @@ func shapeOf(t *testing.T, raw []byte) helloShape {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := helloShape{size: len(raw), ciphers: spec.CipherSuites, extensions: extensionOrder(t, raw)}
+	s := helloShape{size: len(raw), sessionID: int(raw[38]), ciphers: spec.CipherSuites, extensions: extensionOrder(t, raw)}
 	for _, ext := range spec.Extensions {
 		switch e := ext.(type) {
 		case *utls.SupportedCurvesExtension:
@@ -88,7 +104,10 @@ func extensionOrder(t *testing.T, b []byte) (out []uint16) {
 }
 
 func TestHellosReproduceTheCapturedOnes(t *testing.T) {
-	for _, h := range []Hello{HelloLibsignal, HelloAndroidWebSocket, HelloAndroidREST, HelloDesktop} {
+	for _, h := range capturedHellos {
+		if h.alpn != nil {
+			continue // derived from a capture (TestEnclaveHelloOnlyChangesALPN)
+		}
 		t.Run(h.Name, func(t *testing.T) {
 			want, got := shapeOf(t, h.raw), shapeOf(t, generatedHello(t, h))
 			if !reflect.DeepEqual(want, got) {
@@ -111,10 +130,43 @@ func TestEnclaveHelloOnlyChangesALPN(t *testing.T) {
 }
 
 func TestCapturedHelloSizes(t *testing.T) {
-	// the sizes are part of the fingerprint: the Android hello spans two TCP segments
-	for h, size := range map[*Hello]int{&HelloLibsignal: 212, &HelloAndroidWebSocket: 1473, &HelloAndroidREST: 1476, &HelloDesktop: 1475} {
-		if got := len(generatedHello(t, *h)); got != size {
-			t.Errorf("%s: generated %d bytes, captured %d", h.Name, got, size)
+	// the sizes are part of the fingerprint: the Android hellos with an ML-KEM key share span two
+	// TCP segments
+	for _, h := range capturedHellos {
+		if h.alpn != nil {
+			continue
+		}
+		if got := len(generatedHello(t, h)); got != len(h.raw) {
+			t.Errorf("%s: generated %d bytes, captured %d", h.Name, got, len(h.raw))
+		}
+	}
+	// libsignal pads its reflector hello to 512 bytes whatever the front's name (captured on all
+	// eight fronts)
+	for _, sni := range append(append([]string{}, fastlyFronts...), "www.google.com", "android.clients.google.com",
+		"clients3.google.com", "clients4.google.com", "googlemail.com") {
+		if got := len(generatedHelloFor(t, HelloLibsignalReflector, sni)); got != 512 {
+			t.Errorf("reflector hello to %s: %d bytes", sni, got)
+		}
+	}
+}
+
+// Each front gets the hello Signal's client sends to it.
+func TestFrontHello(t *testing.T) {
+	for _, c := range []struct {
+		route, service, front string
+		want                  Hello
+	}{
+		{RouteReflectorF, "", "pinterest.com", HelloLibsignalReflector},
+		{RouteReflectorG, "", "clients3.google.com", HelloLibsignalReflector},
+		{RouteAndroidF, "chat", "www.redditstatic.com", HelloAndroidModernWebSocket},
+		{RouteAndroidF, "storage", "pinterest.com", HelloAndroidModernREST},
+		{RouteAndroidG, "chat", "www.google.com.eg", HelloAndroidGmailWebSocket},
+		{RouteAndroidG, "storage", "android.clients.google.com", HelloAndroidGmailREST},
+		{RouteAndroidG, "chat", "clients4.google.com", HelloAndroidGmapsWebSocket},
+		{RouteAndroidG, "storage", "clients3.google.com", HelloAndroidGmapsREST},
+	} {
+		if got := frontHello(c.route, c.service, c.front); got.Name != c.want.Name {
+			t.Errorf("%s %s %s: %s, want %s", c.route, c.service, c.front, got.Name, c.want.Name)
 		}
 	}
 }
@@ -147,16 +199,12 @@ func TestSignalRoots(t *testing.T) {
 // the connection (the first handshake message), not uTLS's pre-built copy.
 func sentHello(t *testing.T, h Hello) []byte {
 	t.Helper()
-	spec, err := h.Spec()
-	if err != nil {
-		t.Fatal(err)
-	}
 	client, server := net.Pipe()
 	defer client.Close()
 	presetErr := make(chan error, 1)
 	go func() {
 		uconn := utls.UClient(client, &utls.Config{ServerName: captureSNI[h.Name]}, utls.HelloCustom)
-		if err := uconn.ApplyPreset(spec); err != nil {
+		if err := h.apply(uconn); err != nil {
 			presetErr <- err
 			client.Close() // so the reads below fail instead of waiting forever
 			return
@@ -188,7 +236,7 @@ func sentHello(t *testing.T, h Hello) []byte {
 }
 
 func TestHandshakeSendsTheCapturedHellos(t *testing.T) {
-	for _, h := range []Hello{HelloLibsignal, HelloLibsignalEnclave, HelloAndroidWebSocket, HelloAndroidREST, HelloDesktop} {
+	for _, h := range capturedHellos {
 		t.Run(h.Name, func(t *testing.T) {
 			want, got := shapeOf(t, h.raw), shapeOf(t, sentHello(t, h))
 			if h.alpn != nil { // Spec rewrites the capture's ALPN (checked against it above): compare with the build

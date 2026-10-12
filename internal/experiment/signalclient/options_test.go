@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
-	utls "github.com/refraction-networking/utls"
 )
 
 func TestParseControls(t *testing.T) {
@@ -194,24 +193,18 @@ func TestOptionsAreValidatedBeforeMeasuring(t *testing.T) {
 	}
 }
 
-// A hello limited to TLS 1.2 drops the TLS 1.3 extensions and negotiates TLS 1.2.
-func TestHelloLimitedToTLS12(t *testing.T) {
-	h := HelloAndroidWebSocket.limitedToTLS12()
-	if h.Name != HelloAndroidWebSocket.Name+"-tls12" {
-		t.Errorf("name %s", h.Name)
-	}
-	spec, err := h.Spec()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, ext := range spec.Extensions {
-		switch ext.(type) {
-		case *utls.SupportedVersionsExtension, *utls.KeyShareExtension, *utls.PSKKeyExchangeModesExtension:
-			t.Errorf("TLS 1.3 extension %T kept", ext)
+// Signal-Android's Google-front hellos offer only TLS 1.2; the controls' hellos negotiate
+// what their names say.
+func TestHelloVersions(t *testing.T) {
+	for _, h := range []Hello{HelloAndroidGmailWebSocket, HelloAndroidGmailREST, HelloAndroidGmapsWebSocket, HelloAndroidGmapsREST} {
+		if v := handshakeVersion(t, h); v != tls.VersionTLS12 {
+			t.Errorf("%s negotiated %#x", h.Name, v)
 		}
 	}
-	if v := handshakeVersion(t, h); v != tls.VersionTLS12 {
-		t.Errorf("negotiated %#x", v)
+	for _, h := range []Hello{HelloLibsignalReflector, HelloAndroidModernWebSocket, HelloAndroidModernREST} {
+		if v := handshakeVersion(t, h); v != tls.VersionTLS13 {
+			t.Errorf("%s negotiated %#x", h.Name, v)
+		}
 	}
 	if v := handshakeVersion(t, HelloChrome); v != tls.VersionTLS13 {
 		t.Errorf("chrome negotiated %#x", v)

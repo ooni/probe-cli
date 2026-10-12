@@ -51,6 +51,8 @@ func FuzzHelloSpec(f *testing.F) {
 	f.Add(rawHelloLibsignal)
 	f.Add(rawHelloAndroidWebSocket)
 	f.Add(rawHelloDesktop)
+	f.Add(rawHelloLibsignalReflector)
+	f.Add(rawHelloAndroidGmailREST)
 	f.Fuzz(func(t *testing.T, raw []byte) {
 		_, _ = Hello{Name: "fuzz", raw: raw}.Spec() // must not panic on any input
 	})

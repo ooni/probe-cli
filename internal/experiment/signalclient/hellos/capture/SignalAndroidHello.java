@@ -7,7 +7,16 @@
 //     30 s connect/read timeouts, no retries (SignalUrlExtensions.buildOkHttpClient)
 //   - wss://chat.signal.org/v1/websocket/provisioning/ (ProvisioningSocket.connect), then the
 //     server's PUT /v1/address is acked with 200 "OK" and a GET /v1/keepalive is sent
-// Usage (see android.sh): java -cp "lib/*" SignalAndroidHello.java [--get URL] [--ua UA] [--pad N]
+// Domain fronting (SignalServiceNetworkAccess.kt, v8.31.1): the same builder with the front's
+// ConnectionSpec, the front's URL and the Signal relay's Host header (--spec, --ws or --get, --host):
+//   - gmail: GMAIL_CONNECTION_SPEC (also PLAY_CONNECTION_SPEC, the same list): TLS 1.2, 9 suites, for
+//     www.google.com, googlemail.com, android.clients.google.com and the countries' Google domains
+//   - gmaps: GMAPS_CONNECTION_SPEC: TLS 1.2, 14 suites, for clients3 and clients4.google.com
+//   - modern: APP_CONNECTION_SPEC = ConnectionSpec.MODERN_TLS, for the Fastly fronts
+//   The fronts' trust stores (censorship_fronting.store, censorship_digicert.store) do not change
+//   the hello; the JVM's default trust is used for them.
+// Usage (see android.sh): java -cp "lib/*" SignalAndroidHello.java [--get URL | --ws URL] [--host H]
+//   [--spec gmail|gmaps|modern] [--ua UA] [--pad N]
 import java.io.*;
 import java.net.*;
 import java.security.*;
@@ -62,14 +71,46 @@ public class SignalAndroidHello {
   }
   static long readVarint(byte[] b, int[] i) { long n = 0; int s = 0; while (true) { int x = b[i[0]++] & 0xFF; n |= (long) (x & 0x7F) << s; s += 7; if ((x & 0x80) == 0) return n; } }
 
+  // The fronts' ConnectionSpecs, as SignalServiceNetworkAccess.kt builds them.
+  static ConnectionSpec connectionSpec(String name) {
+    switch (name) {
+      case "gmail": return new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).tlsVersions(TlsVersion.TLS_1_2)
+          .cipherSuites(CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+              CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+              CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+              CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
+              CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA)
+          .supportsTlsExtensions(true).build();
+      case "gmaps": return new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).tlsVersions(TlsVersion.TLS_1_2)
+          .cipherSuites(CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+              CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+              CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+              CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+              CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+              CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256, CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384,
+              CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA, CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA)
+          .supportsTlsExtensions(true).build();
+      case "modern": return ConnectionSpec.MODERN_TLS;
+      default: throw new IllegalArgumentException("unknown --spec " + name);
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     String ua = "Signal-Android/8.29.3 Android/34"; int pad = 0;
-    for (int k = 0; k < args.length; k++) { if (args[k].equals("--ua")) ua = args[++k]; if (args[k].equals("--pad")) pad = Integer.parseInt(args[++k]); }
+    String spec = null, host = null, wsUrl = "wss://chat.signal.org/v1/websocket/provisioning/";
+    for (int k = 0; k < args.length; k++) {
+      if (args[k].equals("--ua")) ua = args[++k];
+      if (args[k].equals("--pad")) pad = Integer.parseInt(args[++k]);
+      if (args[k].equals("--spec")) spec = args[++k];
+      if (args[k].equals("--host")) host = args[++k];
+      if (args[k].equals("--ws")) wsUrl = args[++k];
+    }
 
     int pos = Security.insertProviderAt(org.conscrypt.Conscrypt.newProvider(), 2);
     X509Certificate root = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(System.getenv().getOrDefault("SIGNAL_CA", "signal.cer")));
     KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType()); ks.load(null, null); ks.setCertificateEntry("signal", root);
-    TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()); tmf.init(ks);
+    TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    tmf.init(spec == null ? ks : null);  // a front: the JVM's default trust (see the header)
     SSLContext ctx = SSLContext.getInstance("TLS"); ctx.init(null, tmf.getTrustManagers(), null);
     System.out.println(ms() + " Conscrypt at position " + pos + "; SSLContext provider: " + ctx.getProvider().getName() + " " + ctx.getProvider().getVersionStr());
     // The capture is named after the versions android.sh asked for: refuse to run with any others.
@@ -84,12 +125,14 @@ public class SignalAndroidHello {
       System.exit(1);
     }
 
-    final String agent = ua;
+    final String agent = ua, hostHeader = host;
     OkHttpClient client = new OkHttpClient.Builder()
         .sslSocketFactory(new Tls12SocketFactory(ctx.getSocketFactory()), (X509TrustManager) tmf.getTrustManagers()[0])
-        .connectionSpecs(List.of(ConnectionSpec.RESTRICTED_TLS))
+        .connectionSpecs(List.of(spec == null ? ConnectionSpec.RESTRICTED_TLS : connectionSpec(spec)))
         .retryOnConnectionFailure(false).readTimeout(30, TimeUnit.SECONDS).connectTimeout(30, TimeUnit.SECONDS)
         .addInterceptor(c -> c.proceed(c.request().newBuilder().header("User-Agent", agent).build()))  // StandardUserAgentInterceptor
+        .addInterceptor(c -> hostHeader == null ? c.proceed(c.request())  // the relay's Host, as the fronted SignalUrls set it
+            : c.proceed(c.request().newBuilder().header("Host", hostHeader).build()))
         .build();
 
     for (int k = 0; k < args.length; k++) if (args[k].equals("--get")) {  // plain HTTPS GET (REST/CDN clients use the same builder)
@@ -99,7 +142,7 @@ public class SignalAndroidHello {
       client.connectionPool().evictAll(); return;
     }
     CountDownLatch done = new CountDownLatch(1); final int padding = pad; final long[] kid = {0};
-    client.newWebSocket(new Request.Builder().url("wss://chat.signal.org/v1/websocket/provisioning/").build(), new WebSocketListener() {
+    client.newWebSocket(new Request.Builder().url(wsUrl).build(), new WebSocketListener() {
       @Override public void onOpen(WebSocket ws, Response r) {
         System.out.println(ms() + " open: " + r.code() + " " + r.protocol() + " x-signal-timestamp=" + (r.header("x-signal-timestamp") != null)
             + " tls=" + r.handshake().tlsVersion() + " " + r.handshake().cipherSuite());

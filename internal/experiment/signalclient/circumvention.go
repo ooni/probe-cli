@@ -6,9 +6,8 @@ package signalclient
 // never change what the targets say: a failing route says that Signal's circumvention would not
 // help on that network, a different fact from Signal being blocked.
 //
-// The front connections use the closest captured hello until the fronts' own hellos are
-// captured: libsignal's enclave hello (ALPN http/1.1) for the reflectors, Android's WebSocket
-// and REST hellos for the Android fronts, limited to TLS 1.2 on android_g.
+// Each front connection sends the hello the real client sends to that front: libsignal's
+// reflector hello, or Signal-Android's hello with the front's ConnectionSpec (frontHello).
 //
 
 import (
@@ -42,13 +41,38 @@ type RouteResult struct {
 // FailedOperation of a reflector tunnel's upgrade.
 const tunnelUpgradeOperation = "tunnel_upgrade"
 
-
 // routeInner is one target measured through a route.
 type routeInner struct {
 	target  Target // the target as measured directly (its hello is the inner one on reflectors)
 	service string // Android routes: "chat" or "storage"
 	path    string // Android routes: the path before the service prefix
-	hello   Hello  // Android routes: the front connection's hello
+}
+
+// googleMapsFronts are the Google fronts Signal-Android reaches with GMAPS_CONNECTION_SPEC; its
+// other Google fronts (www.google.com, googlemail.com, android.clients.google.com and the
+// countries' domains) use GMAIL_CONNECTION_SPEC or PLAY_CONNECTION_SPEC, the same list.
+var googleMapsFronts = map[string]bool{"clients3.google.com": true, "clients4.google.com": true}
+
+// frontHello is the hello a route's client sends to front for service ("chat" or "storage").
+// A front given with the Fronts option that Signal-Android does not use gets the hello of the
+// route's default fronts (Gmail's on android_g).
+func frontHello(route, service, front string) Hello {
+	switch {
+	case route == RouteReflectorF || route == RouteReflectorG:
+		return HelloLibsignalReflector
+	case route == RouteAndroidF && service == "chat":
+		return HelloAndroidModernWebSocket
+	case route == RouteAndroidF:
+		return HelloAndroidModernREST
+	case googleMapsFronts[front] && service == "chat":
+		return HelloAndroidGmapsWebSocket
+	case googleMapsFronts[front]:
+		return HelloAndroidGmapsREST
+	case service == "chat":
+		return HelloAndroidGmailWebSocket
+	default:
+		return HelloAndroidGmailREST
+	}
 }
 
 // routeInners returns what a route measures.
@@ -58,15 +82,10 @@ func routeInners(route string) []routeInner {
 	switch route {
 	case RouteReflectorF, RouteReflectorG:
 		return []routeInner{{target: chatLibsignal}, {target: cdsi}}
-	case RouteAndroidG:
+	default: // android_g, android_f
 		return []routeInner{
-			{target: chatAndroid, service: "chat", path: "/v1/websocket/provisioning/", hello: HelloAndroidWebSocket.limitedToTLS12()},
-			{target: storage, service: "storage", path: "/ping", hello: HelloAndroidREST.limitedToTLS12()},
-		}
-	default: // android_f
-		return []routeInner{
-			{target: chatAndroid, service: "chat", path: "/v1/websocket/provisioning/", hello: HelloAndroidWebSocket},
-			{target: storage, service: "storage", path: "/ping", hello: HelloAndroidREST},
+			{target: chatAndroid, service: "chat", path: "/v1/websocket/provisioning/"},
+			{target: storage, service: "storage", path: "/ping"},
 		}
 	}
 }
@@ -86,13 +105,12 @@ func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero t
 	res := &RouteResult{Route: route, HostHeader: fc.hostHeader, Front: pickFront(route, opts.country, fc.snis),
 		Targets: []*TargetResult{}, T0: time.Since(zero).Seconds()}
 	defer func() { res.T = time.Since(zero).Seconds() }()
+	res.FrontClientHello = frontHello(route, inners[0].service, res.Front).Name
 	if isReflector {
-		res.FrontClientHello = HelloLibsignalEnclave.Name
 		noTunnel := int64(0) // until a tunnel is attempted
 		res.TunnelStatus = &noTunnel
 	} else {
 		res.Country = opts.country
-		res.FrontClientHello = inners[0].hello.Name
 	}
 	tag := "circumvention:" + route
 	ol := logx.NewOperationLogger(logger, "signal_client: %s via %s", route, res.Front)
@@ -156,7 +174,7 @@ func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero t
 				front = pickFront(route, opts.country, sfc.snis)
 				address, err := resolve(front, in.tags...)
 				if err != nil {
-					r = &TargetResult{Name: inner.target.Name, Hostname: inner.target.Hostname, ClientHello: inner.hello.Name,
+					r = &TargetResult{Name: inner.target.Name, Hostname: inner.target.Hostname, ClientHello: frontHello(route, inner.service, front).Name,
 						Method: inner.target.Method, FailedOperation: netxlite.ResolveOperation,
 						Failure: measurexlite.NewFailure(err), T0: time.Since(zero).Seconds(), T: time.Since(zero).Seconds()}
 					res.Targets = append(res.Targets, r)
@@ -231,7 +249,7 @@ func (in *routeInnerRun) drainer(trace *measurexlite.Trace) func() {
 // verified against Signal's roots, then the target's method. It also returns the tunnel's status.
 func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front, hostHeader string) (*TargetResult, int64) {
 	target := inner.target
-	res, tctx, connectCtx, cancel, trace, tr := in.start(ctx, target, HelloLibsignalEnclave, front)
+	res, tctx, connectCtx, cancel, trace, tr := in.start(ctx, target, HelloLibsignalReflector, front)
 	defer cancel()
 	defer func() { res.T = time.Since(in.zero).Seconds() }()
 	defer in.drainer(trace)()
@@ -278,13 +296,14 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 // itself, with the service's Host header and path prefix.
 func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front string, fc frontConfig) *TargetResult {
 	target := inner.target
-	res, tctx, connectCtx, cancel, trace, tr := in.start(ctx, target, inner.hello, front)
+	hello := frontHello(in.route, inner.service, front)
+	res, tctx, connectCtx, cancel, trace, tr := in.start(ctx, target, hello, front)
 	defer cancel()
 	defer func() { res.T = time.Since(in.zero).Seconds() }()
 	defer in.drainer(trace)()
 	address := in.frontAddress
 	res.Address = &address
-	res.UserAgent = in.m.config.userAgent(inner.hello)
+	res.UserAgent = in.m.config.userAgent(hello)
 	if tr == nil {
 		return res
 	}

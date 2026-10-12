@@ -58,13 +58,16 @@ The test is not enabled by default: set `OONI_FORCE_ENABLE_EXPERIMENT=1` to run 
   - `android_f` picks at random for IR and CU (Signal-Android's Fastly countries), otherwise it uses
     the first front.
   - `android_g` uses the first front, which is the country's own Google domain when it has one.
-- **Front hellos:** until the fronts' own hellos are captured, the routes use the closest captured
-  ones, which are recorded by name:
-  - reflectors: `libsignal-<v>-enclave`;
-  - Android chat: Android's WebSocket hello;
-  - Android storage: its REST hello, which offers `h2,http/1.1`.
+- **Front hellos:** each front connection sends the hello Signal's client sends to that front,
+  captured from the client's own code (`hellos/README.md`) and recorded by name:
+  - reflectors: `libsignal-<v>-reflector`, the same on all eight fronts;
+  - `android_g`: Gmail's settings (`-gmail`), or Maps' (`-gmaps`) on `clients3` and
+    `clients4.google.com`, both TLS 1.2 only with an empty session id, as Signal-Android sends;
+  - `android_f`: OkHttp's `MODERN_TLS` (`-modern`).
 
-  On `android_g`, the Android hellos are limited to TLS 1.2 (named `-tls12`).
+  Android chat uses the WebSocket hello (`-websocket`, ALPN `http/1.1`), storage the HTTPS one
+  (`h2,http/1.1`). A front given with `Fronts` that the client does not use gets the route's
+  default hello (Gmail's on `android_g`).
 - **Connect budget through a route:** each target reached through a route has its own 30 s
   connect budget, as a direct target does. It covers the TCP and TLS to the front, on the
   reflectors the tunnel upgrade and the inner handshake, and then the upgrade or GET. The front's

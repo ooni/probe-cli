@@ -23,11 +23,32 @@ var (
 	//go:embed hellos/libsignal.bin
 	rawHelloLibsignal []byte
 
+	//go:embed hellos/libsignal-reflector.bin
+	rawHelloLibsignalReflector []byte
+
 	//go:embed hellos/android-okhttp-websocket.bin
 	rawHelloAndroidWebSocket []byte
 
 	//go:embed hellos/android-okhttp-rest.bin
 	rawHelloAndroidREST []byte
+
+	//go:embed hellos/android-okhttp-front-g-gmail-websocket.bin
+	rawHelloAndroidGmailWebSocket []byte
+
+	//go:embed hellos/android-okhttp-front-g-gmail-rest.bin
+	rawHelloAndroidGmailREST []byte
+
+	//go:embed hellos/android-okhttp-front-g-gmaps-websocket.bin
+	rawHelloAndroidGmapsWebSocket []byte
+
+	//go:embed hellos/android-okhttp-front-g-gmaps-rest.bin
+	rawHelloAndroidGmapsREST []byte
+
+	//go:embed hellos/android-okhttp-front-f-websocket.bin
+	rawHelloAndroidModernWebSocket []byte
+
+	//go:embed hellos/android-okhttp-front-f-rest.bin
+	rawHelloAndroidModernREST []byte
 
 	//go:embed hellos/desktop-electron.bin
 	rawHelloDesktop []byte
@@ -57,10 +78,6 @@ type Hello struct {
 	// libsignal is true for libsignal's routes, whose User-Agent ends in " libsignal/<version>".
 	libsignal bool
 
-	// maxTLS12 limits a captured hello to TLS 1.2 (Signal-Android's Google fronts): the TLS 1.3
-	// extensions (supported_versions, key_share, psk_key_exchange_modes) are removed.
-	maxTLS12 bool
-
 	// parrot, when not nil, is a uTLS browser parrot used instead of a captured hello (the
 	// browser_hello control).
 	parrot *utls.ClientHelloID
@@ -82,6 +99,12 @@ var (
 	HelloLibsignalEnclave = Hello{Name: "libsignal-0.105.0-enclave", raw: rawHelloLibsignal, alpn: []string{"http/1.1"},
 		libsignal: true, appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
 
+	// HelloLibsignalReflector is libsignal 0.105.0's hello to a front on the reflector routes
+	// (proxyf, proxyg), the same on all eight fronts: TLS 1.2 and 1.3, ALPN http/1.1, padded to
+	// 512 bytes. Inside the tunnel, libsignal sends its usual hello to the target.
+	HelloLibsignalReflector = Hello{Name: "libsignal-0.105.0-reflector", raw: rawHelloLibsignalReflector, libsignal: true,
+		appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
+
 	// HelloAndroidWebSocket is Signal-Android 8.29.3's OkHttp 5.3.2 + Conscrypt 2.6.2 hello for
 	// WebSockets (provisioning): ALPN http/1.1, X25519MLKEM768 key share (1473 bytes).
 	HelloAndroidWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-websocket", raw: rawHelloAndroidWebSocket,
@@ -90,6 +113,26 @@ var (
 	// HelloAndroidREST is the same client's hello for HTTPS (storage, CDNs): ALPN h2,http/1.1.
 	HelloAndroidREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2", raw: rawHelloAndroidREST,
 		appUserAgent: "Signal-Android/8.29.3 Android/34"}
+
+	// Signal-Android's hellos to its own domain fronts (SignalServiceNetworkAccess.kt), the same
+	// client with each front's ConnectionSpec, for WebSockets (provisioning) and HTTPS (storage):
+	//   - Gmail: GMAIL_CONNECTION_SPEC, and PLAY_CONNECTION_SPEC (the same list), for www.google.com,
+	//     googlemail.com, android.clients.google.com and the countries' Google domains: TLS 1.2
+	//     only, 9 cipher suites;
+	//   - Maps: GMAPS_CONNECTION_SPEC, for clients3 and clients4.google.com: TLS 1.2 only, 14 suites;
+	//   - Modern: ConnectionSpec.MODERN_TLS, for the Fastly fronts: TLS 1.2 and 1.3, X25519MLKEM768.
+	HelloAndroidGmailWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmail-websocket",
+		raw: rawHelloAndroidGmailWebSocket, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+	HelloAndroidGmailREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmail",
+		raw: rawHelloAndroidGmailREST, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+	HelloAndroidGmapsWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmaps-websocket",
+		raw: rawHelloAndroidGmapsWebSocket, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+	HelloAndroidGmapsREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmaps",
+		raw: rawHelloAndroidGmapsREST, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+	HelloAndroidModernWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-modern-websocket",
+		raw: rawHelloAndroidModernWebSocket, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+	HelloAndroidModernREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-modern",
+		raw: rawHelloAndroidModernREST, appUserAgent: "Signal-Android/8.29.3 Android/34"}
 
 	// HelloDesktop is Signal-Desktop's own fetches (updater, WebAPI's agent) through Electron
 	// 44.4.5's Node and BoringSSL: no ALPN, X25519MLKEM768 + x25519 key shares (1475 bytes).
@@ -110,13 +153,6 @@ func helloStdlibTLS12(like Hello) Hello {
 		name += "+" + strings.Join(alpn, ",")
 	}
 	return Hello{Name: name, stdlibTLS12: true, alpn: alpn}
-}
-
-// limitedToTLS12 is h limited to TLS 1.2; its name says so.
-func (h Hello) limitedToTLS12() Hello {
-	h.Name += "-tls12"
-	h.maxTLS12 = true
-	return h
 }
 
 // errNoALPN means a hello has no ALPN extension to replace.
@@ -150,19 +186,30 @@ func (h Hello) Spec() (*utls.ClientHelloSpec, error) {
 			return nil, fmt.Errorf("%w: %s", errNoALPN, h.Name)
 		}
 	}
-	if h.maxTLS12 {
-		var kept []utls.TLSExtension
-		for _, ext := range spec.Extensions {
-			switch ext.(type) {
-			case *utls.SupportedVersionsExtension, *utls.KeyShareExtension, *utls.PSKKeyExchangeModesExtension:
-				continue
-			}
-			kept = append(kept, ext)
-		}
-		spec.Extensions = kept
-		spec.TLSVersMin, spec.TLSVersMax = utls.VersionTLS12, utls.VersionTLS12
-	}
 	return spec, nil
+}
+
+// apply sets uconn up to send the hello: its uTLS spec and, where the captured hello sends an
+// empty legacy session id (Signal-Android's TLS 1.2-only Google-front hellos), an empty one too.
+// ApplyPreset always fills it with 32 random bytes, as TLS 1.3 clients send.
+func (h Hello) apply(uconn *utls.UConn) error {
+	spec, err := h.Spec()
+	if err != nil {
+		return err
+	}
+	if err := uconn.ApplyPreset(spec); err != nil {
+		return err
+	}
+	if h.emptySessionID() {
+		uconn.HandshakeState.Hello.SessionId = nil
+	}
+	return nil
+}
+
+// emptySessionID reports whether the captured hello's legacy session id is empty. In the
+// handshake message, its length follows the type, length, version and random (1+3+2+32 bytes).
+func (h Hello) emptySessionID() bool {
+	return h.parrot == nil && len(h.raw) > 38 && h.raw[38] == 0
 }
 
 // ALPN returns the protocols the hello offers.

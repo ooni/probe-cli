@@ -224,7 +224,7 @@ func TestQACircumventionAllRoutes(t *testing.T) {
 	}
 	for _, name := range []string{RouteReflectorF, RouteReflectorG} {
 		r := routes[name]
-		if r.Failure != nil || r.TunnelStatus == nil || *r.TunnelStatus != 101 || r.FrontClientHello != HelloLibsignalEnclave.Name {
+		if r.Failure != nil || r.TunnelStatus == nil || *r.TunnelStatus != 101 || r.FrontClientHello != HelloLibsignalReflector.Name {
 			t.Errorf("%s: %+v failure=%q", name, r, deref(r.Failure))
 			continue
 		}
@@ -243,8 +243,11 @@ func TestQACircumventionAllRoutes(t *testing.T) {
 	}
 	g := routes[RouteAndroidG]
 	if g.Front != "www.google.com.pk" || g.Country != "PK" || g.HostHeader != googleReflectorHost ||
-		g.FrontClientHello != HelloAndroidWebSocket.Name+"-tls12" {
+		g.FrontClientHello != HelloAndroidGmailWebSocket.Name {
 		t.Errorf("android_g: %+v", g)
+	}
+	if f := routes[RouteAndroidF]; f.FrontClientHello != HelloAndroidModernWebSocket.Name {
+		t.Errorf("android_f: %+v", f)
 	}
 	for _, name := range []string{RouteAndroidG, RouteAndroidF} {
 		inner := innerByName(routes[name])
@@ -255,6 +258,10 @@ func TestQACircumventionAllRoutes(t *testing.T) {
 		}
 		if storage == nil || storage.Failure != nil || storage.Status != 200 || !storage.SignalTimestamp {
 			t.Errorf("%s: storage: %+v", name, storage)
+		}
+		if chat != nil && storage != nil && (chat.ClientHello != frontHello(name, "chat", routes[name].Front).Name ||
+			storage.ClientHello != frontHello(name, "storage", routes[name].Front).Name) {
+			t.Errorf("%s: hellos %s, %s", name, chat.ClientHello, storage.ClientHello)
 		}
 	}
 	if f := routes[RouteAndroidF]; f.Front != fastlyFronts[0] || f.HostHeader != "chat-signal.global.ssl.fastly.net" {
