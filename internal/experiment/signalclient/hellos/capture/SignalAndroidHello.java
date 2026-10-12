@@ -72,6 +72,17 @@ public class SignalAndroidHello {
     TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()); tmf.init(ks);
     SSLContext ctx = SSLContext.getInstance("TLS"); ctx.init(null, tmf.getTrustManagers(), null);
     System.out.println(ms() + " Conscrypt at position " + pos + "; SSLContext provider: " + ctx.getProvider().getName() + " " + ctx.getProvider().getVersionStr());
+    // The capture is named after the versions android.sh asked for: refuse to run with any others.
+    org.conscrypt.Conscrypt.Version cv = org.conscrypt.Conscrypt.version();
+    String conscrypt = cv.major() + "." + cv.minor() + "." + cv.patch();
+    String wantOkhttp = System.getenv("EXPECT_OKHTTP"), wantConscrypt = System.getenv("EXPECT_CONSCRYPT");
+    System.out.println(ms() + " loaded OkHttp " + okhttp3.OkHttp.VERSION + ", Conscrypt " + conscrypt);
+    if (!ctx.getProvider().getName().equals("Conscrypt")
+        || (wantOkhttp != null && !wantOkhttp.equals(okhttp3.OkHttp.VERSION))
+        || (wantConscrypt != null && !wantConscrypt.equals(conscrypt))) {
+      System.out.println("version mismatch: want the Conscrypt provider " + wantConscrypt + " and OkHttp " + wantOkhttp);
+      System.exit(1);
+    }
 
     final String agent = ua;
     OkHttpClient client = new OkHttpClient.Builder()

@@ -30,13 +30,13 @@ for p in "Signal-Android:$android_libsignal" "Signal-Desktop:$desktop_libsignal"
   [ "v${p#*:}" = "$libsignal" ] || echo "versions.sh: ${p%%:*} pins libsignal ${p#*:}, not $libsignal (LIBSIGNAL_TAG follows Signal-iOS)" >&2
 done
 
-cat <<OUT
-LIBSIGNAL_TAG=${LIBSIGNAL_TAG:-$libsignal}
-OKHTTP_VERSION=${OKHTTP_VERSION:-$okhttp}
-OKIO_VERSION=${OKIO_VERSION:-$(dep okio-jvm)}
-KOTLIN_VERSION=${KOTLIN_VERSION:-$(dep kotlin-stdlib)}
-CONSCRYPT_VERSION=${CONSCRYPT_VERSION:-$conscrypt}
-SIGNAL_ANDROID_VERSION=${SIGNAL_ANDROID_VERSION:-$android_version}
-ELECTRON_VERSION=${ELECTRON_VERSION:-$electron}
-SIGNAL_DESKTOP_VERSION=${SIGNAL_DESKTOP_VERSION:-$desktop_version}
-OUT
+# %q: the output is eval'ed on the host, and the values come from the network.
+printf '%s=%q\n' \
+  LIBSIGNAL_TAG "${LIBSIGNAL_TAG:-$libsignal}" \
+  OKHTTP_VERSION "${OKHTTP_VERSION:-$okhttp}" \
+  OKIO_VERSION "${OKIO_VERSION:-$(dep okio-jvm)}" \
+  KOTLIN_VERSION "${KOTLIN_VERSION:-$(dep kotlin-stdlib)}" \
+  CONSCRYPT_VERSION "${CONSCRYPT_VERSION:-$conscrypt}" \
+  SIGNAL_ANDROID_VERSION "${SIGNAL_ANDROID_VERSION:-$android_version}" \
+  ELECTRON_VERSION "${ELECTRON_VERSION:-$electron}" \
+  SIGNAL_DESKTOP_VERSION "${SIGNAL_DESKTOP_VERSION:-$desktop_version}"
