@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
+	"crypto/sha1" // #nosec G505 -- RFC 6455 defines Sec-WebSocket-Accept with SHA-1
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -25,6 +26,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "github.com/refraction-networking/utls"
+	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
 )
 
@@ -119,19 +121,29 @@ func upgradeRefused() error {
 	return newFailure(FailureWebSocketUpgradeRefused, netxlite.HTTPRoundTripOperation, errUpgradeRefused)
 }
 
+// errUpgradeInvalid means a 101 answer lacked the headers RFC 6455 section 4.1 requires.
+var errUpgradeInvalid = errors.New("signal_client: invalid websocket upgrade response")
+
+// websocketAccept is the Sec-WebSocket-Accept value a server must return for key.
+func websocketAccept(key string) string {
+	sum := sha1.Sum([]byte(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")) // #nosec G401 -- RFC 6455 section 4.2.2
+	return base64.StdEncoding.EncodeToString(sum[:])
+}
+
 // websocketH1 performs Android OkHttp's HTTP/1.1 WebSocket upgrade on an established TLS conn.
 func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
 	var key [16]byte
 	if _, err := rand.Read(key[:]); err != nil {
 		return nil, err
 	}
+	wsKey := base64.StdEncoding.EncodeToString(key[:])
 	// OkHttp 5.3.2's order: RealWebSocket.connect's headers, then the app's User-Agent
 	// interceptor (Signal's StandardUserAgentInterceptor), then BridgeInterceptor's Host and
 	// Accept-Encoding. All of it is inside TLS; only the encrypted record sizes are visible.
 	req := "GET " + path + " HTTP/1.1\r\n" +
 		"Upgrade: websocket\r\n" +
 		"Connection: Upgrade\r\n" +
-		"Sec-WebSocket-Key: " + base64.StdEncoding.EncodeToString(key[:]) + "\r\n" +
+		"Sec-WebSocket-Key: " + wsKey + "\r\n" +
 		"Sec-WebSocket-Version: 13\r\n" +
 		"Sec-WebSocket-Extensions: permessage-deflate\r\n" +
 		"User-Agent: " + userAgent + "\r\n" +
@@ -155,6 +167,13 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 		_ = conn.Close() // first: Body.Close would otherwise drain an endless body until the deadline
 		_ = resp.Body.Close()
 		return out, upgradeRefused()
+	}
+	// as OkHttp and tungstenite do, accept the upgrade only with the headers RFC 6455 requires
+	if !httpguts.HeaderValuesContainsToken(resp.Header["Upgrade"], "websocket") ||
+		!httpguts.HeaderValuesContainsToken(resp.Header["Connection"], "upgrade") ||
+		resp.Header.Get("Sec-WebSocket-Accept") != websocketAccept(wsKey) {
+		_ = conn.Close()
+		return out, newFailure(FailureWebSocketUpgradeInvalid, netxlite.HTTPRoundTripOperation, errUpgradeInvalid)
 	}
 	out.ws = newWSConn(br, conn)
 	out.closer = conn

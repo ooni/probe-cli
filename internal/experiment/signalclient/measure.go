@@ -165,6 +165,11 @@ const (
 	// CONNECT with a status other than success (see the target's status).
 	FailureWebSocketUpgradeRefused = "websocket_upgrade_refused"
 
+	// FailureWebSocketUpgradeInvalid: the server answered the HTTP/1.1 upgrade with 101 but without
+	// the Upgrade, Connection or Sec-WebSocket-Accept headers RFC 6455 requires, which the apps'
+	// WebSocket clients reject.
+	FailureWebSocketUpgradeInvalid = "websocket_upgrade_invalid"
+
 	// FailureUnexpectedMessage: the server sent a WebSocket message the flow does not allow.
 	FailureUnexpectedMessage = "unexpected_message"
 

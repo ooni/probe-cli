@@ -9,10 +9,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/sha1"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
@@ -53,6 +51,7 @@ type qaBehavior struct {
 	resetAfterAddress bool // HTTP/2: RST_STREAM right after sending the address
 	killAfterAddress  bool // close the TCP connection right after sending the address
 	truncateBody      bool // GET responses: promise 1000 bytes, send 5, close the connection
+	badAccept         bool // answer the HTTP/1.1 provisioning upgrade 101 with a wrong Sec-WebSocket-Accept
 }
 
 // qaUserAgents records the User-Agent of every request the fake front ends receive, by host.
@@ -167,18 +166,22 @@ func (s *qaSignalServer) serveH1(conn net.Conn) {
 	case upgrade && s.factory.behavior.refuseUpgrade:
 		fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 	case upgrade && req.URL.Path == "/v1/websocket/provisioning/":
-		sum := sha1.Sum([]byte(req.Header.Get("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+		accept := websocketAccept(req.Header.Get("Sec-WebSocket-Key"))
+		if s.factory.behavior.badAccept {
+			accept = websocketAccept("not the client's key")
+		}
 		ext := ""
 		if s.factory.behavior.deflate {
 			ext = "Sec-WebSocket-Extensions: permessage-deflate\r\n"
 		}
 		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
-			"Sec-WebSocket-Accept: %s\r\n%s%s\r\n", base64.StdEncoding.EncodeToString(sum[:]), s.timestampHeader(), ext)
+			"Sec-WebSocket-Accept: %s\r\n%s%s\r\n", accept, s.timestampHeader(), ext)
 		s.provisioning().serve(s.factory.t, br, conn)
 	case upgrade && s.factory.behavior.enclave401:
 		fmt.Fprintf(conn, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 	case upgrade && s.factory.behavior.enclaveAccepts:
-		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n")
+		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
+			"Sec-WebSocket-Accept: %s\r\n\r\n", websocketAccept(req.Header.Get("Sec-WebSocket-Key")))
 	case upgrade: // an enclave path without credentials
 		fmt.Fprintf(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 	case s.factory.behavior.truncateBody:
@@ -529,6 +532,18 @@ func TestQAUpgradeRefused(t *testing.T) {
 		}
 	}
 	expectOK(t, byName, "cdsi", "storage")
+}
+
+// A 101 with the wrong Sec-WebSocket-Accept is not an upgrade: the apps' clients reject it.
+func TestQAUpgradeWithWrongAccept(t *testing.T) {
+	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {badAccept: true}})
+	defer env.Close()
+	_, byName := runQA(t, env)
+	expectFailure(t, byName["chat_android"], "websocket_upgrade", FailureWebSocketUpgradeInvalid)
+	if byName["chat_android"].Status != 101 {
+		t.Errorf("status %d", byName["chat_android"].Status)
+	}
+	expectOK(t, byName, "chat_libsignal")
 }
 
 func TestQAUserAgentIdentifiesOONIByDefault(t *testing.T) {
