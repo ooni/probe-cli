@@ -2,6 +2,7 @@ package signalclient
 
 import (
 	"crypto/x509"
+	"fmt"
 	"io"
 	"net"
 	"reflect"
@@ -119,9 +120,17 @@ func TestCapturedHelloSizes(t *testing.T) {
 }
 
 func TestSignalRoots(t *testing.T) {
-	pool, err := signalRoots()
+	certs, err := signalRoots()
 	if err != nil {
 		t.Fatal(err)
+	}
+	anchors := newTrustAnchors(certs)
+	pool := anchors.pool
+	// the fingerprints the spec lists (ts-041 Trust)
+	want := []string{"ddb0f92bb95c8d6fd202ea6e8cc5ccd182b544f8cd696f47d580659ddc9df65a",
+		"2642f1f90b389fed2558d7324ca26d70e750b06f87c595c5de955e2560821657"}
+	if fmt.Sprint(anchors.sha256) != fmt.Sprint(want) {
+		t.Errorf("signal_roots %v, want %v", anchors.sha256, want)
 	}
 	for _, der := range [][]byte{signalRSARootDER, signalEd25519RootDER} {
 		cert, err := x509.ParseCertificate(der)

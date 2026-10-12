@@ -160,6 +160,11 @@ func (s *qaSignalServer) serveH1(conn net.Conn) {
 	if err != nil {
 		return
 	}
+	s.serveH1Request(conn, br, req)
+}
+
+// serveH1Request answers one HTTP/1.1 request already read from br.
+func (s *qaSignalServer) serveH1Request(conn net.Conn, br *bufio.Reader, req *http.Request) {
 	s.factory.uas.add(req.UserAgent(), req.Host)
 	upgrade := strings.EqualFold(req.Header.Get("Upgrade"), "websocket")
 	switch {
@@ -314,20 +319,58 @@ func (w *qaStreamWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// qaEnv is a network where every Signal target resolves to a fake front end.
+// Addresses of the simulated fronts.
+const (
+	qaFastlyFrontAddr = "151.101.1.194" // github.githubassets.com, pinterest.com, www.redditstatic.com
+	qaGoogleFrontAddr = "142.250.180.4" // www.google.com and the other Google fronts
+)
+
+// qaUpstreams maps the hosts a reflector may be asked for (X-Signal-Host) to the fake servers.
+var qaUpstreams = map[string]string{"grpc.chat.signal.org": qaGRPCChatAddr, "cdsi.signal.org": qaEnclaveAddr}
+
+// qaStaticAddrs are the static addresses that get a fake server (the second address of each chat
+// host, which the controls' scenarios check). Every simulated host costs memory and goroutines
+// that netem does not release when the env closes (gvisorStack.Close does not stop the gVisor
+// stack), so the other static addresses stay unreachable: controls to them fail fast (TestMain).
+var qaStaticAddrs = map[string][]string{
+	"76.223.66.180": {"grpc.chat.signal.org"},
+	"76.223.92.165": {"chat.signal.org"},
+}
+
+// qaEnv is a network where every Signal target resolves to a fake front end, the qaStaticAddrs
+// serve their hosts, 1.1.1.1 answers DNS over UDP and HTTPS (from the non-ISP resolvers'
+// records), and the circumvention fronts relay to the fake servers.
 func newQAEnv(t *testing.T, behaviors map[string]qaBehavior) *netemx.QAEnv {
 	qaSeenUserAgents = &qaUserAgents{byUA: map[string][]string{}}
 	front := func(addr string, names ...string) netemx.QAEnvOption {
 		return netemx.QAEnvOptionNetStack(addr, &qaSignalServerFactory{t: t, names: names, behavior: behaviors[addr], uas: qaSeenUserAgents})
 	}
-	env := netemx.MustNewQAEnv(
+	options := []netemx.QAEnvOption{
 		front(qaGRPCChatAddr, "grpc.chat.signal.org"),
 		front(qaChatAddr, "chat.signal.org"),
 		front(qaEnclaveAddr, "cdsi.signal.org", "svr2.signal.org", "svrb.signal.org"),
 		front(qaCDNAddr, "storage.signal.org", "cdn.signal.org", "cdn2.signal.org", "cdn3.signal.org",
 			"updates2.signal.org", "sfu.voip.signal.org"),
+		netemx.QAEnvOptionNetStack(netemx.AddressCloudflareDNSCom1111,
+			&netemx.HTTPSecureServerFactory{Factory: &netemx.DNSOverHTTPSHandlerFactory{}, Ports: []int{443},
+				ServerNameMain: netemx.AddressCloudflareDNSCom1111},
+			&netemx.DNSOverUDPServerFactory{}),
+		netemx.QAEnvOptionNetStack(qaFastlyFrontAddr, &qaFrontFactory{t: t, behavior: behaviors[qaFastlyFrontAddr],
+			names: fastlyFronts}),
+		netemx.QAEnvOptionNetStack(qaGoogleFrontAddr, &qaFrontFactory{t: t, behavior: behaviors[qaGoogleFrontAddr],
+			names: append(append([]string(nil), googleFronts...), "www.google.com.pk", "www.google.com.eg")}),
 		netemx.QAEnvOptionLogger(log.Log),
-	)
+	}
+	for addr, hosts := range qaStaticAddrs {
+		options = append(options, front(addr, hosts...))
+	}
+	env := netemx.MustNewQAEnv(options...)
+	for _, name := range fastlyFronts {
+		env.AddRecordToAllResolvers(name, "", qaFastlyFrontAddr)
+	}
+	for _, name := range append(append([]string(nil), googleFronts...), "www.google.com.pk", "www.google.com.eg") {
+		env.AddRecordToAllResolvers(name, "", qaGoogleFrontAddr)
+	}
 	env.AddRecordToAllResolvers("grpc.chat.signal.org", "", qaGRPCChatAddr)
 	env.AddRecordToAllResolvers("chat.signal.org", "", qaChatAddr)
 	for _, h := range []string{"cdsi", "svr2", "svrb"} {
@@ -359,7 +402,8 @@ func runQATargets(t *testing.T, env *netemx.QAEnv, config Config, targets []Targ
 	env.Do(func() {
 		m := NewExperimentMeasurer(config).(*Measurer)
 		m.targets = targets
-		m.roots = func() (*x509.CertPool, error) { return env.ClientStack.DefaultCertPool(), nil }
+		m.roots = func() ([]*x509.Certificate, error) { return []*x509.Certificate{env.ClientStack.CACert()}, nil }
+		m.googleRoots = func() (*x509.CertPool, error) { return env.ClientStack.DefaultCertPool(), nil }
 		meas := &model.Measurement{MeasurementStartTimeSaved: time.Now()}
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
@@ -683,8 +727,8 @@ func TestQATruncatedBodyIsAFailure(t *testing.T) {
 
 // A TLS blackhole costs the connect budget, not the whole provisioning budget.
 func TestQAConnectBudgetIsEnforced(t *testing.T) {
-	defer func(d time.Duration) { connectBudget = d }(connectBudget)
-	connectBudget = 2 * time.Second
+	defer func(d, c time.Duration) { connectBudget, controlHandshakeTimeout = d, c }(connectBudget, controlHandshakeTimeout)
+	connectBudget, controlHandshakeTimeout = 2*time.Second, time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "chat.signal.org"})

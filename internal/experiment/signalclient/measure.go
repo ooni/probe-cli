@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -15,7 +16,7 @@ import (
 
 const (
 	testName    = "signal_client" // provisional name, see doc.go
-	testVersion = "0.1.0"
+	testVersion = "0.2.0"
 )
 
 // Method is how a target is exercised after TLS.
@@ -86,6 +87,31 @@ type Config struct {
 
 	// UserAgent, when set, is sent instead of either.
 	UserAgent string `ooni:"User-Agent to send instead of the default"`
+
+	// SignalCA, when set, is a PEM bundle that replaces Signal's two built-in roots for every
+	// connection verified against Signal's roots (targets, controls, inner connections of the
+	// circumvention routes), for a root rotation that ships before a probe release or a private
+	// Signal server. Not for the fronts or DNS-over-HTTPS.
+	SignalCA string `ooni:"PEM bundle replacing Signal's two built-in roots"`
+
+	// Controls says when the address controls run: on_failure (default), always or off.
+	Controls string `ooni:"when the address controls run: on_failure (default), always or off"`
+
+	// StaticAddresses replaces the built-in static addresses of the named hosts:
+	// "host=addr,addr;host=addr".
+	StaticAddresses string `ooni:"replace static addresses: host=addr,addr;host=addr"`
+
+	// Circumvention lists the circumvention routes to measure: a comma-separated subset of
+	// reflector_f, reflector_g, android_g, android_f, or all. Empty: none.
+	Circumvention string `ooni:"circumvention routes: comma-separated reflector_f,reflector_g,android_g,android_f or all"`
+
+	// CircumventionCountry is the country whose Android front configuration android_g and
+	// android_f reproduce (default: the probe's country).
+	CircumventionCountry string `ooni:"country of the Android front configuration (default: the probe's)"`
+
+	// Fronts replaces the built-in front configuration of the named routes:
+	// "route[.service]=host_header@sni,sni;...".
+	Fronts string `ooni:"replace fronts: route[.service]=host_header@sni,sni;..."`
 }
 
 // ooniUserAgent identifies this test to Signal's servers.
@@ -109,7 +135,7 @@ func (c *Config) userAgent(hello Hello) string {
 type TargetResult struct {
 	Name            string              `json:"name"`
 	Hostname        string              `json:"hostname"`
-	Address         string              `json:"address"`
+	Address         *string             `json:"address"` // null inside a reflector tunnel
 	ClientHello     string              `json:"client_hello"`
 	Method          Method              `json:"method"`
 	UserAgent       string              `json:"user_agent"`
@@ -121,6 +147,7 @@ type TargetResult struct {
 	Provisioning    *ProvisioningResult `json:"provisioning,omitempty"`
 	Failure         *string             `json:"failure"`
 	FailedOperation string              `json:"failed_operation,omitempty"`
+	Controls        []*ControlResult    `json:"controls"`
 	T0              float64             `json:"t0"`
 	T               float64             `json:"t"`
 }
@@ -136,18 +163,87 @@ type TestKeys struct {
 	// SignalServiceStatus is Signal's own outage beacon: uptime.signal.org resolves to
 	// 127.0.0.1 when the service is up and 127.0.0.2 during an outage.
 	SignalServiceStatus string `json:"signal_service_status"`
+
+	// SignalRoots is the SHA-256 of each root used for Signal's hosts (lowercase hex of the DER):
+	// the two built-in roots unless SignalCA replaced them.
+	SignalRoots []string `json:"signal_roots"`
+
+	// ControlsTruncated is true when the controls' time budget ran out before all were started.
+	ControlsTruncated bool `json:"signal_controls_truncated"`
+
+	// Circumvention holds the circumvention routes (null unless Circumvention is set).
+	Circumvention []*RouteResult `json:"signal_circumvention"`
 }
 
 // Measurer performs the measurement.
 type Measurer struct {
 	config  Config
 	targets []Target
-	roots   func() (*x509.CertPool, error) // tests replace these
+
+	// trust anchors (tests replace these)
+	roots        func() ([]*x509.Certificate, error) // Signal's
+	googleRoots  func() (*x509.CertPool, error)      // the Google fronts'
+	mozillaRoots func() (*x509.CertPool, error)      // the Fastly fronts'
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config, targets: DefaultTargets, roots: signalRoots}
+	return &Measurer{config: config, targets: DefaultTargets, roots: signalRoots, googleRoots: googleRoots,
+		mozillaRoots: mozillaRoots}
+}
+
+// runOptions are the parsed options of one run.
+type runOptions struct {
+	controls string
+	static   map[string][]staticAddress
+	routes   []string
+	country  string
+	fronts   map[string]frontConfig
+}
+
+// parseOptions parses and validates the options. probeCC is the default CircumventionCountry.
+func (m *Measurer) parseOptions(probeCC string) (*runOptions, error) {
+	controls, err := parseControls(m.config.Controls)
+	if err != nil {
+		return nil, err
+	}
+	static := builtinStaticAddresses()
+	override, err := parseStaticAddresses(m.config.StaticAddresses)
+	if err != nil {
+		return nil, err
+	}
+	for host, list := range override {
+		static[host] = list
+	}
+	routes, err := parseCircumvention(m.config.Circumvention)
+	if err != nil {
+		return nil, err
+	}
+	country := strings.ToUpper(strings.TrimSpace(m.config.CircumventionCountry))
+	if country == "" {
+		country = strings.ToUpper(probeCC)
+	}
+	fronts := builtinFronts(country)
+	if err := parseFronts(m.config.Fronts, fronts); err != nil {
+		return nil, err
+	}
+	return &runOptions{controls: controls, static: static, routes: routes, country: country, fronts: fronts}, nil
+}
+
+// signalAnchors returns Signal's roots, or SignalCA's certificates when set.
+func (m *Measurer) signalAnchors() (*trustAnchors, error) {
+	if m.config.SignalCA != "" {
+		certs, err := parsePEMBundle(m.config.SignalCA)
+		if err != nil {
+			return nil, err
+		}
+		return newTrustAnchors(certs), nil
+	}
+	certs, err := m.roots()
+	if err != nil {
+		return nil, err
+	}
+	return newTrustAnchors(certs), nil
 }
 
 // ExperimentName implements model.ExperimentMeasurer.
@@ -195,10 +291,16 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	zero := args.Measurement.MeasurementStartTimeSaved
 	tk := &TestKeys{}
 	args.Measurement.TestKeys = tk
-	roots, err := m.roots()
+	opts, err := m.parseOptions(args.Measurement.ProbeCC)
 	if err != nil {
 		return err
 	}
+	anchors, err := m.signalAnchors()
+	if err != nil {
+		return err
+	}
+	tk.SignalRoots = anchors.sha256
+	roots := anchors.pool
 
 	// Signal's outage beacon, a control: if Signal says it is down, failures mean little.
 	trace := measurexlite.NewTrace(0, zero)
@@ -218,12 +320,29 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	for i, target := range m.targets {
 		tk.Targets = append(tk.Targets, m.measureTarget(ctx, logger, zero, int64(i+1), target, roots, tk))
 	}
+
+	// the controls run after every target, so they never delay or change a target's result
+	if opts.controls != ControlsOff {
+		cr := newControlRunner(m, logger, zero, roots, opts, int64(len(m.targets)+1))
+		cr.plan(m.targets, tk.Targets)
+		tk.ControlsTruncated = cr.run(ctx, tk)
+	}
+
+	// then the circumvention routes, which never change what the targets say
+	if len(opts.routes) > 0 {
+		tk.Circumvention = []*RouteResult{}
+		for i, route := range opts.routes {
+			index := int64(10000 + 10*i)
+			tk.Circumvention = append(tk.Circumvention, m.measureRoute(ctx, logger, zero, index, route, opts, roots, tk))
+		}
+	}
 	return nil
 }
 
 func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero time.Time, index int64,
 	target Target, roots *x509.CertPool, tk *TestKeys) *TargetResult {
-	res := &TargetResult{Name: target.Name, Hostname: target.Hostname, ClientHello: target.Hello.Name,
+	address := ""
+	res := &TargetResult{Name: target.Name, Hostname: target.Hostname, Address: &address, ClientHello: target.Hello.Name,
 		Method: target.Method, T0: time.Since(zero).Seconds()}
 	defer func() { res.T = time.Since(zero).Seconds() }()
 	fail := func(op string, err error) *TargetResult {
@@ -251,9 +370,9 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	if ip == "" {
 		return fail(netxlite.ResolveOperation, errNoAddress)
 	}
-	res.Address = net.JoinHostPort(ip, "443")
+	address = net.JoinHostPort(ip, "443")
 
-	tr, err := dialTLS(connectCtx, trace, logger, zero, res.Address, target.Hostname, target.Hello, roots, target.Name)
+	tr, err := dialTLS(connectCtx, trace, logger, zero, address, target.Hostname, target.Hello, roots, target.Name)
 	tk.TCPConnect = append(tk.TCPConnect, trace.TCPConnects()...)
 	defer func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) }()
 	if tr != nil && tr.handshake != nil {
@@ -266,29 +385,45 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		}
 		return fail(op, err)
 	}
+	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
+	res.UserAgent = m.config.userAgent(target.Hello)
+	drain := func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) } // the buffer holds 64
+	m.exerciseInto(ctx, connectCtx, tr, target, target.Hostname, target.Path, res, zero, drain)
+	return res
+}
+
+// exerciseInto runs target's method on an established TLS connection and records the outcome
+// in res, closing the connection when done. hostHeader and path are what the request names
+// (they differ from the target's own through a front). With a nil checkpoint, provisioning
+// methods stop after the upgrade (the static_address control); otherwise the provisioning flow
+// runs, calling checkpoint after each step.
+func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, target Target, hostHeader, path string,
+	res *TargetResult, zero time.Time, checkpoint func()) {
 	defer func() { _ = tr.conn.Close() }()
 	// when ctx ends, close the conn: this unblocks any read or write, including HTTP/2 writes
 	// waiting for flow control, which do not watch ctx themselves
 	stopCloser := context.AfterFunc(ctx, func() { _ = tr.conn.Close() })
 	defer stopCloser()
-	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
-
-	ua := m.config.userAgent(target.Hello)
-	res.UserAgent = ua
+	fail := func(op string, err error) {
+		res.FailedOperation, res.Failure = op, measurexlite.NewFailure(err)
+	}
+	ua := res.UserAgent
 	switch target.Method {
 	case MethodHTTPSGet:
-		status, ts, err := httpsGet(connectCtx, tr.conn, tr.alpn, target.Hostname, target.Path, ua)
+		status, ts, err := httpsGet(connectCtx, tr.conn, tr.alpn, hostHeader, path, ua)
 		res.Status, res.SignalTimestamp = int64(status), ts
 		if err != nil {
-			return fail(netxlite.HTTPRoundTripOperation, err)
+			fail(netxlite.HTTPRoundTripOperation, err)
 		}
-		return res
 	case MethodEnclaveH1, MethodProvisioningH1, MethodProvisioningH2:
-		var up *upgradeResult
+		var (
+			up  *upgradeResult
+			err error
+		)
 		if target.Method == MethodProvisioningH2 {
-			up, err = websocketH2(ctx, connectCtx, tr.conn, target.Hostname, target.Path, ua)
+			up, err = websocketH2(ctx, connectCtx, tr.conn, hostHeader, path, ua)
 		} else {
-			up, err = websocketH1(connectCtx, tr.conn, target.Hostname, target.Path, ua)
+			up, err = websocketH1(connectCtx, tr.conn, hostHeader, path, ua)
 		}
 		if up != nil {
 			res.Status, res.SignalTimestamp, res.WSExtensions = int64(up.status), up.signalTimestamp, up.extensions
@@ -296,27 +431,31 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		if target.Method == MethodEnclaveH1 {
 			// no credentials: 401 or 404 from the enclave front end is the expected answer
 			if errors.Is(err, errUpgradeRefused) && (res.Status == 401 || res.Status == 404) {
-				return res
+				return
 			}
 			if err == nil { // accepted without credentials: unexpected, but Signal answered
 				_ = up.closer.Close()
-				return res
+				return
 			}
-			return fail("websocket_upgrade", err)
+			fail("websocket_upgrade", err)
+			return
 		}
 		if err != nil {
-			return fail("websocket_upgrade", err)
+			fail("websocket_upgrade", err)
+			return
 		}
 		defer up.closer.Close()
-		drain := func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) } // the buffer holds 64
-		drain()
-		res.Provisioning = runProvisioning(ctx, up.ws, zero, keepalivePaddings, idle, drain)
+		if checkpoint == nil {
+			return
+		}
+		checkpoint()
+		res.Provisioning = runProvisioning(ctx, up.ws, zero, keepalivePaddings, idleDuration(m.config.IdleSeconds), checkpoint)
 		if res.Provisioning.Failure != nil {
 			res.Failure, res.FailedOperation = res.Provisioning.Failure, res.Provisioning.FailedStep
 		}
-		return res
+	default:
+		fail(netxlite.TopLevelOperation, errors.New("signal_client: unknown method"))
 	}
-	return fail(netxlite.TopLevelOperation, errors.New("signal_client: unknown method"))
 }
 
 // connectBudget bounds DNS, TCP, TLS and the upgrade or GET of one target (a variable so tests

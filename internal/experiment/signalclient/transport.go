@@ -42,47 +42,72 @@ const (
 
 // tlsResult is what dialTLS observed.
 type tlsResult struct {
-	conn      *utls.UConn
+	conn      net.Conn
 	alpn      string
 	leafKey   string
 	handshake *model.ArchivalTLSOrQUICHandshakeResult
 }
 
 // dialTLS connects to address and handshakes with the given hello, verifying the chain against
-// roots for sni. Events go to trace. It returns a nil *tlsResult only when the TCP connect failed.
+// roots for sni (nil roots: the chain is recorded but not verified). Events go to trace. It
+// returns a nil *tlsResult only when the TCP connect failed.
 func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger, zero time.Time,
-	address, sni string, hello Hello, roots *x509.CertPool, tag string) (*tlsResult, error) {
+	address, sni string, hello Hello, roots *x509.CertPool, tags ...string) (*tlsResult, error) {
 	dialer := trace.NewDialerWithoutResolver(logger)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	if err != nil {
 		return nil, err // already wrapped by netxlite (operation "connect")
 	}
-	spec, err := hello.Spec()
-	if err != nil {
-		_ = conn.Close()
-		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, err)
-	}
-	config := &utls.Config{ServerName: sni, RootCAs: roots}
-	uconn := utls.UClient(conn, config, utls.HelloCustom)
-	if err := uconn.ApplyPreset(spec); err != nil {
+	return handshakeTLS(ctx, trace, zero, conn, address, sni, hello, roots, tags...)
+}
+
+// handshakeTLS runs the TLS handshake of hello on conn (a TCP connection, or a tunnel whose
+// address is recorded as given). It closes conn on failure.
+func handshakeTLS(ctx context.Context, trace *measurexlite.Trace, zero time.Time, conn net.Conn,
+	address, sni string, hello Hello, roots *x509.CertPool, tags ...string) (*tlsResult, error) {
+	tlsFailure := func(err error) (*tlsResult, error) {
 		_ = conn.Close()
 		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation,
 			fmt.Errorf("signal_client: %s: %w", hello.Name, err))
 	}
+	var (
+		tconn interface {
+			net.Conn
+			HandshakeContext(context.Context) error
+		}
+		connState func() tls.ConnectionState
+	)
+	if hello.stdlibTLS12 {
+		c := tls.Client(conn, &tls.Config{ServerName: sni, RootCAs: roots, InsecureSkipVerify: roots == nil, // #nosec G402 -- recorded, not trusted
+			MinVersion: tls.VersionTLS12, MaxVersion: tls.VersionTLS12, NextProtos: hello.alpn})
+		tconn, connState = c, c.ConnectionState
+	} else {
+		spec, err := hello.Spec()
+		if err != nil {
+			return tlsFailure(err)
+		}
+		config := &utls.Config{ServerName: sni, RootCAs: roots, InsecureSkipVerify: roots == nil} // #nosec G402 -- recorded, not trusted
+		uconn := utls.UClient(conn, config, utls.HelloCustom)
+		if err := uconn.ApplyPreset(spec); err != nil {
+			return tlsFailure(err)
+		}
+		tconn, connState = uconn, func() tls.ConnectionState { return stdlibState(uconn.ConnectionState()) }
+	}
 	started := time.Since(zero)
-	err = uconn.HandshakeContext(ctx)
+	err := tconn.HandshakeContext(ctx)
 	finished := time.Since(zero)
 	if err != nil {
 		err = netxlite.NewErrWrapper(netxlite.ClassifyTLSHandshakeError, netxlite.TLSHandshakeOperation, err)
 	}
-	state := stdlibState(uconn.ConnectionState())
+	state := connState()
 	hs := measurexlite.NewArchivalTLSOrQUICHandshakeResult(trace.Index(), started, "tcp", address,
-		&tls.Config{ServerName: sni, NextProtos: hello.ALPN()}, state, err, finished, tag)
+		&tls.Config{ServerName: sni, NextProtos: hello.ALPN(), InsecureSkipVerify: roots == nil}, // #nosec G402 -- archival only
+		state, err, finished, tags...)
 	if err != nil {
 		_ = conn.Close()
 		return &tlsResult{handshake: hs}, err
 	}
-	return &tlsResult{conn: uconn, alpn: state.NegotiatedProtocol, leafKey: leafKeyType(state), handshake: hs}, nil
+	return &tlsResult{conn: tconn, alpn: state.NegotiatedProtocol, leafKey: leafKeyType(state), handshake: hs}, nil
 }
 
 // stdlibState converts uTLS's connection state for the archival helpers.
@@ -141,13 +166,21 @@ func websocketAccept(key string) string {
 	return base64.StdEncoding.EncodeToString(sum[:])
 }
 
-// websocketH1 performs Android OkHttp's HTTP/1.1 WebSocket upgrade on an established TLS conn.
-func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
+// newWebSocketKey returns a random Sec-WebSocket-Key.
+func newWebSocketKey() (string, error) {
 	var key [16]byte
 	if _, err := rand.Read(key[:]); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(key[:]), nil
+}
+
+// websocketH1 performs Android OkHttp's HTTP/1.1 WebSocket upgrade on an established TLS conn.
+func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
+	wsKey, err := newWebSocketKey()
+	if err != nil {
 		return nil, err
 	}
-	wsKey := base64.StdEncoding.EncodeToString(key[:])
 	// OkHttp 5.3.2's order: RealWebSocket.connect's headers, then the app's User-Agent
 	// interceptor (Signal's StandardUserAgentInterceptor), then BridgeInterceptor's Host and
 	// Accept-Encoding. All of it is inside TLS; only the encrypted record sizes are visible.
@@ -160,6 +193,11 @@ func websocketH1(ctx context.Context, conn net.Conn, host, path, userAgent strin
 		"User-Agent: " + userAgent + "\r\n" +
 		"Host: " + host + "\r\n" +
 		"Accept-Encoding: gzip\r\n\r\n"
+	return upgradeH1(ctx, conn, req, wsKey)
+}
+
+// upgradeH1 sends an HTTP/1.1 WebSocket upgrade request and checks the answer.
+func upgradeH1(ctx context.Context, conn net.Conn, req, wsKey string) (*upgradeResult, error) {
 	if deadline, ok := ctx.Deadline(); ok {
 		_ = conn.SetDeadline(deadline)
 		defer func() { _ = conn.SetDeadline(time.Time{}) }()
