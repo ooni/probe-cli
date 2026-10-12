@@ -42,26 +42,6 @@ type RouteResult struct {
 // FailedOperation of a reflector tunnel's upgrade.
 const tunnelUpgradeOperation = "tunnel_upgrade"
 
-// routeConnectBudget is a route's connect budget (a variable so tests can shorten it).
-var routeConnectBudget = 30 * time.Second
-
-// routeBudget is what is left of a route's connect budget: its front's DNS, the TCP and TLS of
-// each connection to the front and, on the reflectors, each tunnel upgrade and inner handshake
-// share it (ts-041 Time limits). The inner targets' own steps keep their usual limits.
-type routeBudget struct {
-	remaining time.Duration
-}
-
-// phase returns a context bounded by the remaining budget, and a function that ends the phase
-// and charges the time it took. Once the budget is spent, phases fail at once with a timeout.
-func (b *routeBudget) phase(ctx context.Context) (context.Context, func()) {
-	start := time.Now()
-	pctx, cancel := context.WithTimeout(ctx, max(b.remaining, 0))
-	return pctx, func() {
-		cancel()
-		b.remaining -= time.Since(start)
-	}
-}
 
 // routeInner is one target measured through a route.
 type routeInner struct {
@@ -135,12 +115,11 @@ func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero t
 		return res
 	}
 
-	budget := &routeBudget{remaining: routeConnectBudget}
-
-	// resolve returns the address of a front's first IPv4 address, with the system resolver
+	// resolve returns the address of a front's first IPv4 address, with the system resolver,
+	// within its own connect budget
 	resolve := func(front string, tags ...string) (string, error) {
-		connectCtx, done := budget.phase(ctx)
-		defer done()
+		connectCtx, cancel := context.WithTimeout(ctx, connectBudget)
+		defer cancel()
 		trace := measurexlite.NewTrace(index, zero, tags...)
 		addrs, err := trace.NewStdlibResolver(logger).LookupHost(connectCtx, front)
 		tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
@@ -162,7 +141,7 @@ func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero t
 	for i, inner := range inners {
 		in := &routeInnerRun{m: m, logger: logger, zero: zero, index: index + int64(i+1), route: route,
 			tags: []string{tag, inner.target.Name}, frontAddress: res.FrontAddress, frontRoots: frontRoots,
-			signalRoots: signalRoots, tk: tk, budget: budget}
+			signalRoots: signalRoots, tk: tk}
 		var r *TargetResult
 		if isReflector {
 			var status int64
@@ -212,12 +191,12 @@ type routeInnerRun struct {
 	frontRoots   *x509.CertPool
 	signalRoots  *x509.CertPool
 	tk           *TestKeys
-	budget       *routeBudget // the route's, shared by its inner targets
-	frontFailed  bool         // the failure, if any, was the front's (not the inner target's)
+	frontFailed  bool // the failure, if any, was the front's (not the inner target's)
 }
 
-// start creates the inner target's result, its budgets and trace, and dials the front within the
-// route's budget. connectCtx bounds the target's own upgrade or GET, as on a direct target.
+// start creates the inner target's result, its budgets and trace, and dials the front. As on a
+// direct target, connectCtx is the target's connect budget: the TCP and TLS to the front and, on
+// the reflectors, the tunnel upgrade and the inner handshake, then the upgrade or GET.
 func (in *routeInnerRun) start(ctx context.Context, target Target, hello Hello, front string) (
 	res *TargetResult, tctx, connectCtx context.Context, cancel func(), trace *measurexlite.Trace, tr *tlsResult) {
 	res = &TargetResult{Name: target.Name, Hostname: target.Hostname, ClientHello: hello.Name, Method: target.Method,
@@ -227,9 +206,7 @@ func (in *routeInnerRun) start(ctx context.Context, target Target, hello Hello, 
 	cancel = func() { cancelC(); cancelT() }
 	trace = measurexlite.NewTrace(in.index, in.zero, in.tags...)
 	var err error
-	dialCtx, done := in.budget.phase(tctx)
-	tr, err = dialTLS(dialCtx, trace, in.logger, in.zero, in.frontAddress, front, hello, in.frontRoots, in.tags...)
-	done()
+	tr, err = dialTLS(connectCtx, trace, in.logger, in.zero, in.frontAddress, front, hello, in.frontRoots, in.tags...)
 	in.tk.TCPConnect = append(in.tk.TCPConnect, trace.TCPConnects()...)
 	if tr != nil && tr.handshake != nil {
 		in.tk.TLSHandshakes = append(in.tk.TLSHandshakes, tr.handshake)
@@ -272,9 +249,7 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 	if in.m.config.UserAgent != "" {
 		tunnelUA = in.m.config.UserAgent
 	}
-	upCtx, done := in.budget.phase(tctx)
-	up, err := tunnelUpgrade(upCtx, tr.conn, hostHeader, target.Hostname, tunnelUA)
-	done()
+	up, err := tunnelUpgrade(connectCtx, tr.conn, hostHeader, target.Hostname, tunnelUA)
 	var status int64
 	if up != nil {
 		status = int64(up.status)
@@ -286,9 +261,7 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 		return res, status
 	}
 	tunnel := newTunnelConn(up, tr.conn)
-	hsCtx, done := in.budget.phase(tctx)
-	itr, err := handshakeTLS(hsCtx, trace, in.zero, tunnel, "", target.Hostname, target.Hello, in.signalRoots, in.tags...)
-	done()
+	itr, err := handshakeTLS(connectCtx, trace, in.zero, tunnel, "", target.Hostname, target.Hello, in.signalRoots, in.tags...)
 	if itr != nil && itr.handshake != nil {
 		in.tk.TLSHandshakes = append(in.tk.TLSHandshakes, itr.handshake)
 	}

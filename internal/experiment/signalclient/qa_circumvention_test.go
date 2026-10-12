@@ -385,29 +385,25 @@ func TestQACircumventionFrontDoesNotResolve(t *testing.T) {
 	}
 }
 
-// A route's connect budget is shared by its connections: once a blackholed front has used it,
-// the second tunnel fails at once instead of waiting a budget of its own.
-func TestQACircumventionConnectBudgetIsPerRoute(t *testing.T) {
-	defer func(d time.Duration) { routeConnectBudget = d }(routeConnectBudget)
-	routeConnectBudget = 2 * time.Second
+// Each target of a route has its own connect budget, as a direct target does: a blackholed
+// front costs each of a reflector route's tunnels one budget, and no more.
+func TestQACircumventionConnectBudgetIsPerTarget(t *testing.T) {
+	defer func(d time.Duration) { connectBudget = d }(connectBudget)
+	connectBudget = 2 * time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "pinterest.com"})
 	tk, _ := runQAWith(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff,
 		Fronts: "reflector_f=reflector-signal.global.ssl.fastly.net@pinterest.com"})
 	r := byRoute(tk)[RouteReflectorF]
-	inner := innerByName(r)
-	chat, cdsi := inner["chat_libsignal"], inner["cdsi"]
-	if chat.FailedOperation != "tls_handshake" || deref(chat.Failure) != "generic_timeout_error" {
-		t.Errorf("chat_libsignal: %q %q", chat.FailedOperation, deref(chat.Failure))
+	for _, inner := range r.Targets {
+		took := inner.T - inner.T0
+		if inner.FailedOperation != "tls_handshake" || deref(inner.Failure) != "generic_timeout_error" ||
+			took < connectBudget.Seconds()-0.5 || took > connectBudget.Seconds()+1 {
+			t.Errorf("%s: %q %q after %.2f s", inner.Name, inner.FailedOperation, deref(inner.Failure), took)
+		}
 	}
-	if deref(cdsi.Failure) != "generic_timeout_error" || cdsi.T-cdsi.T0 > 0.5 {
-		t.Errorf("cdsi: %q %q after %.2f s", cdsi.FailedOperation, deref(cdsi.Failure), cdsi.T-cdsi.T0)
-	}
-	if took := r.T - r.T0; took > routeConnectBudget.Seconds()+1 {
-		t.Errorf("route took %.1f s with a %v budget", took, routeConnectBudget)
-	}
-	if r.FailedOperation != "tls_handshake" {
-		t.Errorf("route: %q %q", r.FailedOperation, deref(r.Failure))
+	if len(r.Targets) != 2 || r.FailedOperation != "tls_handshake" {
+		t.Errorf("route: %d targets, %q %q", len(r.Targets), r.FailedOperation, deref(r.Failure))
 	}
 }

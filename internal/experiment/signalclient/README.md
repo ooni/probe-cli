@@ -65,9 +65,10 @@ The test is not enabled by default: set `OONI_FORCE_ENABLE_EXPERIMENT=1` to run 
   - Android storage: its REST hello, which offers `h2,http/1.1`.
 
   On `android_g`, the Android hellos are limited to TLS 1.2 (named `-tls12`).
-- **Route connect budget:** one 30 s budget per route covers its front's DNS, the TCP and TLS of
-  each connection to the front, and, on the reflectors, each tunnel upgrade and inner handshake.
-  The inner targets' upgrade, GET and provisioning steps keep their usual limits.
+- **Connect budget through a route:** each target reached through a route has its own 30 s
+  connect budget, as a direct target does. It covers the TCP and TLS to the front, on the
+  reflectors the tunnel upgrade and the inner handshake, and then the upgrade or GET. The front's
+  DNS lookup has its own 30 s, and the provisioning steps keep their usual limits.
 - **Route `host_header`, `front` and `front_client_hello`** describe the route's first
   connection. `tls_handshakes` records each connection's SNI.
 - **The User-Agent on the reflector tunnel's upgrade** identifies the test, as the targets' does.
