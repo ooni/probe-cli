@@ -22,7 +22,7 @@ pkg=$(raw Signal-Desktop/main/package.json)
 electron=$(python3 -I -c 'import json,sys; p=json.load(sys.stdin); print((p.get("devDependencies") or {}).get("electron") or p["dependencies"]["electron"])' <<<"$pkg")
 desktop_version=$(python3 -I -c 'import json,sys; print(json.load(sys.stdin)["version"])' <<<"$pkg")
 # The apps pin libsignal separately and not always to the same version: LIBSIGNAL_TAG follows
-# Signal-iOS; report the other pins so a difference is noticed (each would need its own capture).
+# Signal-iOS, LIBSIGNAL_DESKTOP_TAG Signal-Desktop; report the other pins so a difference is noticed.
 desktop_libsignal=$(python3 -I -c 'import json,sys; print(json.load(sys.stdin)["dependencies"]["@signalapp/libsignal-client"])' <<<"$pkg")
 catalog=$(raw Signal-Android/main/gradle/libs.versions.toml)  # read whole: grep -m1 on a pipe makes curl fail
 android_libsignal=$(grep -m1 -E '^libsignal-client *=' <<<"$catalog" | sed -E 's/.*"([^"]+)".*/\1/')
@@ -33,6 +33,7 @@ done
 # %q: the output is eval'ed on the host, and the values come from the network.
 printf '%s=%q\n' \
   LIBSIGNAL_TAG "${LIBSIGNAL_TAG:-$libsignal}" \
+  LIBSIGNAL_DESKTOP_TAG "${LIBSIGNAL_DESKTOP_TAG:-v$desktop_libsignal}" \
   OKHTTP_VERSION "${OKHTTP_VERSION:-$okhttp}" \
   OKIO_VERSION "${OKIO_VERSION:-$(dep okio-jvm)}" \
   KOTLIN_VERSION "${KOTLIN_VERSION:-$(dep kotlin-stdlib)}" \

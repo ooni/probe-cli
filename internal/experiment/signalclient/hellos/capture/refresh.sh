@@ -7,7 +7,7 @@
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 eval "$("$HERE/versions.sh")"
-export LIBSIGNAL_TAG OKHTTP_VERSION OKIO_VERSION KOTLIN_VERSION CONSCRYPT_VERSION ELECTRON_VERSION
+export LIBSIGNAL_TAG LIBSIGNAL_DESKTOP_TAG OKHTTP_VERSION OKIO_VERSION KOTLIN_VERSION CONSCRYPT_VERSION ELECTRON_VERSION
 "$HERE/versions.sh"
 for c in ${@:-libsignal android desktop}; do
   echo "== $c"; "$HERE/$c.sh"

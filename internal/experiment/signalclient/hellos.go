@@ -89,8 +89,8 @@ type Hello struct {
 var (
 	// HelloLibsignal is libsignal 0.105.0's direct-route hello, the version Signal-Android and
 	// Signal-iOS pin (chat on both, provisioning on iOS): TLS 1.3 only, groups x25519, P-256 and
-	// P-384 with an x25519 key share, Ed25519 first, ALPN h2. Signal-Desktop pinned libsignal
-	// 0.103.0 when this was captured; its hello was not captured separately.
+	// P-384 with an x25519 key share, Ed25519 first, ALPN h2. Signal-Desktop's libsignal 0.103.0
+	// sends the same hello (captured separately on 2026-10-12).
 	HelloLibsignal = Hello{Name: "libsignal-0.105.0", raw: rawHelloLibsignal, libsignal: true,
 		appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
 
