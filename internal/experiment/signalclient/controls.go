@@ -36,21 +36,21 @@ const (
 // ControlResult is the outcome of one control. DNS kinds fill resolver and addresses; handshake
 // kinds fill the address, SNI, hello and TLS fields.
 type ControlResult struct {
-	Kind            string   `json:"kind"`
-	Resolver        string   `json:"resolver,omitempty"`
+	Kind            string    `json:"kind"`
+	Resolver        string    `json:"resolver,omitempty"`
 	Addresses       *[]string `json:"addresses,omitempty"` // DNS kinds: always present, possibly empty
-	Address         string   `json:"address,omitempty"`
-	AddressSource   string   `json:"address_source,omitempty"`
-	SNI             string   `json:"sni,omitempty"`
-	ClientHello     string   `json:"client_hello,omitempty"`
-	Verified        *bool    `json:"verified,omitempty"`
-	LeafKeyType     string   `json:"leaf_key_type,omitempty"`
-	Status          *int64   `json:"status,omitempty"`
-	SignalTimestamp *bool    `json:"x_signal_timestamp,omitempty"`
-	Failure         *string  `json:"failure"`
-	FailedOperation string   `json:"failed_operation,omitempty"`
-	T0              float64  `json:"t0"`
-	T               float64  `json:"t"`
+	Address         string    `json:"address,omitempty"`
+	AddressSource   string    `json:"address_source,omitempty"`
+	SNI             string    `json:"sni,omitempty"`
+	ClientHello     string    `json:"client_hello,omitempty"`
+	Verified        *bool     `json:"verified,omitempty"`
+	LeafKeyType     string    `json:"leaf_key_type,omitempty"`
+	Status          *int64    `json:"status,omitempty"`
+	SignalTimestamp *bool     `json:"x_signal_timestamp,omitempty"`
+	Failure         *string   `json:"failure"`
+	FailedOperation string    `json:"failed_operation,omitempty"`
+	T0              float64   `json:"t0"`
+	T               float64   `json:"t"`
 }
 
 // Limits (variables so tests can shorten them).
