@@ -11,7 +11,7 @@ func TestConfigUserAgent(t *testing.T) {
 		{Config{}, HelloAndroidWebSocket, "ooniprobe-signal_client/" + testVersion + " (+https://ooni.org)"},
 		{Config{}, HelloLibsignal, "ooniprobe-signal_client/" + testVersion + " (+https://ooni.org) libsignal/0.105.0"},
 		{Config{}, HelloLibsignalEnclave, "ooniprobe-signal_client/" + testVersion + " (+https://ooni.org) libsignal/0.105.0"},
-		{Config{AppUserAgent: true}, HelloLibsignal, "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"},
+		{Config{AppUserAgent: true}, HelloLibsignal, "Signal-Android/8.31.1 Android/34 libsignal/0.105.0"},
 		{Config{AppUserAgent: true}, HelloDesktop, "Signal-Desktop/8.33.0 Linux"},
 		{Config{UserAgent: "x", AppUserAgent: true}, HelloDesktop, "x"},
 	}

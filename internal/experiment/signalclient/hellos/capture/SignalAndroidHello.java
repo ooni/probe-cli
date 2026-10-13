@@ -1,7 +1,10 @@
 // Signal-Android's pre-account provisioning socket, rebuilt on the JVM from the app's own code paths
 // and library versions, to reproduce its network behaviour outside Android:
-//   - TLS provider: Conscrypt 2.6.2 inserted at position 2 (ApplicationContext.initializeSecurityProvider;
-//     the app bundles org.conscrypt:conscrypt-android:2.6.2, here the openjdk-uber build of the same version)
+//   - TLS provider: Conscrypt 2.6.2 inserted at position 2, after Signal's AesGcmProvider at 1
+//     (ApplicationContext.initializeSecurityProvider; the app bundles org.conscrypt:conscrypt-android:2.6.2,
+//     here the openjdk-uber build of the same version). android.sh sets CONSCRYPT_FIRST=1 instead, so that
+//     OkHttp's JVM build configures sockets as its Android build does (see android.sh); checked
+//     byte-identical against Android 14's own runtime, where this client also runs (hellos/README.md)
 //   - SSLContext "TLS", trust = Signal's RSA root only (whisper.store via BlacklistingTrustManager)
 //   - TLS 1.3 + 1.2 only (Tls12SocketFactory), OkHttp 5.3.2 with ConnectionSpec.RESTRICTED_TLS,
 //     30 s connect/read timeouts, no retries (SignalUrlExtensions.buildOkHttpClient)
@@ -71,6 +74,27 @@ public class SignalAndroidHello {
   }
   static long readVarint(byte[] b, int[] i) { long n = 0; int s = 0; while (true) { int x = b[i[0]++] & 0xFF; n |= (long) (x & 0x7F) << s; s += 7; if ((x & 0x80) == 0) return n; } }
 
+  // The system resolver, unless SIGNAL_RESOLVE ("host=ip,ip;host=ip") gives addresses: for running on
+  // Android's runtime without netd (hellos/README.md), where the system resolver has no DNS. The app
+  // resolves its own way too (SequentialDns); DNS is not part of the ClientHello.
+  static Dns dns(String resolve) {
+    if (resolve == null || resolve.isEmpty()) return Dns.SYSTEM;
+    Map<String, List<InetAddress>> table = new HashMap<>();
+    for (String entry : resolve.split(";")) {
+      String[] kv = entry.split("=", 2);
+      List<InetAddress> addrs = new ArrayList<>();
+      for (String ip : kv[1].split(",")) {
+        try { addrs.add(InetAddress.getByName(ip.trim())); } catch (UnknownHostException e) { throw new IllegalArgumentException(ip, e); }
+      }
+      table.put(kv[0].trim(), addrs);
+    }
+    return hostname -> {
+      List<InetAddress> addrs = table.get(hostname);
+      if (addrs == null) throw new UnknownHostException(hostname + " is not in SIGNAL_RESOLVE");
+      return addrs;
+    };
+  }
+
   // The fronts' ConnectionSpecs, as SignalServiceNetworkAccess.kt builds them.
   static ConnectionSpec connectionSpec(String name) {
     switch (name) {
@@ -96,7 +120,7 @@ public class SignalAndroidHello {
   }
 
   public static void main(String[] args) throws Exception {
-    String ua = "Signal-Android/8.29.3 Android/34"; int pad = 0;
+    String ua = "Signal-Android/8.31.1 Android/34"; int pad = 0;
     String spec = null, host = null, wsUrl = "wss://chat.signal.org/v1/websocket/provisioning/";
     for (int k = 0; k < args.length; k++) {
       if (args[k].equals("--ua")) ua = args[++k];
@@ -106,13 +130,28 @@ public class SignalAndroidHello {
       if (args[k].equals("--ws")) wsUrl = args[++k];
     }
 
-    int pos = Security.insertProviderAt(org.conscrypt.Conscrypt.newProvider(), 2);
+    // ApplicationContext.initializeSecurityProvider: AesGcmProvider at position 1, Conscrypt at 2.
+    // A stand-in takes position 1 (it offers no TLS), so Conscrypt ends up where the app puts it.
+    // CONSCRYPT_FIRST=1 (on the JVM): Conscrypt at position 1 instead, so that OkHttp's JVM build picks
+    // ConscryptPlatform, which configures sockets as its Android build does on a phone.
+    int pos;
+    if ("1".equals(System.getenv("CONSCRYPT_FIRST"))) {
+      pos = Security.insertProviderAt(org.conscrypt.Conscrypt.newProvider(), 1);
+    } else {
+      @SuppressWarnings("deprecation")
+      Provider aesGcmStandIn = new Provider("SignalAesGcmStandIn", 1.0, "stands in for Signal's AesGcmProvider") {};
+      Security.insertProviderAt(aesGcmStandIn, 1);
+      pos = Security.insertProviderAt(org.conscrypt.Conscrypt.newProvider(), 2);
+    }
     X509Certificate root = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(System.getenv().getOrDefault("SIGNAL_CA", "signal.cer")));
     KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType()); ks.load(null, null); ks.setCertificateEntry("signal", root);
     TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
     tmf.init(spec == null ? ks : null);  // a front: the JVM's default trust (see the header)
     SSLContext ctx = SSLContext.getInstance("TLS"); ctx.init(null, tmf.getTrustManagers(), null);
-    System.out.println(ms() + " Conscrypt at position " + pos + "; SSLContext provider: " + ctx.getProvider().getName() + " " + ctx.getProvider().getVersionStr());
+    System.out.println(ms() + " Conscrypt at position " + pos + "; SSLContext provider: " + ctx.getProvider().getName());
+    // OkHttp's platform decides how it configures each socket (session tickets, ALPN): Android's
+    // Android10Platform on a phone; on the JVM, ConscryptPlatform or Jdk9Platform by provider order.
+    System.out.println(ms() + " OkHttp platform: " + okhttp3.internal.platform.Platform.Companion.get().getClass().getName());
     // The capture is named after the versions android.sh asked for: refuse to run with any others.
     org.conscrypt.Conscrypt.Version cv = org.conscrypt.Conscrypt.version();
     String conscrypt = cv.major() + "." + cv.minor() + "." + cv.patch();
@@ -133,6 +172,7 @@ public class SignalAndroidHello {
         .addInterceptor(c -> c.proceed(c.request().newBuilder().header("User-Agent", agent).build()))  // StandardUserAgentInterceptor
         .addInterceptor(c -> hostHeader == null ? c.proceed(c.request())  // the relay's Host, as the fronted SignalUrls set it
             : c.proceed(c.request().newBuilder().header("Host", hostHeader).build()))
+        .dns(dns(System.getenv("SIGNAL_RESOLVE")))
         .build();
 
     for (int k = 0; k < args.length; k++) if (args[k].equals("--get")) {  // plain HTTPS GET (REST/CDN clients use the same builder)

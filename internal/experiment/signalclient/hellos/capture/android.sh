@@ -5,6 +5,12 @@
 # the same two through each of the app's domain-front configurations (../android-okhttp-front-*.bin).
 # The front captures go through Google's and Fastly's servers to Signal's relays, as the app does
 # with censorship circumvention on.
+#
+# Conscrypt is the first security provider here (CONSCRYPT_FIRST=1), not the second as in the app:
+# on the JVM, OkHttp configures sockets through ConscryptPlatform only when Conscrypt comes first,
+# and that is what makes it configure them as its Android build does on a phone (session tickets
+# on, then ALPN). With the app's order, OkHttp's JVM build sends no session_ticket extension, which
+# a phone does. check_okhttp.py stops the capture if OkHttp changes either code path.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}
@@ -24,17 +30,20 @@ fetch com/squareup/okhttp3/okhttp-jvm okhttp-jvm "$OKHTTP_VERSION"
 fetch com/squareup/okio/okio-jvm okio-jvm "$OKIO_VERSION"
 fetch org/jetbrains/kotlin/kotlin-stdlib kotlin-stdlib "$KOTLIN_VERSION"
 fetch org/conscrypt/conscrypt-openjdk-uber conscrypt-openjdk-uber "$CONSCRYPT_VERSION"
+python3 -I "$HERE/check_okhttp.py" "$OKHTTP_VERSION" "$WORK/android"
 
 run() {  # name args...: run the client once under a pasta capture
   local pcap="$WORK/android/$1.pcap" log="$WORK/android/$1.log" rc=0; shift; rm -f "$pcap"
   # The client exits non-zero if the OkHttp or Conscrypt it loaded is not the version asked for.
   "$CTR" run --rm --network "pasta:--pcap,$pcap" -v "$HERE:/src:ro,Z" -v "$WORK/android:/w:Z" \
     -v "$HELLOS/signal.cer:/w/signal.cer:ro,Z" -w /w \
-    -e EXPECT_OKHTTP="$OKHTTP_VERSION" -e EXPECT_CONSCRYPT="$CONSCRYPT_VERSION" \
+    -e EXPECT_OKHTTP="$OKHTTP_VERSION" -e EXPECT_CONSCRYPT="$CONSCRYPT_VERSION" -e CONSCRYPT_FIRST=1 \
     docker.io/library/eclipse-temurin:21-jdk \
     java -cp "/w/$LIB/*" /src/SignalAndroidHello.java "$@" >"$log" 2>&1 || rc=$?
   grep -v '^WARNING' "$log" || true
   [ "$rc" = 0 ] || { echo "android.sh: the client exited with status $rc" >&2; exit 1; }
+  grep -q 'OkHttp platform: okhttp3.internal.platform.ConscryptPlatform' "$log" ||
+    { echo "android.sh: OkHttp did not use ConscryptPlatform (see the header)" >&2; exit 1; }
   chmod 644 "$pcap"
 }
 run websocket                               # provisioning socket on chat.signal.org

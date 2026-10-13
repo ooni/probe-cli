@@ -1,0 +1,5 @@
+# OkHttp 5.3.2: verified against Android 14's runtime (hellos/README.md)
+okhttp-android androidMain/okhttp3/internal/platform/android/ConscryptSocketAdapter.kt
+override fun configureTlsExtensions( sslSocket: SSLSocket, hostname: String?, protocols: List<Protocol>, ) { // No TLS extensions if the socket class is custom. if (matchesSocket(sslSocket)) { // Enable session tickets. Conscrypt.setUseSessionTickets(sslSocket, true) // Enable ALPN. val names = Platform.alpnProtocolNames(protocols) Conscrypt.setApplicationProtocols(sslSocket, names.toTypedArray()) } }
+okhttp-jvm jvmMain/okhttp3/internal/platform/ConscryptPlatform.kt
+override fun configureTlsExtensions( sslSocket: SSLSocket, hostname: String?, protocols: List<@JvmSuppressWildcards Protocol>, ) { if (Conscrypt.isConscrypt(sslSocket)) { // Enable session tickets. Conscrypt.setUseSessionTickets(sslSocket, true) // Enable ALPN. val names = alpnProtocolNames(protocols) Conscrypt.setApplicationProtocols(sslSocket, names.toTypedArray()) } else { super.configureTlsExtensions(sslSocket, hostname, protocols) } }

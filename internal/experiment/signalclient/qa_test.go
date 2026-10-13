@@ -621,8 +621,8 @@ func TestQAAppUserAgent(t *testing.T) {
 		}
 	}
 	for name, want := range map[string]string{
-		"chat_libsignal":   "Signal-Android/8.29.3 Android/34 libsignal/0.105.0",
-		"chat_android":     "Signal-Android/8.29.3 Android/34",
+		"chat_libsignal":   "Signal-Android/8.31.1 Android/34 libsignal/0.105.0",
+		"chat_android":     "Signal-Android/8.31.1 Android/34",
 		"updates2_desktop": "Signal-Desktop/8.33.0 Linux",
 	} {
 		if got := byName[name].UserAgent; got != want {

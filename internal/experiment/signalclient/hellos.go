@@ -92,27 +92,27 @@ var (
 	// P-384 with an x25519 key share, Ed25519 first, ALPN h2. Signal-Desktop's libsignal 0.103.0
 	// sends the same hello (captured separately on 2026-10-12).
 	HelloLibsignal = Hello{Name: "libsignal-0.105.0", raw: rawHelloLibsignal, libsignal: true,
-		appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
+		appUserAgent: "Signal-Android/8.31.1 Android/34 libsignal/0.105.0"}
 
 	// HelloLibsignalEnclave is the same hello with ALPN http/1.1, which libsignal uses for the
 	// CDSI, SVR2 and SVR-B enclaves (same ssl_config, alpn parameter differs; net/src/env.rs).
 	HelloLibsignalEnclave = Hello{Name: "libsignal-0.105.0-enclave", raw: rawHelloLibsignal, alpn: []string{"http/1.1"},
-		libsignal: true, appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
+		libsignal: true, appUserAgent: "Signal-Android/8.31.1 Android/34 libsignal/0.105.0"}
 
 	// HelloLibsignalReflector is libsignal 0.105.0's hello to a front on the reflector routes
 	// (proxyf, proxyg), the same on all eight fronts: TLS 1.2 and 1.3, ALPN http/1.1, padded to
 	// 512 bytes. Inside the tunnel, libsignal sends its usual hello to the target.
 	HelloLibsignalReflector = Hello{Name: "libsignal-0.105.0-reflector", raw: rawHelloLibsignalReflector, libsignal: true,
-		appUserAgent: "Signal-Android/8.29.3 Android/34 libsignal/0.105.0"}
+		appUserAgent: "Signal-Android/8.31.1 Android/34 libsignal/0.105.0"}
 
-	// HelloAndroidWebSocket is Signal-Android 8.29.3's OkHttp 5.3.2 + Conscrypt 2.6.2 hello for
-	// WebSockets (provisioning): ALPN http/1.1, X25519MLKEM768 key share (1473 bytes).
+	// HelloAndroidWebSocket is Signal-Android 8.31.1's OkHttp 5.3.2 + Conscrypt 2.6.2 hello for
+	// WebSockets (provisioning): ALPN http/1.1, session tickets, X25519MLKEM768 key share (1477 bytes).
 	HelloAndroidWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-websocket", raw: rawHelloAndroidWebSocket,
-		appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		appUserAgent: "Signal-Android/8.31.1 Android/34"}
 
 	// HelloAndroidREST is the same client's hello for HTTPS (storage, CDNs): ALPN h2,http/1.1.
 	HelloAndroidREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2", raw: rawHelloAndroidREST,
-		appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		appUserAgent: "Signal-Android/8.31.1 Android/34"}
 
 	// Signal-Android's hellos to its own domain fronts (SignalServiceNetworkAccess.kt), the same
 	// client with each front's ConnectionSpec, for WebSockets (provisioning) and HTTPS (storage):
@@ -122,17 +122,17 @@ var (
 	//   - Maps: GMAPS_CONNECTION_SPEC, for clients3 and clients4.google.com: TLS 1.2 only, 14 suites;
 	//   - Modern: ConnectionSpec.MODERN_TLS, for the Fastly fronts: TLS 1.2 and 1.3, X25519MLKEM768.
 	HelloAndroidGmailWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmail-websocket",
-		raw: rawHelloAndroidGmailWebSocket, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		raw: rawHelloAndroidGmailWebSocket, appUserAgent: "Signal-Android/8.31.1 Android/34"}
 	HelloAndroidGmailREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmail",
-		raw: rawHelloAndroidGmailREST, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		raw: rawHelloAndroidGmailREST, appUserAgent: "Signal-Android/8.31.1 Android/34"}
 	HelloAndroidGmapsWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmaps-websocket",
-		raw: rawHelloAndroidGmapsWebSocket, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		raw: rawHelloAndroidGmapsWebSocket, appUserAgent: "Signal-Android/8.31.1 Android/34"}
 	HelloAndroidGmapsREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-gmaps",
-		raw: rawHelloAndroidGmapsREST, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		raw: rawHelloAndroidGmapsREST, appUserAgent: "Signal-Android/8.31.1 Android/34"}
 	HelloAndroidModernWebSocket = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-modern-websocket",
-		raw: rawHelloAndroidModernWebSocket, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		raw: rawHelloAndroidModernWebSocket, appUserAgent: "Signal-Android/8.31.1 Android/34"}
 	HelloAndroidModernREST = Hello{Name: "android-okhttp-5.3.2-conscrypt-2.6.2-modern",
-		raw: rawHelloAndroidModernREST, appUserAgent: "Signal-Android/8.29.3 Android/34"}
+		raw: rawHelloAndroidModernREST, appUserAgent: "Signal-Android/8.31.1 Android/34"}
 
 	// HelloDesktop is Signal-Desktop's own fetches (updater, WebAPI's agent) through Electron
 	// 44.4.5's Node and BoringSSL: no ALPN, X25519MLKEM768 + x25519 key shares (1475 bytes).
