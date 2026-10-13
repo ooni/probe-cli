@@ -1,188 +1,19 @@
 package signalclient
 
 //
-// Simulated domain fronts and QA scenarios for the circumvention routes.
+// QA scenarios for the circumvention routes, through the fronts of qa_servers_test.go.
 //
 
 import (
-	"bufio"
-	"context"
-	"crypto/tls"
-	"encoding/binary"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net"
-	"net/http"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-// qaFrontFactory is a CDN front: libsignal's reflector tunnel (/tls-tunnel with X-Signal-Host)
-// and Signal-Android's fronted requests (Host header and path prefix), relayed to the fake
-// Signal servers.
-type qaFrontFactory struct {
-	t        *testing.T
-	names    []string
-	behavior qaBehavior
-}
-
-var _ netemx.NetStackServerFactory = &qaFrontFactory{}
-
-func (f *qaFrontFactory) MustNewServer(_ netemx.NetStackServerFactoryEnv, stack *netem.UNetStack) netemx.NetStackServer {
-	return &qaFront{factory: f, stack: stack}
-}
-
-type qaFront struct {
-	factory  *qaFrontFactory
-	stack    *netem.UNetStack
-	mu       sync.Mutex
-	listener net.Listener
-}
-
-func (s *qaFront) MustStart() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	ln := runtimex.Try1(s.stack.ListenTCP("tcp", &net.TCPAddr{IP: net.ParseIP(s.stack.IPAddress()), Port: 443}))
-	config := s.stack.MustNewServerTLSConfig(s.factory.names[0], s.factory.names[1:]...)
-	config.NextProtos = []string{"http/1.1"}
-	s.listener = tls.NewListener(ln, config)
-	go func() {
-		for {
-			conn, err := s.listener.Accept()
-			if err != nil {
-				return
-			}
-			go s.serve(conn)
-		}
-	}()
-}
-
-func (s *qaFront) Close() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.listener != nil {
-		s.listener.Close()
-	}
-	return nil
-}
-
-// frontedServices maps a front's Host header (and path prefix) to the Signal host it reaches.
-var frontedServices = map[string]string{
-	"chat-signal.global.ssl.fastly.net":         "chat.signal.org",
-	"storage.signal.org.global.prod.fastly.net": "storage.signal.org",
-	googleReflectorHost + " /service":           "chat.signal.org",
-	googleReflectorHost + " /storage":           "storage.signal.org",
-}
-
-var reflectorHosts = map[string]bool{"reflector-signal.global.ssl.fastly.net": true, googleReflectorHost: true}
-
-func (s *qaFront) serve(conn net.Conn) {
-	defer conn.Close()
-	br := bufio.NewReader(conn)
-	req, err := http.ReadRequest(br)
-	if err != nil {
-		return
-	}
-	b := s.factory.behavior
-	if strings.EqualFold(req.Header.Get("Upgrade"), "websocket") && req.URL.Path == reflectorPath && reflectorHosts[req.Host] {
-		qaSeenUserAgents.add(req.UserAgent(), "tunnel:"+req.Host)
-		upstream, ok := qaUpstreams[req.Header.Get("X-Signal-Host")]
-		if b.refuseUpgrade || !ok {
-			fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-			return
-		}
-		up, err := s.stack.DialContext(context.Background(), "tcp", net.JoinHostPort(upstream, "443"))
-		if err != nil {
-			fmt.Fprintf(conn, "HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-			return
-		}
-		defer up.Close()
-		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
-			"Sec-WebSocket-Accept: %s\r\n\r\n", websocketAccept(req.Header.Get("Sec-WebSocket-Key")))
-		qaRelay(br, conn, up)
-		return
-	}
-	// Signal-Android's fronted requests
-	host := frontedServices[req.Host]
-	if host == "" {
-		for _, prefix := range []string{"/service", "/storage"} {
-			if strings.HasPrefix(req.URL.Path, prefix+"/") {
-				host = frontedServices[req.Host+" "+prefix]
-				req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
-			}
-		}
-	}
-	if host == "" {
-		fmt.Fprintf(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-		return
-	}
-	req.Host = host
-	signal := &qaSignalServer{factory: &qaSignalServerFactory{t: s.factory.t, names: []string{host}, behavior: b,
-		uas: qaSeenUserAgents}}
-	signal.serveH1Request(conn, br, req)
-}
-
-// qaRelay carries a reflector tunnel: the client's (masked) binary frames to up as bytes, and
-// up's bytes back as unmasked binary frames.
-func qaRelay(br *bufio.Reader, conn net.Conn, up net.Conn) {
-	done := make(chan struct{}, 2)
-	go func() {
-		defer func() { done <- struct{}{} }()
-		ws := &wsConn{r: br}
-		for {
-			op, payload, err := ws.readFrame()
-			if err != nil || op == opClose {
-				up.Close()
-				return
-			}
-			if op == opBinary {
-				if _, err := up.Write(payload); err != nil {
-					return
-				}
-			}
-		}
-	}()
-	go func() {
-		defer func() { done <- struct{}{} }()
-		buf := make([]byte, 70000) // more than a frame, to exercise the 64 KiB split on the way back
-		for {
-			n, err := up.Read(buf)
-			if n > 0 {
-				if err := qaWriteServerFrame(conn, opBinary, buf[:n]); err != nil {
-					return
-				}
-			}
-			if err != nil {
-				conn.Close()
-				return
-			}
-		}
-	}()
-	<-done
-}
-
-// qaWriteServerFrame writes an unmasked frame, as servers do.
-func qaWriteServerFrame(w io.Writer, op byte, p []byte) error {
-	hdr := []byte{0x80 | op}
-	switch n := len(p); {
-	case n < 126:
-		hdr = append(hdr, byte(n))
-	case n < 65536:
-		hdr = binary.BigEndian.AppendUint16(append(hdr, 126), uint16(n))
-	default:
-		hdr = binary.BigEndian.AppendUint64(append(hdr, 127), uint64(n))
-	}
-	_, err := w.Write(append(hdr, p...))
-	return err
-}
 
 // byRoute indexes the circumvention results.
 func byRoute(tk *TestKeys) map[string]*RouteResult {
@@ -333,7 +164,7 @@ func TestQACircumventionTunnelRefused(t *testing.T) {
 func TestQACircumventionInnerTLSIsVerified(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	other := mustSelfSignedPEM(t)
+	other := otherRoot(t)
 	tk, _ := runQA(t, env, Config{Circumvention: RouteReflectorG, Controls: ControlsOff, SignalCA: other})
 	r := byRoute(tk)[RouteReflectorG]
 	if r.Failure != nil || r.TunnelStatus == nil || *r.TunnelStatus != 101 {
@@ -428,7 +259,7 @@ func TestQACircumventionTunnelUserAgent(t *testing.T) {
 	} {
 		env := newQAEnv(t, nil)
 		runQA(t, env, c.config)
-		seen := qaSeenUserAgents.seen()
+		seen := env.uas.seen()
 		env.Close()
 		if hosts := seen[c.want]; !contains(hosts, "tunnel:reflector-signal.global.ssl.fastly.net") {
 			t.Errorf("AppUserAgent=%v: tunnel upgrade not sent with %q (saw %v)", c.config.AppUserAgent, c.want, seen)

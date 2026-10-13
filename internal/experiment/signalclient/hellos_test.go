@@ -1,13 +1,16 @@
 package signalclient
 
 import (
-	"crypto/x509"
-	"fmt"
+	"context"
+	"crypto/tls"
 	"io"
 	"net"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	utls "github.com/refraction-networking/utls"
 )
 
@@ -171,30 +174,6 @@ func TestFrontHello(t *testing.T) {
 	}
 }
 
-func TestSignalRoots(t *testing.T) {
-	certs, err := signalRoots()
-	if err != nil {
-		t.Fatal(err)
-	}
-	anchors := newTrustAnchors(certs)
-	pool := anchors.pool
-	// the fingerprints the spec lists (ts-041 Trust)
-	want := []string{"ddb0f92bb95c8d6fd202ea6e8cc5ccd182b544f8cd696f47d580659ddc9df65a",
-		"2642f1f90b389fed2558d7324ca26d70e750b06f87c595c5de955e2560821657"}
-	if fmt.Sprint(anchors.sha256) != fmt.Sprint(want) {
-		t.Errorf("signal_roots %v, want %v", anchors.sha256, want)
-	}
-	for _, der := range [][]byte{signalRSARootDER, signalEd25519RootDER} {
-		cert, err := x509.ParseCertificate(der)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := cert.Verify(x509.VerifyOptions{Roots: pool}); err != nil {
-			t.Fatalf("%s does not verify against the pool: %v", cert.Subject, err)
-		}
-	}
-}
-
 // sentHello runs a real handshake with h and returns the ClientHello bytes actually written to
 // the connection (the first handshake message), not uTLS's pre-built copy.
 func sentHello(t *testing.T, h Hello) []byte {
@@ -247,4 +226,80 @@ func TestHandshakeSendsTheCapturedHellos(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Signal-Android's Google-front hellos offer only TLS 1.2; the controls' hellos negotiate
+// what their names say.
+func TestHelloVersions(t *testing.T) {
+	for _, h := range []Hello{HelloAndroidGmailWebSocket, HelloAndroidGmailREST, HelloAndroidGmapsWebSocket, HelloAndroidGmapsREST} {
+		if v := handshakeVersion(t, h); v != tls.VersionTLS12 {
+			t.Errorf("%s negotiated %#x", h.Name, v)
+		}
+	}
+	for _, h := range []Hello{HelloLibsignalReflector, HelloAndroidModernWebSocket, HelloAndroidModernREST} {
+		if v := handshakeVersion(t, h); v != tls.VersionTLS13 {
+			t.Errorf("%s negotiated %#x", h.Name, v)
+		}
+	}
+	if v := handshakeVersion(t, HelloChrome); v != tls.VersionTLS13 {
+		t.Errorf("chrome negotiated %#x", v)
+	}
+	if v := handshakeVersion(t, helloStdlibTLS12(HelloLibsignal)); v != tls.VersionTLS12 {
+		t.Errorf("stdlib negotiated %#x", v)
+	}
+	if got := helloStdlibTLS12(HelloLibsignal).ALPN(); strings.Join(got, ",") != "h2" {
+		t.Errorf("stdlib ALPN %v", got)
+	}
+	if a, b := helloStdlibTLS12(HelloAndroidREST).Name, helloStdlibTLS12(HelloDesktop).Name; a != "go-crypto-tls-1.2+h2,http/1.1" ||
+		b != "go-crypto-tls-1.2" {
+		t.Errorf("stdlib names %q %q", a, b)
+	}
+	if !strings.HasPrefix(HelloChrome.Name, "utls-chrome-") {
+		t.Errorf("chrome name %s", HelloChrome.Name)
+	}
+}
+
+// handshakeVersion runs h against a local Go TLS server (unverified) and returns the version.
+func handshakeVersion(t *testing.T, h Hello) uint16 {
+	t.Helper()
+	certPEM, keyPEM := mustSelfSigned(t)
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// a loopback socket, not net.Pipe: TLS 1.3 flights that both sides write at once would block
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go func() {
+		server, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer server.Close()
+		s := tls.Server(server, &tls.Config{Certificates: []tls.Certificate{cert}, NextProtos: []string{"h2", "http/1.1"}})
+		_ = s.Handshake()
+		_, _ = s.Read(make([]byte, 1)) // until the client closes
+	}()
+	client, err := net.Dial("tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tr, err := handshakeTLS(ctx, measurexlite.NewTrace(0, time.Now()), client, "pipe", "example.com", h, nil)
+	if err != nil {
+		t.Fatalf("%s: %v", h.Name, err)
+	}
+	defer tr.conn.Close()
+	switch tr.handshake.TLSVersion {
+	case "TLSv1.2":
+		return tls.VersionTLS12
+	case "TLSv1.3":
+		return tls.VersionTLS13
+	}
+	t.Fatalf("version %s", tr.handshake.TLSVersion)
+	return 0
 }

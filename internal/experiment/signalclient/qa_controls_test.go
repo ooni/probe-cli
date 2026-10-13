@@ -6,16 +6,10 @@ package signalclient
 //
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/sha256"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"math/big"
 	"strings"
 	"testing"
 	"time"
@@ -184,7 +178,7 @@ func TestQAControlsFingerprintBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: qaChatAddr, ServerPort: 443,
-		String: "\x11\xec\x00\x1d"})
+		String: qaHybridThenX25519})
 	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
 	expectFailure(t, r, "tls_handshake", "connection_reset")
@@ -200,8 +194,6 @@ func TestQAControlsFingerprintBlocking(t *testing.T) {
 	}
 }
 
-// Interference after the handshake (a 403 to the upgrade): the TLS controls run, but not
-// browser_hello and tls12, which only follow a TLS failure.
 // A refused upgrade is the server's answer (TLS is verified against Signal's roots): no controls
 // run, and the refusal is recorded, scrubbed of IP addresses.
 func TestQAControlsNotAfterUpgradeRefused(t *testing.T) {
@@ -305,23 +297,6 @@ func TestQAControlsCutByTheClock(t *testing.T) {
 	}
 }
 
-// mustSelfSignedPEM returns a PEM certificate unrelated to the simulated network's CA.
-func mustSelfSignedPEM(t *testing.T) string {
-	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tmpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "other root"},
-		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour), IsCA: true,
-		BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
-}
-
 // SignalCA replaces the roots: with the network's CA everything verifies and signal_roots says
 // which root was used; with another root, Signal's hosts fail verification.
 func TestQASignalCA(t *testing.T) {
@@ -335,7 +310,7 @@ func TestQASignalCA(t *testing.T) {
 		t.Errorf("signal_roots %v", tk.SignalRoots)
 	}
 
-	tk, byName = runQA(t, env, Config{SignalCA: mustSelfSignedPEM(t), Controls: ControlsOff})
+	tk, byName = runQA(t, env, Config{SignalCA: otherRoot(t), Controls: ControlsOff})
 	for _, name := range allTargets {
 		expectFailure(t, byName[name], "tls_handshake", "ssl_unknown_authority")
 	}
@@ -367,7 +342,7 @@ func TestQAControlsUseSignalCA(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	_, byName := runQA(t, env, Config{SignalCA: mustSelfSignedPEM(t)})
+	_, byName := runQA(t, env, Config{SignalCA: otherRoot(t)})
 	c := controlsOf(byName["chat_android"]) // its target failed verification: tls_handshake
 	if s := c[ControlStatic][0]; deref(s.Failure) != "ssl_unknown_authority" {
 		t.Errorf("static_address: %q", deref(s.Failure))
