@@ -7,7 +7,7 @@
 # Rootless podman, Xvfb; the app connects to Signal's production servers, as a new install does.
 # Writes $WORK/desktop-profile/runs/<time>/: capture.pcap, keys.log (Chromium's TLS keys),
 # the app's logs (home/.config/Signal/logs) and screenshots (they show a QR code; do not share).
-# Then: python3 -I analyze.py runs/<time>/capture.pcap [--records]
+# Then: ../../../gotool.sh hellotool analyze [-records] runs/<time>/capture.pcap
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}

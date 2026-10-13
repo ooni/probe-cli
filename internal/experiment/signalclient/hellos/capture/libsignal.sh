@@ -18,6 +18,7 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}; mkdir -p "$WORK/libsignal/cargo"
 CTR=${CONTAINER:-podman}
+HELLOTOOL=$("$HELLOS/../gotool.sh" --path hellotool)  # built from this checkout
 : "${LIBSIGNAL_TAG:?run: eval \"\$(./versions.sh)\"}"
 
 build() {  # tag: clone and build chat_smoke_test at tag (network allowed: cargo fetches crates)
@@ -41,7 +42,7 @@ smoke() {  # tag pcap args...: run chat_smoke_test at tag once against productio
 direct() {  # tag out.bin
   build "$1"
   smoke "$1" "$WORK/libsignal/direct-$1.pcap" --limit-to-routes direct
-  python3 -I "$HERE/extract_hello.py" "$WORK/libsignal/direct-$1.pcap" grpc.chat.signal.org "$2"
+  "$HELLOTOOL" extract "$WORK/libsignal/direct-$1.pcap" grpc.chat.signal.org "$2"
 }
 
 # The reflector routes: --try-all-routes connects through each front of the route in turn. The fronts
@@ -57,11 +58,11 @@ reflector() {  # tag out.bin
     smoke "$1" "$pcap" --limit-to-routes "$route" --try-all-routes
     eval "fronts=\$fronts_$route"
     for sni in $fronts; do
-      python3 -I "$HERE/extract_hello.py" "$pcap" "$sni" "$WORK/libsignal/reflector-$1-$sni.bin"
+      "$HELLOTOOL" extract "$pcap" "$sni" "$WORK/libsignal/reflector-$1-$sni.bin"
       bins+=("$WORK/libsignal/reflector-$1-$sni.bin")
     done
   done
-  python3 -I "$HERE/same_hello.py" "${bins[@]}"
+  "$HELLOTOOL" same "${bins[@]}"
   cp "${bins[0]}" "$2"
 }
 

@@ -6,6 +6,7 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}; mkdir -p "$WORK/desktop"
 CTR=${CONTAINER:-podman}
+HELLOTOOL=$("$HELLOS/../gotool.sh" --path hellotool)  # built from this checkout
 : "${ELECTRON_VERSION:?run: eval \"\$(./versions.sh)\"}"
 V=$ELECTRON_VERSION; Z="electron-v$V-linux-x64.zip"; D="$WORK/desktop/electron-$V"
 if [ ! -x "$D/electron" ]; then
@@ -24,5 +25,5 @@ pcap="$WORK/desktop/desktop.pcap"; rm -f "$pcap"
   -v "$D:/electron:ro,Z" -v "$HERE:/src:ro,Z" -v "$HELLOS:/hellos:ro,Z" localhost/signal-hello-electron \
   /electron/electron /src/desktop-fetch.js https://updates2.signal.org/desktop/latest-linux.yml
 chmod 644 "$pcap"
-python3 -I "$HERE/extract_hello.py" "$pcap" updates2.signal.org "$HELLOS/desktop-electron.bin"
+"$HELLOTOOL" extract "$pcap" updates2.signal.org "$HELLOS/desktop-electron.bin"
 echo "Captured with Electron $V: update HelloDesktop's name in hellos.go and the table in hellos/README.md"

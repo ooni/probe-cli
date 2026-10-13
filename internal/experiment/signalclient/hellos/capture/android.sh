@@ -10,11 +10,12 @@
 # on the JVM, OkHttp configures sockets through ConscryptPlatform only when Conscrypt comes first,
 # and that is what makes it configure them as its Android build does on a phone (session tickets
 # on, then ALPN). With the app's order, OkHttp's JVM build sends no session_ticket extension, which
-# a phone does. check_okhttp.py stops the capture if OkHttp changes either code path.
+# a phone does. `hellotool check-okhttp` stops the capture if OkHttp changes either code path.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}
 CTR=${CONTAINER:-podman}
+HELLOTOOL=$("$HELLOS/../gotool.sh" --path hellotool)  # built from this checkout
 : "${OKHTTP_VERSION:?run: eval \"\$(./versions.sh)\"}" "${OKIO_VERSION:?}" "${KOTLIN_VERSION:?}" "${CONSCRYPT_VERSION:?}"
 # One lib directory per version set: with a shared one, a version bump would leave the old jars on
 # the wildcard classpath, and the JVM could load them instead of the new ones.
@@ -30,7 +31,7 @@ fetch com/squareup/okhttp3/okhttp-jvm okhttp-jvm "$OKHTTP_VERSION"
 fetch com/squareup/okio/okio-jvm okio-jvm "$OKIO_VERSION"
 fetch org/jetbrains/kotlin/kotlin-stdlib kotlin-stdlib "$KOTLIN_VERSION"
 fetch org/conscrypt/conscrypt-openjdk-uber conscrypt-openjdk-uber "$CONSCRYPT_VERSION"
-python3 -I "$HERE/check_okhttp.py" "$OKHTTP_VERSION" "$WORK/android"
+CAPTURE_DIR=$HERE "$HELLOTOOL" check-okhttp "$OKHTTP_VERSION" "$WORK/android"
 
 run() {  # name args...: run the client once under a pasta capture
   local pcap="$WORK/android/$1.pcap" log="$WORK/android/$1.log" rc=0; shift; rm -f "$pcap"
@@ -48,8 +49,8 @@ run() {  # name args...: run the client once under a pasta capture
 }
 run websocket                               # provisioning socket on chat.signal.org
 run rest --get https://cdn2.signal.org/     # the same client builder for HTTPS
-python3 -I "$HERE/extract_hello.py" "$WORK/android/websocket.pcap" chat.signal.org "$HELLOS/android-okhttp-websocket.bin"
-python3 -I "$HERE/extract_hello.py" "$WORK/android/rest.pcap" cdn2.signal.org "$HELLOS/android-okhttp-rest.bin"
+"$HELLOTOOL" extract "$WORK/android/websocket.pcap" chat.signal.org "$HELLOS/android-okhttp-websocket.bin"
+"$HELLOTOOL" extract "$WORK/android/rest.pcap" cdn2.signal.org "$HELLOS/android-okhttp-rest.bin"
 
 # Domain fronting (SignalServiceNetworkAccess.kt): the provisioning socket and a storage GET through
 # each front configuration, with the relay's Host header. Gmail's spec serves www.google.com,
@@ -58,8 +59,8 @@ G=reflector-nrgwuv7kwq-uc.a.run.app
 front() {  # name spec sni ws_path ws_host get_path get_host
   run "front-$1-websocket" --spec "$2" --ws "wss://$3$4" --host "$5"
   run "front-$1-rest" --spec "$2" --get "https://$3$6" --host "$7"
-  python3 -I "$HERE/extract_hello.py" "$WORK/android/front-$1-websocket.pcap" "$3" "$HELLOS/android-okhttp-front-$1-websocket.bin"
-  python3 -I "$HERE/extract_hello.py" "$WORK/android/front-$1-rest.pcap" "$3" "$HELLOS/android-okhttp-front-$1-rest.bin"
+  "$HELLOTOOL" extract "$WORK/android/front-$1-websocket.pcap" "$3" "$HELLOS/android-okhttp-front-$1-websocket.bin"
+  "$HELLOTOOL" extract "$WORK/android/front-$1-rest.pcap" "$3" "$HELLOS/android-okhttp-front-$1-rest.bin"
 }
 front g-gmail gmail www.google.com /service/v1/websocket/provisioning/ $G /storage/ping $G
 front g-gmaps gmaps clients3.google.com /service/v1/websocket/provisioning/ $G /storage/ping $G

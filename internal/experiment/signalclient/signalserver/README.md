@@ -30,20 +30,24 @@ probe-cli never needs any of this: the Go test is behind the `signalserver` buil
   - `127.0.0.1:8444`, shaped like `grpc.chat.signal.org`: Signal-Server's own gRPC front end with
     TLS (TLS 1.3 only, X25519MLKEM768, h2 only, 100 concurrent streams), proxying WebSockets to the
     server's h2c connector.
-- **Certificates** (`certs.py`, `MakeKeyStores.java`): local test CAs and leaves with the same
-  shape as production's (key types, signature algorithms, empty subject, critical SAN, extensions),
+- **Certificates** (`servertool certs`, `MakeKeyStores.java`): local test CAs and leaves with the same
+  shape as production's (key types, signature algorithms, empty subject, extensions in production's
+  order),
   named as test CAs. The keystores use Signal-Server's test secret as their password because the
   server overrides connector keystore passwords with its `tlsKeyStore.password` secret.
 
 Downloads and caches live in `~/.cache/ooni-signal-server` (`WORK_DIR`) and in the podman volumes
-`signal-server-m2`, `signal-server-docker` and `signal-server-pip`.
+`signal-server-m2` and `signal-server-docker`. The helpers in `cmd/servertool` (certificates,
+test configuration, Maven's unpacking, the TLS profile) are built by `../gotool.sh`.
 
 ## Keeping it matching production
 
 Run `./tlsprofile.sh` after Signal changes its servers: it records TLS versions, each cipher suite
 and the server's preference, key-exchange groups, the certificate chain, ALPN, session tickets,
 OCSP stapling and the HTTP/2 SETTINGS for both hostnames, in production and locally (about 100
-ordinary handshakes per hostname). Update `run.sh` until the two JSON files agree.
+ordinary handshakes per hostname). Update `run.sh` until the two JSON files agree. On 2026-10-13
+they differed only in the certificates' issuers and in session tickets: the local front ends send
+two after a TLS 1.3 handshake, production none.
 
 Known gaps: only the two chat hostnames are modelled (not the CDNs or enclaves), and the local
 server's data and behaviour are Signal-Server's test mode, not production's.

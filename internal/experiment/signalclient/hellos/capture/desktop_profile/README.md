@@ -8,7 +8,7 @@ TLS records.
 ```sh
 ./fetch.sh                                   # download and verify the current .deb (~120 MB)
 ./profile.sh                                 # first launch (not captured), then 240 s captured
-python3 -I analyze.py "$WORK/desktop-profile/runs/<time>/capture.pcap" --records
+../../../gotool.sh hellotool analyze -records "$WORK/desktop-profile/runs/<time>/capture.pcap"
 ```
 
 `fetch.sh` checks the APT repository's `InRelease` signature with Signal's key

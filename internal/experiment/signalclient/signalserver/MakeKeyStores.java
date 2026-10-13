@@ -1,4 +1,4 @@
-// Assemble the PKCS#12 keystores Signal-Server's connectors load, from the PEM files certs.py writes:
+// Assemble the PKCS#12 keystores Signal-Server's connectors load, from the PEM files `servertool certs` writes:
 // chat.p12 holds the Ed25519 and the RSA entries for chat.signal.org (Jetty picks by the client's
 // signature algorithms, as production does); grpc.p12 holds the Ed25519 entry for grpc.chat.signal.org.
 // Only the leaf is stored: production sends no intermediates. Done in Java because the password must be

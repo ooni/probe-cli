@@ -1,7 +1,8 @@
 #!/bin/bash
 # Re-capture the ClientHellos that signal_client reproduces, from the clients' own code at the
 # versions Signal currently pins.   Usage: ./refresh.sh [libsignal] [android] [desktop]   (default: all)
-# Requirements: podman (or CONTAINER=docker with a pasta-capable setup), curl, git, python3.
+# Requirements: podman (or CONTAINER=docker with a pasta-capable setup), curl, git, python3 (for
+# versions.sh). hellotool is built from this checkout, with Go or in a golang container (../../gotool.sh).
 # Afterwards: go test ./internal/experiment/signalclient/ (the tests compare generated and
 # captured hellos), update names in hellos.go and the table in hellos/README.md, and commit.
 set -euo pipefail

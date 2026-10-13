@@ -1,0 +1,56 @@
+Connecting to 127.0.0.1
+depth=0 CN=test
+verify error:num=18:self-signed certificate
+verify return:1
+depth=0 CN=test
+verify return:1
+CONNECTED(00000003)
+---
+Certificate chain
+ 0 s:CN=test
+   i:CN=test
+   a:PKEY: RSA, 2048 (bit); sigalg: sha256WithRSAEncryption
+   v:NotBefore: Oct 13 03:52:30 2026 GMT; NotAfter: Oct 14 03:52:30 2026 GMT
+---
+Server certificate
+-----BEGIN CERTIFICATE-----
+MIIC/zCCAeegAwIBAgIUYISNjXmipNuZWP5iEmEbHyoa3NYwDQYJKoZIhvcNAQEL
+BQAwDzENMAsGA1UEAwwEdGVzdDAeFw0yNjEwMTMwMzUyMzBaFw0yNjEwMTQwMzUy
+MzBaMA8xDTALBgNVBAMMBHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQDWgkvB7KQ6NQugrpmaHKEkjqqZ6I4rt3MyChdpParq9NqtKP7LVbFyo6zj
+xq1s4LoaLAalxb9ePxGNBg0txuPWoCcXoKIrEypun2uzPxdBihI/7mraS1W4Nb+z
+tVVPYi5PmBPJARO/NE8nevcieYDnZGpDclmYdjLdpGFNi2lfoVg+sjSLyEnOHAJX
+zIiiKSSxIJIazWi3IVi9UPRYKu01TlkzkJ9BE8iyvlwkDF9oDqlbkKigXMRXFyvV
+V7vaUJyJ9c2JRaVKXfB5Yh7Qd21VfJqNRIaW0JERSL+szpRDIZKYcyvFeEMEiVRx
+wlk9WuhdnR5G3vhMcPKKYXl/RpLfAgMBAAGjUzBRMB0GA1UdDgQWBBT6awcX0GXa
+O9UwAY+PK9NeszqtWTAfBgNVHSMEGDAWgBT6awcX0GXaO9UwAY+PK9NeszqtWTAP
+BgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCGsRSRZeP83GPH9kR6
+TEDMG/esBu7ZiX7fTPIiXXqtAq0jzKIZHkUQ2pa179qL0R7QnpEO0t9VNia0tBpP
+PueGNJxtpQGJI/CpvSAquWAaObptktpQuhe507WUU6Gc373zJik9Ygr8iQ7WqOeX
+4OeU8Ub1fQLOsTXXhIQL+PzatyrTroeyC4H6sMeqWqcIhbrO6vOBZt1XFLVEgRu0
+bSeBMx9xmdLJU0B75gbqlPZH5kOU9YHEBeyP1VL6kjUPGeiS9QPWOwLCaJpp3i1Q
+TXeZ3N8dMQFPY0ZwquMwHAV52ZMFO+qzLYb9ENDlCsN7s8yToH48PIw9QBFuIFL3
+xp6D
+-----END CERTIFICATE-----
+subject=CN=test
+issuer=CN=test
+---
+No client certificate CA names sent
+Peer signing digest: SHA256
+Peer signature type: rsa_pss_rsae_sha256
+Peer Temp Key: X25519, 253 bits
+---
+SSL handshake has read 1349 bytes and written 319 bytes
+Verification error: self-signed certificate
+---
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+Protocol: TLSv1.3
+Server public key is 2048 bit
+This TLS version forbids renegotiation.
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 18 (self-signed certificate)
+---
+DONE

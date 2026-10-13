@@ -1,0 +1,81 @@
+Connecting to 127.0.0.1
+depth=0 CN=test
+verify error:num=18:self-signed certificate
+verify return:1
+depth=0 CN=test
+verify return:1
+CONNECTED(00000003)
+---
+Certificate chain
+ 0 s:CN=test
+   i:CN=test
+   a:PKEY: RSA, 2048 (bit); sigalg: sha256WithRSAEncryption
+   v:NotBefore: Oct 13 03:52:30 2026 GMT; NotAfter: Oct 14 03:52:30 2026 GMT
+---
+Server certificate
+-----BEGIN CERTIFICATE-----
+MIIC/zCCAeegAwIBAgIUYISNjXmipNuZWP5iEmEbHyoa3NYwDQYJKoZIhvcNAQEL
+BQAwDzENMAsGA1UEAwwEdGVzdDAeFw0yNjEwMTMwMzUyMzBaFw0yNjEwMTQwMzUy
+MzBaMA8xDTALBgNVBAMMBHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQDWgkvB7KQ6NQugrpmaHKEkjqqZ6I4rt3MyChdpParq9NqtKP7LVbFyo6zj
+xq1s4LoaLAalxb9ePxGNBg0txuPWoCcXoKIrEypun2uzPxdBihI/7mraS1W4Nb+z
+tVVPYi5PmBPJARO/NE8nevcieYDnZGpDclmYdjLdpGFNi2lfoVg+sjSLyEnOHAJX
+zIiiKSSxIJIazWi3IVi9UPRYKu01TlkzkJ9BE8iyvlwkDF9oDqlbkKigXMRXFyvV
+V7vaUJyJ9c2JRaVKXfB5Yh7Qd21VfJqNRIaW0JERSL+szpRDIZKYcyvFeEMEiVRx
+wlk9WuhdnR5G3vhMcPKKYXl/RpLfAgMBAAGjUzBRMB0GA1UdDgQWBBT6awcX0GXa
+O9UwAY+PK9NeszqtWTAfBgNVHSMEGDAWgBT6awcX0GXaO9UwAY+PK9NeszqtWTAP
+BgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCGsRSRZeP83GPH9kR6
+TEDMG/esBu7ZiX7fTPIiXXqtAq0jzKIZHkUQ2pa179qL0R7QnpEO0t9VNia0tBpP
+PueGNJxtpQGJI/CpvSAquWAaObptktpQuhe507WUU6Gc373zJik9Ygr8iQ7WqOeX
+4OeU8Ub1fQLOsTXXhIQL+PzatyrTroeyC4H6sMeqWqcIhbrO6vOBZt1XFLVEgRu0
+bSeBMx9xmdLJU0B75gbqlPZH5kOU9YHEBeyP1VL6kjUPGeiS9QPWOwLCaJpp3i1Q
+TXeZ3N8dMQFPY0ZwquMwHAV52ZMFO+qzLYb9ENDlCsN7s8yToH48PIw9QBFuIFL3
+xp6D
+-----END CERTIFICATE-----
+subject=CN=test
+issuer=CN=test
+---
+No client certificate CA names sent
+Peer signing digest: MD5-SHA1
+Peer signature type: rsa_pkcs1_md5_sha1
+Peer Temp Key: X25519, 253 bits
+---
+SSL handshake has read 1426 bytes and written 250 bytes
+Verification error: self-signed certificate
+---
+New, TLSv1.0, Cipher is ECDHE-RSA-AES256-SHA
+Protocol: TLSv1
+Server public key is 2048 bit
+Secure Renegotiation IS supported
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+SSL-Session:
+    Protocol  : TLSv1
+    Cipher    : ECDHE-RSA-AES256-SHA
+    Session-ID: 32139969309DBBC07087877233C0B014A1B4F55329104BECF838D70FE5074CCC
+    Session-ID-ctx: 
+    Master-Key: FF296E365B3FFC8FEBBE4D9285A5E0A4B47FE802447EE85F7EED234944511A9A5E133A487F757CFD675A83B5CE7D3C8D
+    PSK identity: None
+    PSK identity hint: None
+    SRP username: None
+    TLS session ticket lifetime hint: 7200 (seconds)
+    TLS session ticket:
+    0000 - fc a3 a6 96 61 1e 49 1d-32 5c d3 78 88 0c a3 c2   ....a.I.2\.x....
+    0010 - e3 f5 82 e0 8b d2 01 a8-d9 36 10 69 e4 2e 8d 46   .........6.i...F
+    0020 - b9 f0 5a a5 f8 6c a9 ec-bf 64 eb fd 0c 36 aa ca   ..Z..l...d...6..
+    0030 - 7e 53 bf 5c d9 fe f2 9b-c7 fe db 02 52 38 02 6b   ~S.\........R8.k
+    0040 - a0 5d d1 84 3e 7d f3 64-11 9f 73 ee cf 7e 77 8a   .]..>}.d..s..~w.
+    0050 - 31 2f 37 28 7b f2 62 00-fe 3c cf 94 08 32 3b b4   1/7({.b..<...2;.
+    0060 - 3d d9 ab e7 0c 3a 5a a2-c1 c7 28 26 bd 6f 1a 94   =....:Z...(&.o..
+    0070 - 9f d7 55 96 1b 2a 7f 02-77 e4 9e 08 0e 4e 18 38   ..U..*..w....N.8
+    0080 - f4 fc 03 bc 2c 87 1b bb-48 78 da be b3 80 8f 3c   ....,...Hx.....<
+    0090 - 8b bb 59 7d 00 bf 75 25-6d f6 8d bc 29 9f 98 9c   ..Y}..u%m...)...
+    00a0 - 60 df fd e3 08 13 68 89-60 9f fd 45 b5 59 7f 9b   `.....h.`..E.Y..
+
+    Start Time: 1791863551
+    Timeout   : 7200 (sec)
+    Verify return code: 18 (self-signed certificate)
+    Extended master secret: yes
+---
+closed
