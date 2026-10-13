@@ -469,6 +469,9 @@ func TestQAEverythingReachable(t *testing.T) {
 	if byName["cdsi"].Status != 404 {
 		t.Errorf("enclave status %d", byName["cdsi"].Status)
 	}
+	if tk.MeasurementSummaryKeys().Anomaly() {
+		t.Error("anomaly with everything reachable")
+	}
 }
 
 func TestQADNSBlocking(t *testing.T) {
@@ -493,9 +496,12 @@ func TestQASNIBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	_, byName := runQA(t, env)
+	tk, byName := runQA(t, env)
 	expectFailure(t, byName["chat_libsignal"], "tls_handshake", "connection_reset")
 	expectOK(t, byName, "chat_android", "cdsi", "storage")
+	if !tk.MeasurementSummaryKeys().Anomaly() {
+		t.Error("no anomaly with chat_libsignal reset")
+	}
 }
 
 // TestQAFingerprintBlocking resets ClientHellos that list X25519MLKEM768 then x25519 in their
@@ -565,12 +571,18 @@ func TestQASignalReportsOutage(t *testing.T) {
 	if tk.SignalServiceStatus != "outage" {
 		t.Fatalf("service status %q", tk.SignalServiceStatus)
 	}
+	if tk.MeasurementSummaryKeys().Anomaly() {
+		t.Error("anomaly while Signal reports an outage")
+	}
 }
 
 func TestQAUpgradeRefused(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {refuseUpgrade: true}, qaChatAddr: {refuseUpgrade: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	tk, byName := runQA(t, env)
+	if tk.MeasurementSummaryKeys().Anomaly() { // a refusal inside Signal-verified TLS is the server's
+		t.Error("anomaly for a refusal by the server")
+	}
 	for _, name := range []string{"chat_libsignal", "chat_android"} {
 		expectFailure(t, byName[name], "websocket_upgrade", FailureWebSocketUpgradeRefused)
 		if byName[name].Status != 403 {
