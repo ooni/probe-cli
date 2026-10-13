@@ -1,0 +1,50 @@
+// The messages of Signal's WebSocket protocol that signal_client sends and reads: the same
+// message names, field numbers and types as libsignal v0.105.0's
+// rust/net/src/proto/chat_websocket.proto and chat_provisioning.proto, written for probe-cli.
+//
+// proto2, as libsignal's are: optional fields have explicit presence, so a field set to its
+// zero value (a keepalive whose id is 0) is still sent.
+//
+// Regenerate signal.pb.go with go generate (see generate.go).
+
+syntax = "proto2";
+
+package ooni.signalclient;
+
+option go_package = "github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb";
+
+// WebSocketMessage is every binary WebSocket message: a request or a response.
+message WebSocketMessage {
+  enum Type {
+    UNKNOWN = 0;
+    REQUEST = 1;
+    RESPONSE = 2;
+  }
+  optional Type type = 1;
+  optional WebSocketRequestMessage request = 2;
+  optional WebSocketResponseMessage response = 3;
+}
+
+// WebSocketRequestMessage is a request either side may send (the server's PUT /v1/address,
+// the client's GET /v1/keepalive). Headers are "Name:value" strings.
+message WebSocketRequestMessage {
+  optional string verb = 1;
+  optional string path = 2;
+  optional bytes body = 3;
+  repeated string headers = 5;
+  optional uint64 id = 4;
+}
+
+// WebSocketResponseMessage answers the request with the same id.
+message WebSocketResponseMessage {
+  optional uint64 id = 1;
+  optional uint32 status = 2;
+  optional string message = 3;
+  repeated string headers = 5;
+  optional bytes body = 4;
+}
+
+// ProvisioningAddress is the body of the server's PUT /v1/address on a provisioning socket.
+message ProvisioningAddress {
+  optional string address = 1;
+}

@@ -34,8 +34,7 @@ func upgradeAgainst(t *testing.T, head func(accept string) string, after []byte)
 // Bytes the server sends right after the 101 (often in the same TCP segment as the headers) must
 // reach the WebSocket reader: they sit in the bufio.Reader that parsed the response.
 func TestWebsocketH1KeepsBytesBufferedAfterThe101(t *testing.T) {
-	addr := append([]byte{0x0a, 24}, []byte("abcdefghijklmnopqrstuvwx")...)
-	frame := serverFrame(true, false, opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: addr, ID: 7}).marshal())
+	frame := serverFrame(true, false, opBinary, serverRequest("PUT", "/v1/address", 7, addressBody()))
 	up, err := upgradeAgainst(t, func(accept string) string {
 		return "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n" +
 			"Sec-WebSocket-Accept: " + accept + "\r\nX-Signal-Timestamp: 1\r\n\r\n"
@@ -48,7 +47,7 @@ func TestWebsocketH1KeepsBytesBufferedAfterThe101(t *testing.T) {
 		t.Fatalf("op %d err %v", op, err)
 	}
 	msg, err := parseMessage(payload)
-	if err != nil || msg.Request == nil || msg.Request.Path != "/v1/address" {
+	if err != nil || msg.GetRequest().GetPath() != "/v1/address" {
 		t.Fatalf("expected the buffered address frame, got %+v %v", msg, err)
 	}
 }

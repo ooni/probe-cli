@@ -24,8 +24,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"google.golang.org/protobuf/proto"
 )
 
 // ProvisioningResult is what happened on one provisioning socket.
@@ -95,7 +97,8 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 	res.AddressReceived, res.AddressLength, res.AddressT = true, len(addr), time.Since(zero).Seconds()
 
 	// 2. ack, as the apps do
-	if err := s.send(opBinary, (&wsResponse{ID: req.ID, Status: 200, Message: "OK"}).marshal()); err != nil {
+	if err := s.send(opBinary, responseMessage(&signalpb.WebSocketResponseMessage{
+		Id: proto.Uint64(req.GetId()), Status: proto.Uint32(200), Message: proto.String("OK")})); err != nil {
 		return fail("ack", err)
 	}
 	res.Acked = true
@@ -209,7 +212,7 @@ func (s *session) send(op byte, payload []byte) error {
 
 // awaitAddress waits for the server's REQUEST PUT /v1/address and returns it and its address.
 // The first binary message must be that request.
-func (s *session) awaitAddress() (*wsRequest, string, error) {
+func (s *session) awaitAddress() (*signalpb.WebSocketRequestMessage, string, error) {
 	f, err := s.recv(time.Now().Add(addressTimeout), isBinary)
 	if err != nil {
 		return nil, "", err
@@ -218,10 +221,10 @@ func (s *session) awaitAddress() (*wsRequest, string, error) {
 	if err != nil {
 		return nil, "", malformed(err)
 	}
-	if msg.Request == nil || msg.Request.Verb != "PUT" || msg.Request.Path != "/v1/address" {
+	if req := msg.GetRequest(); req.GetVerb() != "PUT" || req.GetPath() != "/v1/address" {
 		return nil, "", errUnexpectedMessage
 	}
-	addr, err := provisioningAddress(msg.Request.Body)
+	addr, err := provisioningAddress(msg.GetRequest().GetBody())
 	if err != nil {
 		return nil, "", malformed(err)
 	}
@@ -246,15 +249,15 @@ func (s *session) keepalive(i uint64, pad int, zero time.Time) (*KeepaliveResult
 		return kr, err
 	}
 	id := uint64(time.Now().UnixMilli())*100 + i // #nosec G115 -- the apps use millisecond timestamps
-	r := &wsRequest{Verb: "GET", Path: "/v1/keepalive", ID: id}
+	r := &signalpb.WebSocketRequestMessage{Verb: proto.String("GET"), Path: proto.String("/v1/keepalive"), Id: proto.Uint64(id)}
 	if pad > 0 {
 		r.Body = make([]byte, pad)
 		_, _ = rand.Read(r.Body)
 	}
-	if err := s.send(opBinary, r.marshal()); err != nil {
+	if err := s.send(opBinary, requestMessage(r)); err != nil {
 		return fail(err)
 	}
-	var resp *wsResponse
+	var resp *signalpb.WebSocketResponseMessage
 	_, err := s.recv(time.Now().Add(keepaliveTimeout), func(f frame) bool {
 		if f.op != opBinary {
 			return false
@@ -268,8 +271,8 @@ func (s *session) keepalive(i uint64, pad int, zero time.Time) (*KeepaliveResult
 		return fail(err)
 	}
 	kr.T = time.Since(zero).Seconds()
-	kr.Status, kr.IDMatch = int64(resp.Status), resp.ID == id
-	for _, h := range resp.Headers {
+	kr.Status, kr.IDMatch = int64(resp.GetStatus()), resp.GetId() == id
+	for _, h := range resp.GetHeaders() {
 		if name, _, ok := strings.Cut(h, ":"); ok && strings.EqualFold(strings.TrimSpace(name), "X-Signal-Timestamp") {
 			kr.SignalTimestamp = true
 		}

@@ -4,24 +4,45 @@ import (
 	"bytes"
 	"compress/flate"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"io"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
+	"google.golang.org/protobuf/proto"
 )
 
-func TestRequestAndResponseRoundTrip(t *testing.T) {
-	req := &wsRequest{Verb: "GET", Path: "/v1/keepalive", Body: []byte{1, 2, 3}, ID: 1791563494213, Headers: []string{"a:b"}}
-	msg, err := parseMessage(req.marshal())
-	if err != nil || msg.Type != msgTypeRequest || msg.Request == nil {
-		t.Fatalf("parse: %v %+v", err, msg)
+// The messages the client sends, byte for byte: proto2 sends id even when it is 0, and fields go
+// in field-number order.
+func TestMessagesWeSend(t *testing.T) {
+	keepalive := requestMessage(&signalpb.WebSocketRequestMessage{
+		Verb: proto.String("GET"), Path: proto.String("/v1/keepalive"), Id: proto.Uint64(0)})
+	want := "0801" + "1216" + "0a03" + hex.EncodeToString([]byte("GET")) + "120d" +
+		hex.EncodeToString([]byte("/v1/keepalive")) + "2000"
+	if got := hex.EncodeToString(keepalive); got != want {
+		t.Errorf("keepalive:\n got %s\nwant %s", got, want)
 	}
-	if got := msg.Request; got.Verb != req.Verb || got.Path != req.Path || got.ID != req.ID || !bytes.Equal(got.Body, req.Body) || got.Headers[0] != "a:b" {
-		t.Fatalf("request mismatch: %+v", got)
+	ack := responseMessage(&signalpb.WebSocketResponseMessage{
+		Id: proto.Uint64(7), Status: proto.Uint32(200), Message: proto.String("OK")})
+	want = "0802" + "1a09" + "0807" + "10c801" + "1a02" + hex.EncodeToString([]byte("OK"))
+	if got := hex.EncodeToString(ack); got != want {
+		t.Errorf("ack:\n got %s\nwant %s", got, want)
 	}
-	resp := &wsResponse{ID: 42, Status: 200, Message: "OK", Headers: []string{"X-Signal-Timestamp:1"}}
-	msg, err = parseMessage(resp.marshal())
-	if err != nil || msg.Type != msgTypeResponse || msg.Response.ID != 42 || msg.Response.Status != 200 || msg.Response.Message != "OK" {
-		t.Fatalf("response: %v %+v", err, msg)
+}
+
+func TestParseMessage(t *testing.T) {
+	msg, err := parseMessage(serverRequest("PUT", "/v1/address", 7, addressBody()))
+	if err != nil || msg.GetType() != signalpb.WebSocketMessage_REQUEST || msg.GetRequest().GetPath() != "/v1/address" ||
+		msg.GetRequest().GetId() != 7 {
+		t.Fatalf("request: %v %v", err, msg)
+	}
+	headers := []string{"X-Signal-Timestamp:1"}
+	msg, err = parseMessage(responseMessage(&signalpb.WebSocketResponseMessage{
+		Id: proto.Uint64(42), Status: proto.Uint32(200), Message: proto.String("OK"), Headers: headers}))
+	if err != nil || msg.GetType() != signalpb.WebSocketMessage_RESPONSE || msg.GetResponse().GetStatus() != 200 ||
+		msg.GetResponse().GetHeaders()[0] != headers[0] {
+		t.Fatalf("response: %v %v", err, msg)
 	}
 }
 
@@ -34,11 +55,30 @@ func TestParseMessageRejectsGarbage(t *testing.T) {
 }
 
 func TestProvisioningAddress(t *testing.T) {
-	body := append([]byte{0x0a, 24}, []byte("abcdefghijklmnopqrstuvwx")...)
-	addr, err := provisioningAddress(body)
-	if err != nil || addr != "abcdefghijklmnopqrstuvwx" {
+	addr, err := provisioningAddress(addressBody())
+	if err != nil || addr != testAddress {
 		t.Fatalf("got %q %v", addr, err)
 	}
+	if _, err := provisioningAddress(addressWithoutAddress); !errors.Is(err, errNoProvisioningAddress) {
+		t.Fatalf("without an address: %v", err)
+	}
+}
+
+// testAddress is the provisioning address the tests' servers send.
+const testAddress = "abcdefghijklmnopqrstuvwx"
+
+// addressWithoutAddress is a ProvisioningAddress body with only an unknown field (2 = 1).
+var addressWithoutAddress = []byte{0x10, 0x01}
+
+// addressBody is a ProvisioningAddress carrying testAddress.
+func addressBody() []byte {
+	return marshal(&signalpb.ProvisioningAddress{Address: proto.String(testAddress)})
+}
+
+// serverRequest encodes a request as the server sends it.
+func serverRequest(verb, path string, id uint64, body []byte) []byte {
+	return requestMessage(&signalpb.WebSocketRequestMessage{
+		Verb: proto.String(verb), Path: proto.String(path), Id: proto.Uint64(id), Body: body})
 }
 
 // serverFrame builds an unmasked server frame.

@@ -2,7 +2,7 @@ package signalclient
 
 //
 // Signal's WebSocket protocol: RFC 6455 framing carrying WebSocketMessage protobufs
-// (libsignal rust/net/src/proto/chat_websocket.proto, chat_provisioning.proto).
+// (signalpb/signal.proto, after libsignal's chat_websocket.proto and chat_provisioning.proto).
 //
 // Hand-written rather than gorilla/websocket's: the WebSocket must also run over an RFC 8441
 // HTTP/2 stream, and the HTTP/1.1 upgrade must send OkHttp's headers in OkHttp's order (both
@@ -19,11 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"google.golang.org/protobuf/encoding/protowire"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"google.golang.org/protobuf/proto"
 )
 
 // WebSocket opcodes.
@@ -228,175 +229,30 @@ func (c *wsConn) readRawFrame() (rawFrame, error) {
 	return f, nil
 }
 
-// wsMessage is a decoded WebSocketMessage.
-type wsMessage struct {
-	Type     uint64 // 1 = REQUEST, 2 = RESPONSE
-	Request  *wsRequest
-	Response *wsResponse
+// requestMessage encodes a WebSocketMessage carrying req.
+func requestMessage(req *signalpb.WebSocketRequestMessage) []byte {
+	return marshal(&signalpb.WebSocketMessage{Type: signalpb.WebSocketMessage_REQUEST.Enum(), Request: req})
 }
 
-// wsRequest is a WebSocketRequestMessage.
-type wsRequest struct {
-	Verb    string
-	Path    string
-	Body    []byte
-	Headers []string
-	ID      uint64
+// responseMessage encodes a WebSocketMessage carrying resp.
+func responseMessage(resp *signalpb.WebSocketResponseMessage) []byte {
+	return marshal(&signalpb.WebSocketMessage{Type: signalpb.WebSocketMessage_RESPONSE.Enum(), Response: resp})
 }
 
-// wsResponse is a WebSocketResponseMessage.
-type wsResponse struct {
-	ID      uint64
-	Status  uint32
-	Message string
-	Headers []string
-	Body    []byte
-}
-
-const (
-	msgTypeRequest  = 1
-	msgTypeResponse = 2
-)
-
-func (r *wsRequest) marshal() []byte {
-	var b []byte
-	b = protowire.AppendTag(b, 1, protowire.BytesType)
-	b = protowire.AppendString(b, r.Verb)
-	b = protowire.AppendTag(b, 2, protowire.BytesType)
-	b = protowire.AppendString(b, r.Path)
-	if r.Body != nil {
-		b = protowire.AppendTag(b, 3, protowire.BytesType)
-		b = protowire.AppendBytes(b, r.Body)
-	}
-	b = protowire.AppendTag(b, 4, protowire.VarintType)
-	b = protowire.AppendVarint(b, r.ID)
-	for _, h := range r.Headers {
-		b = protowire.AppendTag(b, 5, protowire.BytesType)
-		b = protowire.AppendString(b, h)
-	}
-	return wrapMessage(msgTypeRequest, 2, b)
-}
-
-func (r *wsResponse) marshal() []byte {
-	var b []byte
-	b = protowire.AppendTag(b, 1, protowire.VarintType)
-	b = protowire.AppendVarint(b, r.ID)
-	b = protowire.AppendTag(b, 2, protowire.VarintType)
-	b = protowire.AppendVarint(b, uint64(r.Status))
-	b = protowire.AppendTag(b, 3, protowire.BytesType)
-	b = protowire.AppendString(b, r.Message)
-	for _, h := range r.Headers {
-		b = protowire.AppendTag(b, 5, protowire.BytesType)
-		b = protowire.AppendString(b, h)
-	}
-	if r.Body != nil {
-		b = protowire.AppendTag(b, 4, protowire.BytesType)
-		b = protowire.AppendBytes(b, r.Body)
-	}
-	return wrapMessage(msgTypeResponse, 3, b)
-}
-
-func wrapMessage(typ uint64, field protowire.Number, inner []byte) []byte {
-	var b []byte
-	b = protowire.AppendTag(b, 1, protowire.VarintType)
-	b = protowire.AppendVarint(b, typ)
-	b = protowire.AppendTag(b, field, protowire.BytesType)
-	b = protowire.AppendBytes(b, inner)
+func marshal(msg proto.Message) []byte {
+	b, err := proto.Marshal(msg)
+	runtimex.PanicOnError(err, "signal_client: cannot marshal a protobuf") // proto2, no required fields
 	return b
 }
 
 // errMalformedProto means a protobuf could not be parsed.
 var errMalformedProto = errors.New("signal_client: malformed protobuf")
 
-// fields walks a protobuf message, calling fn for each varint or length-delimited field.
-func fields(b []byte, fn func(num protowire.Number, v uint64, bytes []byte)) error {
-	for len(b) > 0 {
-		num, typ, n := protowire.ConsumeTag(b)
-		if n < 0 {
-			return errMalformedProto
-		}
-		b = b[n:]
-		switch typ {
-		case protowire.VarintType:
-			v, m := protowire.ConsumeVarint(b)
-			if m < 0 {
-				return errMalformedProto
-			}
-			fn(num, v, nil)
-			b = b[m:]
-		case protowire.BytesType:
-			v, m := protowire.ConsumeBytes(b)
-			if m < 0 {
-				return errMalformedProto
-			}
-			fn(num, 0, v)
-			b = b[m:]
-		default:
-			m := protowire.ConsumeFieldValue(num, typ, b)
-			if m < 0 {
-				return errMalformedProto
-			}
-			b = b[m:]
-		}
-	}
-	return nil
-}
-
-func parseMessage(b []byte) (*wsMessage, error) {
-	msg := &wsMessage{}
-	var reqBytes, respBytes []byte
-	err := fields(b, func(num protowire.Number, v uint64, bs []byte) {
-		switch num {
-		case 1:
-			msg.Type = v
-		case 2:
-			reqBytes = bs
-		case 3:
-			respBytes = bs
-		}
-	})
-	if err != nil {
-		return nil, err
-	}
-	if reqBytes != nil {
-		r := &wsRequest{}
-		if err := fields(reqBytes, func(num protowire.Number, v uint64, bs []byte) {
-			switch num {
-			case 1:
-				r.Verb = string(bs)
-			case 2:
-				r.Path = string(bs)
-			case 3:
-				r.Body = bs
-			case 4:
-				r.ID = v
-			case 5:
-				r.Headers = append(r.Headers, string(bs))
-			}
-		}); err != nil {
-			return nil, err
-		}
-		msg.Request = r
-	}
-	if respBytes != nil {
-		r := &wsResponse{}
-		if err := fields(respBytes, func(num protowire.Number, v uint64, bs []byte) {
-			switch num {
-			case 1:
-				r.ID = v
-			case 2:
-				r.Status = uint32(min(v, math.MaxUint32)) // #nosec G115 -- clamped; HTTP statuses are tiny
-			case 3:
-				r.Message = string(bs)
-			case 4:
-				r.Body = bs
-			case 5:
-				r.Headers = append(r.Headers, string(bs))
-			}
-		}); err != nil {
-			return nil, err
-		}
-		msg.Response = r
+// parseMessage decodes a WebSocketMessage, which must carry a request or a response.
+func parseMessage(b []byte) (*signalpb.WebSocketMessage, error) {
+	msg := &signalpb.WebSocketMessage{}
+	if err := proto.Unmarshal(b, msg); err != nil {
+		return nil, fmt.Errorf("%w: %w", errMalformedProto, err)
 	}
 	if msg.Request == nil && msg.Response == nil {
 		return nil, fmt.Errorf("%w: neither request nor response", errMalformedProto)
@@ -407,17 +263,14 @@ func parseMessage(b []byte) (*wsMessage, error) {
 // errNoProvisioningAddress means a ProvisioningAddress had no address field.
 var errNoProvisioningAddress = errors.New("signal_client: ProvisioningAddress without an address")
 
-// provisioningAddress extracts ProvisioningAddress.address (field 1), which must be present.
+// provisioningAddress decodes a ProvisioningAddress and returns its address, which must be present.
 func provisioningAddress(body []byte) (string, error) {
-	var addr string
-	found := false
-	err := fields(body, func(num protowire.Number, _ uint64, bs []byte) {
-		if num == 1 {
-			addr, found = string(bs), true
-		}
-	})
-	if err == nil && !found {
-		err = errNoProvisioningAddress
+	pa := &signalpb.ProvisioningAddress{}
+	if err := proto.Unmarshal(body, pa); err != nil {
+		return "", fmt.Errorf("%w: %w", errMalformedProto, err)
 	}
-	return addr, err
+	if pa.Address == nil {
+		return "", errNoProvisioningAddress
+	}
+	return pa.GetAddress(), nil
 }

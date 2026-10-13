@@ -10,6 +10,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
+	"google.golang.org/protobuf/proto"
 )
 
 // fakeServer plays Signal's side of a provisioning socket on conn.
@@ -80,12 +83,11 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		w.Write(serverFrame(true, true, opBinary, []byte{0xff, 0xff, 0xff, 0xff, 0x00}))
 		return
 	case f.addressWithoutAddr:
-		send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: []byte{0x10, 0x01}, ID: 7}).marshal())
+		send(opBinary, serverRequest("PUT", "/v1/address", 7, addressWithoutAddress))
 	case f.sendAddress:
-		addr := append([]byte{0x0a, 24}, []byte("abcdefghijklmnopqrstuvwx")...)
-		send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/address", Body: addr, ID: 7}).marshal())
+		send(opBinary, serverRequest("PUT", "/v1/address", 7, addressBody()))
 		if f.extraAfterAddress {
-			send(opBinary, (&wsRequest{Verb: "PUT", Path: "/v1/message", ID: 8}).marshal())
+			send(opBinary, serverRequest("PUT", "/v1/message", 8, nil))
 		}
 		if f.stopAfterAddress {
 			return
@@ -120,13 +122,13 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 				t.Errorf("server: %v", err)
 				return
 			}
-			if msg.Response != nil && (msg.Response.ID != 7 || msg.Response.Status != 200) {
+			if msg.Response != nil && (msg.Response.GetId() != 7 || msg.Response.GetStatus() != 200) {
 				t.Errorf("bad ack: %+v", msg.Response)
 			}
 			if msg.Response != nil && f.pingAfterAck {
 				send(opPing, []byte("server-ping"))
 			}
-			if msg.Request != nil && msg.Request.Path == "/v1/keepalive" && !f.ignoreKeepalives {
+			if msg.Request.GetPath() == "/v1/keepalive" && !f.ignoreKeepalives {
 				h := []string{"X-Signal-Timestamp:1791563494213", "Content-Length:0"}
 				if f.timestampHeader != "" {
 					h[0] = f.timestampHeader
@@ -134,14 +136,15 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 				if f.noTimestamp {
 					h = h[1:]
 				}
-				id, status := msg.Request.ID, f.keepaliveStatus
+				id, status := msg.Request.GetId(), f.keepaliveStatus
 				if f.keepaliveWrongID {
 					id++
 				}
 				if status == 0 {
 					status = 200
 				}
-				send(opBinary, (&wsResponse{ID: id, Status: status, Message: "OK", Headers: h}).marshal())
+				send(opBinary, responseMessage(&signalpb.WebSocketResponseMessage{
+					Id: proto.Uint64(id), Status: proto.Uint32(status), Message: proto.String("OK"), Headers: h}))
 			}
 		}
 	}

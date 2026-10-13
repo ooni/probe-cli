@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"io"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
+	"google.golang.org/protobuf/proto"
 )
 
 // Server-controlled bytes must never panic the parsers or exceed their size limits.
@@ -33,8 +36,9 @@ func FuzzReadFrame(f *testing.F) {
 }
 
 func FuzzParseMessage(f *testing.F) {
-	f.Add((&wsRequest{Verb: "PUT", Path: "/v1/address", Body: []byte{0x0a, 1, 'x'}, ID: 7}).marshal())
-	f.Add((&wsResponse{ID: 1, Status: 200, Message: "OK", Headers: []string{"X-Signal-Timestamp:1"}}).marshal())
+	f.Add(serverRequest("PUT", "/v1/address", 7, addressBody()))
+	f.Add(responseMessage(&signalpb.WebSocketResponseMessage{
+		Id: proto.Uint64(1), Status: proto.Uint32(200), Message: proto.String("OK"), Headers: []string{"X-Signal-Timestamp:1"}}))
 	f.Add([]byte{0x08, 0x01, 0x12, 0x00})
 	f.Fuzz(func(t *testing.T, b []byte) {
 		msg, err := parseMessage(b)
@@ -42,7 +46,7 @@ func FuzzParseMessage(f *testing.F) {
 			t.Fatal("nil error but neither request nor response")
 		}
 		if err == nil && msg.Request != nil {
-			_, _ = provisioningAddress(msg.Request.Body)
+			_, _ = provisioningAddress(msg.Request.GetBody())
 		}
 	})
 }
