@@ -119,6 +119,12 @@ func (j *controlJob) collect(trace *measurexlite.Trace) {
 	j.evidence.NetworkEvents = append(j.evidence.NetworkEvents, trace.NetworkEvents()...)
 }
 
+// controlKey identifies a control: identical controls of several targets run once.
+type controlKey struct {
+	kind, host string
+	ip, hello  string // handshake kinds
+}
+
 // controlRunner plans and runs the controls of one measurement.
 type controlRunner struct {
 	m      *Measurer
@@ -128,39 +134,49 @@ type controlRunner struct {
 	opts   *runOptions
 	index  int64
 
-	mu    sync.Mutex
-	jobs  []*controlJob          // in start order
-	byKey map[string]*controlJob // for deduplication
+	jobs    []*controlJob              // in start order
+	planned map[controlKey]*controlJob // read-only once plan returns
+
+	// the static_address controls to DoH answers, known only while the controls run
+	derivedMu sync.Mutex
+	derived   map[controlKey]*controlJob
 }
 
 func newControlRunner(m *Measurer, logger model.Logger, zero time.Time, roots *x509.CertPool, opts *runOptions,
 	firstIndex int64) *controlRunner {
 	return &controlRunner{m: m, logger: logger, zero: zero, roots: roots, opts: opts, index: firstIndex,
-		byKey: map[string]*controlJob{}}
+		planned: map[controlKey]*controlJob{}, derived: map[controlKey]*controlJob{}}
 }
 
-// add plans a control for r, or adds r to an identical planned one.
-func (cr *controlRunner) add(r *TargetResult, key, kind string, run func(context.Context, *controlJob) *ControlResult) {
-	if job, ok := cr.byKey[key]; ok {
-		job.addTarget(r)
-		return
-	}
+// newJob creates a control job with the next index.
+func (cr *controlRunner) newJob(kind string, run func(context.Context, *controlJob) *ControlResult) *controlJob {
 	job := &controlJob{index: cr.index, kind: kind, run: run, done: make(chan struct{})}
 	cr.index++
+	return job
+}
+
+// add plans a control for r, or adds r to an identical planned one, and returns the job.
+func (cr *controlRunner) add(r *TargetResult, key controlKey, run func(context.Context, *controlJob) *ControlResult) *controlJob {
+	job, ok := cr.planned[key]
+	if !ok {
+		job = cr.newJob(key.kind, run)
+		cr.planned[key] = job
+		cr.jobs = append(cr.jobs, job)
+	}
 	job.addTarget(r)
-	cr.byKey[key] = job
-	cr.jobs = append(cr.jobs, job)
+	return job
+}
+
+// finish records a job's result (nil: not recorded) and wakes whoever waits for it.
+func (job *controlJob) finish(result *ControlResult) {
+	job.result = result
+	close(job.done)
 }
 
 // plan decides the controls of every target from snapshots, each target's result when it finished
 // connecting (its provisioning flow may still be writing to results), and records them in results.
 // They start in controlPriority order, then target order.
 func (cr *controlRunner) plan(targets []Target, snapshots, results []*TargetResult) {
-	defer func() {
-		sort.SliceStable(cr.jobs, func(i, j int) bool {
-			return controlPriority[cr.jobs[i].kind] < controlPriority[cr.jobs[j].kind]
-		})
-	}()
 	for i, target := range targets {
 		r, snap := results[i], snapshots[i]
 		always := cr.opts.controls == ControlsAlways
@@ -205,6 +221,9 @@ func (cr *controlRunner) plan(targets []Target, snapshots, results []*TargetResu
 			cr.planHandshake(r, ControlTLS12, target, same, helloStdlibTLS12(target.Hello), true)
 		}
 	}
+	sort.SliceStable(cr.jobs, func(i, j int) bool {
+		return controlPriority[cr.jobs[i].kind] < controlPriority[cr.jobs[j].kind]
+	})
 }
 
 // alternateHello is another Signal client's hello: Android's REST hello for targets that use
@@ -217,28 +236,26 @@ func alternateHello(h Hello) Hello {
 }
 
 func (cr *controlRunner) planDNS(r *TargetResult, kind, host string) *controlJob {
-	cr.add(r, kind+"|"+host, kind, func(ctx context.Context, job *controlJob) *ControlResult {
+	return cr.add(r, controlKey{kind: kind, host: host}, func(ctx context.Context, job *controlJob) *ControlResult {
 		if kind == ControlDoH {
 			return cr.doh(ctx, job, host)
 		}
 		return cr.udp(ctx, job, host)
 	})
-	return cr.byKey[kind+"|"+host]
 }
 
 func (cr *controlRunner) planHandshake(r *TargetResult, kind string, target Target, a staticAddress, hello Hello, verify bool) {
-	key := strings.Join([]string{kind, a.ip, target.Hostname, hello.Name}, "|")
-	cr.add(r, key, kind, func(ctx context.Context, job *controlJob) *ControlResult {
+	key := controlKey{kind: kind, host: target.Hostname, ip: a.ip, hello: hello.Name}
+	cr.add(r, key, func(ctx context.Context, job *controlJob) *ControlResult {
 		return cr.handshake(ctx, job, kind, target, a, hello, verify)
 	})
 }
 
 // planStaticFromDoH plans the static_address control to the first IPv4 answer of doh, when that
-// answer is in no static list and was not tried. It waits for doh; if an identical control
-// exists by then, r is added to it instead.
+// answer is in no static list and was not tried. The job waits for doh; if an identical control
+// was planned, or derived for another target, r is added to it instead.
 func (cr *controlRunner) planStaticFromDoH(r *TargetResult, target Target, doh *controlJob, list []staticAddress, tried string) {
-	job := &controlJob{index: cr.index, kind: ControlStatic, done: make(chan struct{})}
-	cr.index++
+	job := cr.newJob(ControlStatic, nil)
 	job.run = func(ctx context.Context, job *controlJob) *ControlResult {
 		select {
 		case <-doh.done:
@@ -258,20 +275,30 @@ func (cr *controlRunner) planStaticFromDoH(r *TargetResult, target Target, doh *
 		if ip == "" || ip == tried || inList(list, ip) {
 			return nil
 		}
-		a := staticAddress{ip: ip, source: "doh"}
-		key := strings.Join([]string{ControlStatic, ip, target.Hostname, target.Hello.Name}, "|")
-		cr.mu.Lock()
-		if other, ok := cr.byKey[key]; ok {
-			cr.mu.Unlock()
+		key := controlKey{kind: ControlStatic, host: target.Hostname, ip: ip, hello: target.Hello.Name}
+		if other := cr.derivedFor(key, job); other != nil {
 			other.addTarget(r) // recorded with the other's result, if it ran
 			return nil
 		}
-		cr.byKey[key] = job
-		cr.mu.Unlock()
-		return cr.handshake(ctx, job, ControlStatic, target, a, target.Hello, true)
+		return cr.handshake(ctx, job, ControlStatic, target, staticAddress{ip: ip, source: "doh"}, target.Hello, true)
 	}
 	job.addTarget(r)
 	cr.jobs = append(cr.jobs, job)
+}
+
+// derivedFor returns the job already planned or derived for key, or registers job for it and
+// returns nil.
+func (cr *controlRunner) derivedFor(key controlKey, job *controlJob) *controlJob {
+	if other, ok := cr.planned[key]; ok {
+		return other
+	}
+	cr.derivedMu.Lock()
+	defer cr.derivedMu.Unlock()
+	if other, ok := cr.derived[key]; ok {
+		return other
+	}
+	cr.derived[key] = job
+	return nil
 }
 
 // run starts the controls in order, at most controlsParallelism at a time, until ctx (the test's
@@ -287,7 +314,7 @@ func (cr *controlRunner) run(ctx context.Context, tk *TestKeys) (truncated bool)
 		if ctx.Err() != nil {
 			truncated = true
 			for _, j := range cr.jobs[i:] {
-				close(j.done) // never started: not recorded
+				j.finish(nil) // never started: not recorded
 			}
 			break
 		}
@@ -295,8 +322,7 @@ func (cr *controlRunner) run(ctx context.Context, tk *TestKeys) (truncated bool)
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			job.result = job.run(ctx, job)
-			close(job.done)
+			job.finish(job.run(ctx, job))
 		}()
 	}
 	wg.Wait()
