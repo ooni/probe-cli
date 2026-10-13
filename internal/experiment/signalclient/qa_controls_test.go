@@ -197,7 +197,7 @@ func TestQAControlsFingerprintBlocking(t *testing.T) {
 // A refused upgrade is the server's answer (TLS is verified against Signal's roots): no controls
 // run, and the refusal is recorded, scrubbed of IP addresses.
 func TestQAControlsNotAfterUpgradeRefused(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {refuseUpgrade: true}})
+	env := newQAEnv(t, map[string]fault{qaChatAddr: faultRefuseUpgrade})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
@@ -218,7 +218,7 @@ func TestQAControlsNotAfterUpgradeRefused(t *testing.T) {
 
 // A provisioning step that fails after Signal answered gets no controls by default.
 func TestQAControlsNotAfterSignalAnswered(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noAddress: true}})
+	env := newQAEnv(t, map[string]fault{qaChatAddr: faultNoAddress})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.address = 300 * time.Millisecond })
 	expectFailure(t, byName["chat_android"], "provisioning_address", "generic_timeout_error")

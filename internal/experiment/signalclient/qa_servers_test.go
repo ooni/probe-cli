@@ -41,22 +41,6 @@ const (
 	qaGoogleFrontAddr = "142.250.180.4" // www.google.com and the other Google fronts
 )
 
-// qaBehavior configures how a fake front end misbehaves (all false: like Signal).
-type qaBehavior struct {
-	noTimestamp       bool // replies lack X-Signal-Timestamp, as injected replies would
-	noAddress         bool // the provisioning address never arrives
-	closeAfterUpgrade bool // the stream ends right after the upgrade
-	noConnectProtocol bool // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
-	refuseUpgrade     bool // answer the provisioning upgrade with 403, as a CDN's geoblock would
-	enclaveAccepts    bool // accept enclave upgrades without credentials (101)
-	enclave401        bool // answer enclave upgrades 401, as for a real enclave id without credentials
-	deflate           bool // accept permessage-deflate (HTTP/1.1) and compress every message
-	resetAfterAddress bool // HTTP/2: RST_STREAM right after sending the address
-	killAfterAddress  bool // close the TCP connection right after sending the address
-	truncateBody      bool // GET responses: promise 1000 bytes, send 5, close the connection
-	badAccept         bool // answer the HTTP/1.1 provisioning upgrade 101 with a wrong Sec-WebSocket-Accept
-}
-
 // qaGeoblockPage is the body of the fake refusal: a CDN-style page that echoes the client's address.
 const qaGeoblockPage = "<html><body>Access denied: your country (203.0.113.7) is not allowed</body></html>"
 
@@ -93,12 +77,12 @@ var qaGoogleFronts = append(slices.Clone(googleFronts), "www.google.com.pk", "ww
 
 // newQAEnv returns a network where every Signal target resolves to a fake front end, the
 // qaStaticAddrs serve their hosts, 1.1.1.1 answers DNS over UDP and HTTPS (from the non-ISP
-// resolvers' records), and the circumvention fronts relay to the fake servers. behaviors says how
+// resolvers' records), and the circumvention fronts relay to the fake servers. faults says how
 // the server at each address misbehaves.
-func newQAEnv(t *testing.T, behaviors map[string]qaBehavior) *qaEnv {
+func newQAEnv(t *testing.T, faults map[string]fault) *qaEnv {
 	uas := &qaUserAgents{byUA: map[string][]string{}}
 	front := func(addr string, names ...string) netemx.QAEnvOption {
-		return netemx.QAEnvOptionNetStack(addr, &qaSignalServerFactory{t: t, names: names, behavior: behaviors[addr], uas: uas})
+		return netemx.QAEnvOptionNetStack(addr, &qaSignalServerFactory{t: t, names: names, fault: faults[addr], uas: uas})
 	}
 	options := []netemx.QAEnvOption{
 		front(qaGRPCChatAddr, "grpc.chat.signal.org"),
@@ -110,9 +94,9 @@ func newQAEnv(t *testing.T, behaviors map[string]qaBehavior) *qaEnv {
 			&netemx.HTTPSecureServerFactory{Factory: &netemx.DNSOverHTTPSHandlerFactory{}, Ports: []int{443},
 				ServerNameMain: netemx.AddressCloudflareDNSCom1111},
 			&netemx.DNSOverUDPServerFactory{}),
-		netemx.QAEnvOptionNetStack(qaFastlyFrontAddr, &qaFrontFactory{t: t, behavior: behaviors[qaFastlyFrontAddr],
+		netemx.QAEnvOptionNetStack(qaFastlyFrontAddr, &qaFrontFactory{t: t, fault: faults[qaFastlyFrontAddr],
 			names: fastlyFronts, uas: uas}),
-		netemx.QAEnvOptionNetStack(qaGoogleFrontAddr, &qaFrontFactory{t: t, behavior: behaviors[qaGoogleFrontAddr],
+		netemx.QAEnvOptionNetStack(qaGoogleFrontAddr, &qaFrontFactory{t: t, fault: faults[qaGoogleFrontAddr],
 			names: qaGoogleFronts, uas: uas}),
 		netemx.QAEnvOptionLogger(log.Log),
 	}
@@ -153,10 +137,10 @@ var qaStaticAddrs = map[string][]string{
 
 // qaSignalServerFactory is a netemx server factory for a fake Signal front end.
 type qaSignalServerFactory struct {
-	t        *testing.T
-	names    []string
-	behavior qaBehavior
-	uas      *qaUserAgents
+	t     *testing.T
+	names []string
+	fault fault
+	uas   *qaUserAgents
 }
 
 var _ netemx.NetStackServerFactory = &qaSignalServerFactory{}
@@ -213,13 +197,11 @@ func (s *qaSignalServer) serve(conn *tls.Conn) {
 }
 
 func (s *qaSignalServer) provisioning() fakeServer {
-	b := s.factory.behavior
-	return fakeServer{sendAddress: !b.noAddress, closeAtStart: b.closeAfterUpgrade, noTimestamp: b.noTimestamp,
-		compress: b.deflate, stopAfterAddress: b.resetAfterAddress || b.killAfterAddress}
+	return fakeServer{fault: s.factory.fault, compress: s.factory.fault == deflate}
 }
 
 func (s *qaSignalServer) timestampHeader() string {
-	if s.factory.behavior.noTimestamp {
+	if s.factory.fault == faultNoTimestamp {
 		return ""
 	}
 	return "X-Signal-Timestamp: 1791563494213\r\n"
@@ -240,29 +222,29 @@ func (s *qaSignalServer) serveH1Request(conn net.Conn, br *bufio.Reader, req *ht
 	s.factory.uas.add(req.UserAgent(), req.Host)
 	upgrade := strings.EqualFold(req.Header.Get("Upgrade"), "websocket")
 	switch {
-	case upgrade && s.factory.behavior.refuseUpgrade: // a CDN's geoblock page, which echoes the client's IP
+	case upgrade && s.factory.fault == faultRefuseUpgrade: // a CDN's geoblock page, which echoes the client's IP
 		fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nServer: cloudflare\r\nContent-Type: text/html\r\nContent-Length: %d\r\n"+
 			"Connection: close\r\n\r\n%s", len(qaGeoblockPage), qaGeoblockPage)
 	case upgrade && req.URL.Path == "/v1/websocket/provisioning/":
 		accept := websocketAccept(req.Header.Get("Sec-WebSocket-Key"))
-		if s.factory.behavior.badAccept {
+		if s.factory.fault == faultBadAccept {
 			accept = websocketAccept("not the client's key")
 		}
 		ext := ""
-		if s.factory.behavior.deflate {
+		if s.factory.fault == deflate {
 			ext = "Sec-WebSocket-Extensions: permessage-deflate\r\n"
 		}
 		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
 			"Sec-WebSocket-Accept: %s\r\n%s%s\r\n", accept, s.timestampHeader(), ext)
 		s.provisioning().serve(s.factory.t, br, conn)
-	case upgrade && s.factory.behavior.enclave401:
+	case upgrade && s.factory.fault == faultEnclave401:
 		fmt.Fprintf(conn, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-	case upgrade && s.factory.behavior.enclaveAccepts:
+	case upgrade && s.factory.fault == faultEnclaveAccepts:
 		fmt.Fprintf(conn, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
 			"Sec-WebSocket-Accept: %s\r\n\r\n", websocketAccept(req.Header.Get("Sec-WebSocket-Key")))
 	case upgrade: // an enclave path without credentials
 		fmt.Fprintf(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-	case s.factory.behavior.truncateBody:
+	case s.factory.fault == faultTruncateBody:
 		fmt.Fprintf(conn, "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\nshort")
 	default:
 		fmt.Fprintf(conn, "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n%s\r\nok", s.timestampHeader())
@@ -281,7 +263,7 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 	var wmu sync.Mutex
 	locked := func(fn func() error) error { wmu.Lock(); defer wmu.Unlock(); return fn() }
 	settings := []http2.Setting{{ID: http2.SettingMaxConcurrentStreams, Val: 100}, {ID: http2.SettingMaxHeaderListSize, Val: 8192}}
-	if !s.factory.behavior.noConnectProtocol {
+	if s.factory.fault != faultNoConnectProtocol {
 		settings = append(settings, http2.Setting{ID: http2.SettingEnableConnectProtocol, Val: 1})
 	}
 	locked(func() error { return fr.WriteSettings(settings...) })
@@ -289,7 +271,7 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 		var buf bytes.Buffer
 		enc := hpack.NewEncoder(&buf)
 		enc.WriteField(hpack.HeaderField{Name: ":status", Value: fmt.Sprint(status)})
-		if !s.factory.behavior.noTimestamp {
+		if s.factory.fault != faultNoTimestamp {
 			enc.WriteField(hpack.HeaderField{Name: "x-signal-timestamp", Value: "1791563494213"})
 		}
 		return locked(func() error {
@@ -319,7 +301,7 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 				}
 			}
 			if f.PseudoValue("method") == "CONNECT" && f.PseudoValue("protocol") == "websocket" {
-				if s.factory.behavior.refuseUpgrade {
+				if s.factory.fault == faultRefuseUpgrade {
 					respond(f.StreamID, 403, true)
 					continue
 				}
@@ -331,10 +313,10 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 					// close pr when done, or the main loop's pw.Write blocks on the stream's next DATA
 					defer pr.Close()
 					s.provisioning().serve(s.factory.t, pr, w)
-					switch {
-					case s.factory.behavior.resetAfterAddress:
+					switch s.factory.fault {
+					case faultResetAfterAddress:
 						locked(func() error { return fr.WriteRSTStream(f.StreamID, http2.ErrCodeCancel) })
-					case s.factory.behavior.killAfterAddress:
+					case faultKillAfterAddress:
 						conn.Close()
 					default:
 						locked(func() error { return fr.WriteData(f.StreamID, true, nil) })
@@ -342,7 +324,7 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 				}()
 				continue
 			}
-			if s.factory.behavior.truncateBody {
+			if s.factory.fault == faultTruncateBody {
 				respond(f.StreamID, 200, false)
 				locked(func() error { return fr.WriteData(f.StreamID, false, []byte("short")) })
 				conn.Close()
@@ -396,10 +378,10 @@ func (w *qaStreamWriter) Write(p []byte) (int, error) {
 // and Signal-Android's fronted requests (Host header and path prefix), relayed to the fake
 // Signal servers.
 type qaFrontFactory struct {
-	t        *testing.T
-	names    []string
-	behavior qaBehavior
-	uas      *qaUserAgents
+	t     *testing.T
+	names []string
+	fault fault
+	uas   *qaUserAgents
 }
 
 var _ netemx.NetStackServerFactory = &qaFrontFactory{}
@@ -449,11 +431,10 @@ func (s *qaFront) serve(conn net.Conn) {
 	if err != nil {
 		return
 	}
-	b := s.factory.behavior
 	if strings.EqualFold(req.Header.Get("Upgrade"), "websocket") && req.URL.Path == reflectorPath && reflectorHosts[req.Host] {
 		s.factory.uas.add(req.UserAgent(), "tunnel:"+req.Host)
 		upstream, ok := qaUpstreams[req.Header.Get("X-Signal-Host")]
-		if b.refuseUpgrade || !ok {
+		if s.factory.fault == faultRefuseUpgrade || !ok {
 			fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
 			return
 		}
@@ -483,7 +464,7 @@ func (s *qaFront) serve(conn net.Conn) {
 		return
 	}
 	req.Host = host
-	signal := &qaSignalServer{factory: &qaSignalServerFactory{t: s.factory.t, names: []string{host}, behavior: b,
+	signal := &qaSignalServer{factory: &qaSignalServerFactory{t: s.factory.t, names: []string{host}, fault: s.factory.fault,
 		uas: s.factory.uas}}
 	signal.serveH1Request(conn, br, req)
 }

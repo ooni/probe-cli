@@ -176,7 +176,7 @@ func TestQAFingerprintBlocking(t *testing.T) {
 }
 
 func TestQAInjectedReplyWithoutTimestamp(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noTimestamp: true}})
+	env := newQAEnv(t, map[string]fault{qaChatAddr: faultNoTimestamp})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
@@ -194,7 +194,7 @@ func TestQAInjectedReplyWithoutTimestamp(t *testing.T) {
 }
 
 func TestQAProvisioningAddressNeverArrives(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {noAddress: true}, qaChatAddr: {noAddress: true}})
+	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultNoAddress, qaChatAddr: faultNoAddress})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.address = 500 * time.Millisecond })
 	expectFailure(t, byName["chat_libsignal"], "provisioning_address", "generic_timeout_error")
@@ -202,7 +202,7 @@ func TestQAProvisioningAddressNeverArrives(t *testing.T) {
 }
 
 func TestQASessionKilledAfterUpgrade(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {closeAfterUpgrade: true}, qaChatAddr: {closeAfterUpgrade: true}})
+	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultCloseAtStart, qaChatAddr: faultCloseAtStart})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_libsignal"], "provisioning_address", "eof_error")
@@ -210,7 +210,7 @@ func TestQASessionKilledAfterUpgrade(t *testing.T) {
 }
 
 func TestQANoExtendedConnect(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {noConnectProtocol: true}})
+	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultNoConnectProtocol})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_libsignal"], "websocket_upgrade", FailureExtendedConnectNotSupported)
@@ -231,7 +231,7 @@ func TestQASignalReportsOutage(t *testing.T) {
 }
 
 func TestQAUpgradeRefused(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {refuseUpgrade: true}, qaChatAddr: {refuseUpgrade: true}})
+	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultRefuseUpgrade, qaChatAddr: faultRefuseUpgrade})
 	defer env.Close()
 	tk, byName := runQA(t, env, Config{})
 	if tk.MeasurementSummaryKeys().Anomaly() { // a refusal inside Signal-verified TLS is the server's
@@ -248,7 +248,7 @@ func TestQAUpgradeRefused(t *testing.T) {
 
 // A 101 with the wrong Sec-WebSocket-Accept is not an upgrade: the apps' clients reject it.
 func TestQAUpgradeWithWrongAccept(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {badAccept: true}})
+	env := newQAEnv(t, map[string]fault{qaChatAddr: faultBadAccept})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_android"], "websocket_upgrade", FailureWebSocketUpgradeInvalid)
@@ -302,7 +302,7 @@ func TestQAAppUserAgent(t *testing.T) {
 
 // An enclave accepting the upgrade without credentials is unexpected, but Signal answered.
 func TestQAEnclaveAcceptingUpgradeIsReached(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaEnclaveAddr: {enclaveAccepts: true}})
+	env := newQAEnv(t, map[string]fault{qaEnclaveAddr: faultEnclaveAccepts})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	for _, name := range []string{"cdsi", "svr2", "svrb"} {
@@ -326,7 +326,7 @@ func TestQABrokenHelloIsATLSFailure(t *testing.T) {
 }
 
 func TestQAEnclave401IsReached(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaEnclaveAddr: {enclave401: true}})
+	env := newQAEnv(t, map[string]fault{qaEnclaveAddr: faultEnclave401})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	for _, name := range []string{"cdsi", "svr2", "svrb"} {
@@ -337,7 +337,7 @@ func TestQAEnclave401IsReached(t *testing.T) {
 }
 
 func TestQAPermessageDeflateNegotiated(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {deflate: true}})
+	env := newQAEnv(t, map[string]fault{qaChatAddr: deflate})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
@@ -348,7 +348,7 @@ func TestQAPermessageDeflateNegotiated(t *testing.T) {
 }
 
 func TestQAStreamResetAfterAddress(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {resetAfterAddress: true}})
+	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultResetAfterAddress})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	r := byName["chat_libsignal"]
@@ -361,7 +361,7 @@ func TestQAStreamResetAfterAddress(t *testing.T) {
 }
 
 func TestQAConnectionKilledAfterAddress(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {killAfterAddress: true}, qaChatAddr: {killAfterAddress: true}})
+	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultKillAfterAddress, qaChatAddr: faultKillAfterAddress})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	for _, name := range []string{"chat_libsignal", "chat_android"} {
@@ -377,7 +377,7 @@ func TestQAConnectionKilledAfterAddress(t *testing.T) {
 }
 
 func TestQATruncatedBodyIsAFailure(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaCDNAddr: {truncateBody: true}})
+	env := newQAEnv(t, map[string]fault{qaCDNAddr: faultTruncateBody})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{})
 	for name, alpn := range map[string]string{"storage": "h2", "updates2_desktop": ""} { // both protocols
@@ -452,7 +452,7 @@ func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
 // A step cut short by the test's clock is interrupted, not a timeout of the network's.
 func TestQAProvisioningCutByTheClock(t *testing.T) {
 	const clock = 2 * time.Second // the address step would wait 10 s
-	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noAddress: true}})
+	env := newQAEnv(t, map[string]fault{qaChatAddr: faultNoAddress})
 	defer env.Close()
 	_, byName := runQA(t, env, Config{Controls: ControlsOff}, func(m *Measurer) { m.limits.test = clock })
 	expectFailure(t, byName["chat_android"], "provisioning_address", "interrupted")

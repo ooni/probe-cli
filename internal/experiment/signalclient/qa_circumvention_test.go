@@ -144,7 +144,7 @@ func TestQACircumventionFrontSNIBlocked(t *testing.T) {
 }
 
 func TestQACircumventionTunnelRefused(t *testing.T) {
-	env := newQAEnv(t, map[string]qaBehavior{qaFastlyFrontAddr: {refuseUpgrade: true}})
+	env := newQAEnv(t, map[string]fault{qaFastlyFrontAddr: faultRefuseUpgrade})
 	defer env.Close()
 	tk, _ := runQA(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff})
 	r := byRoute(tk)[RouteReflectorF]

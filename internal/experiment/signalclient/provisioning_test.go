@@ -15,29 +15,50 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// fakeServer plays Signal's side of a provisioning socket on conn.
-type fakeServer struct {
-	sendAddress     bool
-	closeAtStart    bool
-	noTimestamp     bool
-	badPong         bool
-	pingAfterAck    bool         // send a PING right after the client's ack (during idle)
-	gotPong         *atomic.Bool // set when the client answers that PING
-	timestampHeader string       // replaces the X-Signal-Timestamp header line when set
+// fault is how a fake Signal server misbehaves; the zero value behaves like Signal. The provisioning
+// socket's faults are fakeServer's; the front ends' (qa_servers_test.go) also pass them through.
+type fault int
 
-	spamPongs          bool   // send unsolicited pongs every 50 ms instead of the address
-	closeOnPing        bool   // answer the client's PING with a close frame (TCP stays open)
-	junkPongFirst      bool   // answer the client's PING with an unrelated pong, then the echo
-	keepaliveWrongID   bool   // answer keepalives with a different id
-	keepaliveStatus    uint32 // answer keepalives with this status (default 200)
-	compress           bool   // send every message with permessage-deflate (RSV1, shared context)
-	corruptCompressed  bool   // send the address as an RSV1 frame that does not inflate
-	addressWithoutAddr bool   // send a ProvisioningAddress with no address field
-	oversizedFrame     bool   // send a frame header announcing more than maxFramePayload
-	reservedOpcode     bool   // send a frame with reserved opcode 0x3 instead of the address
-	stopAfterAddress   bool   // return right after sending the address (the caller then kills the stream)
-	extraAfterAddress  bool   // send another binary message right after the address
-	ignoreKeepalives   bool   // stay connected but never answer keepalives
+const (
+	_ fault = iota // behaves like Signal
+
+	// the provisioning socket
+	faultNoAddress             // the provisioning address never arrives
+	faultCloseAtStart          // the stream ends right after the upgrade
+	faultNoTimestamp           // replies lack X-Signal-Timestamp, as injected replies would
+	faultTimestampLookalike    // replies carry X-Signal-Timestamp-Foo instead of X-Signal-Timestamp
+	faultSpamPongs             // unsolicited pongs every 50 ms instead of the address
+	faultAddressWithoutAddress // a ProvisioningAddress with no address field
+	faultCorruptCompressed     // the address as a compressed (RSV1) frame that does not inflate
+	faultOversizedFrame        // a frame header announcing more than maxFramePayload
+	faultReservedOpcode        // a frame with reserved opcode 0x3 instead of the address
+	faultMessageThenClose      // another message right after the address, then the stream ends
+	faultIgnoreKeepalives      // never answer keepalives
+	faultKeepaliveWrongAnswer  // answer keepalives with another id and status 500
+	faultBadPong               // answer the client's PING with another payload
+	faultJunkPongFirst         // answer the client's PING with an unrelated pong, then the echo
+	faultCloseOnPing           // answer the client's PING with a close frame (TCP stays open)
+
+	// the front ends
+	faultResetAfterAddress // HTTP/2: RST_STREAM right after the address
+	faultKillAfterAddress  // close the TCP connection right after the address
+	faultNoConnectProtocol // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
+	faultRefuseUpgrade     // 403 to the provisioning upgrade, as a CDN's geoblock would
+	faultBadAccept         // a 101 with the wrong Sec-WebSocket-Accept (HTTP/1.1)
+	faultEnclaveAccepts    // accept enclave upgrades without credentials (101)
+	faultEnclave401        // 401 to enclave upgrades, as for a real enclave id without credentials
+	faultTruncateBody      // GET responses: promise 1000 bytes, send 5, close the connection
+	deflate                // not a fault: accept permessage-deflate (HTTP/1.1), compress every message
+)
+
+// fakeServer plays Signal's side of a provisioning socket.
+type fakeServer struct {
+	fault    fault
+	compress bool // permessage-deflate was negotiated: send every message compressed
+
+	// pingAfterAck, when set, makes the server PING right after the client's ack (during the
+	// idle time), and records whether the client answered.
+	pingAfterAck *atomic.Bool
 }
 
 func (f fakeServer) run(t *testing.T, conn net.Conn) {
@@ -48,7 +69,7 @@ func (f fakeServer) run(t *testing.T, conn net.Conn) {
 // serve runs the server side of the provisioning flow over any byte stream (an HTTP/1.1
 // connection after the upgrade, or an HTTP/2 stream), until the client closes.
 func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
-	if f.closeAtStart {
+	if f.fault == faultCloseAtStart {
 		return
 	}
 	ws := newWSConn(r, w) // reads the client's masked frames
@@ -64,32 +85,34 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		}
 		w.Write(serverFrame(true, false, op, p))
 	}
-	switch {
-	case f.spamPongs:
+	switch f.fault {
+	case faultNoAddress:
+	case faultSpamPongs:
 		for i := 0; i < 40; i++ {
 			send(opPong, []byte("unsolicited"))
 			time.Sleep(50 * time.Millisecond)
 		}
 		return
-	case f.oversizedFrame:
+	case faultOversizedFrame:
 		var l [8]byte
 		binary.BigEndian.PutUint64(l[:], maxFramePayload+1)
 		w.Write(append([]byte{0x82, 127}, l[:]...))
 		return
-	case f.reservedOpcode:
+	case faultReservedOpcode:
 		w.Write(serverFrame(true, false, 0x3, []byte("x")))
 		return
-	case f.corruptCompressed:
+	case faultCorruptCompressed:
 		w.Write(serverFrame(true, true, opBinary, []byte{0xff, 0xff, 0xff, 0xff, 0x00}))
 		return
-	case f.addressWithoutAddr:
+	case faultAddressWithoutAddress:
 		send(opBinary, serverRequest("PUT", "/v1/address", 7, addressWithoutAddress))
-	case f.sendAddress:
+	default:
 		send(opBinary, serverRequest("PUT", "/v1/address", 7, addressBody()))
-		if f.extraAfterAddress {
+		switch f.fault {
+		case faultMessageThenClose:
 			send(opBinary, serverRequest("PUT", "/v1/message", 8, nil))
-		}
-		if f.stopAfterAddress {
+			return
+		case faultResetAfterAddress, faultKillAfterAddress: // the front end resets or kills
 			return
 		}
 	}
@@ -100,19 +123,19 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		}
 		switch op {
 		case opPing:
-			switch {
-			case f.closeOnPing:
+			switch f.fault {
+			case faultCloseOnPing:
 				send(opClose, []byte{0x03, 0xe8})
 				continue
-			case f.junkPongFirst:
+			case faultJunkPongFirst:
 				send(opPong, []byte("not the payload"))
-			case f.badPong:
+			case faultBadPong:
 				p = []byte("not the payload")
 			}
 			send(opPong, p)
 		case opPong:
-			if f.gotPong != nil && string(p) == "server-ping" {
-				f.gotPong.Store(true)
+			if f.pingAfterAck != nil && string(p) == "server-ping" {
+				f.pingAfterAck.Store(true)
 			}
 		case opClose:
 			return
@@ -125,29 +148,29 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 			if msg.Response != nil && (msg.Response.GetId() != 7 || msg.Response.GetStatus() != 200) {
 				t.Errorf("bad ack: %+v", msg.Response)
 			}
-			if msg.Response != nil && f.pingAfterAck {
+			if msg.Response != nil && f.pingAfterAck != nil {
 				send(opPing, []byte("server-ping"))
 			}
-			if msg.Request.GetPath() == "/v1/keepalive" && !f.ignoreKeepalives {
-				h := []string{"X-Signal-Timestamp:1791563494213", "Content-Length:0"}
-				if f.timestampHeader != "" {
-					h[0] = f.timestampHeader
-				}
-				if f.noTimestamp {
-					h = h[1:]
-				}
-				id, status := msg.Request.GetId(), f.keepaliveStatus
-				if f.keepaliveWrongID {
-					id++
-				}
-				if status == 0 {
-					status = 200
-				}
-				send(opBinary, responseMessage(&signalpb.WebSocketResponseMessage{
-					Id: proto.Uint64(id), Status: proto.Uint32(status), Message: proto.String("OK"), Headers: h}))
+			if msg.Request.GetPath() == "/v1/keepalive" && f.fault != faultIgnoreKeepalives {
+				send(opBinary, f.keepaliveAnswer(msg.Request.GetId()))
 			}
 		}
 	}
+}
+
+// keepaliveAnswer is the server's response to the keepalive with id.
+func (f fakeServer) keepaliveAnswer(id uint64) []byte {
+	resp := &signalpb.WebSocketResponseMessage{Id: proto.Uint64(id), Status: proto.Uint32(200), Message: proto.String("OK"),
+		Headers: []string{"X-Signal-Timestamp:1791563494213", "Content-Length:0"}}
+	switch f.fault {
+	case faultNoTimestamp:
+		resp.Headers = resp.Headers[1:]
+	case faultTimestampLookalike:
+		resp.Headers[0] = "X-Signal-Timestamp-Foo:1"
+	case faultKeepaliveWrongAnswer:
+		resp.Id, resp.Status = proto.Uint64(id+1), proto.Uint32(500)
+	}
+	return responseMessage(resp)
 }
 
 // runAgainst runs the flow against f, with the measurement's flow changed by adjust.
@@ -163,12 +186,12 @@ func runAgainst(t *testing.T, f fakeServer, adjust ...func(*provisioningFlow)) *
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	ws := newWSConn(client, client)
-	ws.deflate = f.compress || f.corruptCompressed // as if negotiated
+	ws.deflate = f.compress || f.fault == faultCorruptCompressed // as if negotiated
 	return runProvisioning(ctx, ws, time.Now(), flow, nil)
 }
 
 func TestProvisioningHappyPath(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true})
+	r := runAgainst(t, fakeServer{})
 	if r.Failure != nil || !r.AddressReceived || r.AddressLength != 24 || !r.Acked {
 		t.Fatalf("unexpected: %+v failure=%v", r, deref(r.Failure))
 	}
@@ -186,21 +209,21 @@ func TestProvisioningHappyPath(t *testing.T) {
 }
 
 func TestProvisioningNoAddress(t *testing.T) {
-	r := runAgainst(t, fakeServer{}, func(flow *provisioningFlow) { flow.addressTimeout = 200 * time.Millisecond })
+	r := runAgainst(t, fakeServer{fault: faultNoAddress}, func(flow *provisioningFlow) { flow.addressTimeout = 200 * time.Millisecond })
 	if r.FailedStep != "provisioning_address" || deref(r.Failure) != "generic_timeout_error" {
 		t.Fatalf("got step %q failure %q", r.FailedStep, deref(r.Failure))
 	}
 }
 
 func TestProvisioningClosedAfterUpgrade(t *testing.T) {
-	r := runAgainst(t, fakeServer{closeAtStart: true})
+	r := runAgainst(t, fakeServer{fault: faultCloseAtStart})
 	if r.FailedStep != "provisioning_address" || deref(r.Failure) != "eof_error" {
 		t.Fatalf("got step %q failure %q", r.FailedStep, deref(r.Failure))
 	}
 }
 
 func TestProvisioningReplyWithoutTimestamp(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, noTimestamp: true})
+	r := runAgainst(t, fakeServer{fault: faultNoTimestamp})
 	if r.Failure != nil {
 		t.Fatal(deref(r.Failure))
 	}
@@ -212,7 +235,7 @@ func TestProvisioningReplyWithoutTimestamp(t *testing.T) {
 }
 
 func TestProvisioningPongMismatch(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, badPong: true},
+	r := runAgainst(t, fakeServer{fault: faultBadPong},
 		func(flow *provisioningFlow) { flow.keepaliveTimeout = 300 * time.Millisecond })
 	if r.PingEchoed == nil || *r.PingEchoed {
 		t.Fatalf("expected ping_echoed=false, got %v", r.PingEchoed)
@@ -230,7 +253,7 @@ func deref(s *string) string {
 func TestProvisioningIdleSurvivesServerPing(t *testing.T) {
 	var gotPong atomic.Bool
 	idle := 300 * time.Millisecond
-	r := runAgainst(t, fakeServer{sendAddress: true, pingAfterAck: true, gotPong: &gotPong},
+	r := runAgainst(t, fakeServer{pingAfterAck: &gotPong},
 		func(flow *provisioningFlow) { flow.idle = idle })
 	if r.Failure != nil {
 		t.Fatal(deref(r.Failure))
@@ -245,7 +268,7 @@ func TestProvisioningIdleSurvivesServerPing(t *testing.T) {
 
 // Only a header named exactly X-Signal-Timestamp counts.
 func TestProvisioningTimestampHeaderNameIsExact(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, timestampHeader: "X-Signal-Timestamp-Foo:1"})
+	r := runAgainst(t, fakeServer{fault: faultTimestampLookalike})
 	if r.Failure != nil {
 		t.Fatal(deref(r.Failure))
 	}
@@ -261,7 +284,7 @@ func TestProvisioningTimestampHeaderNameIsExact(t *testing.T) {
 func TestProvisioningStepDeadlineIsNotExtendedByIgnoredFrames(t *testing.T) {
 	const deadline = 300 * time.Millisecond
 	start := time.Now()
-	r := runAgainst(t, fakeServer{spamPongs: true}, func(flow *provisioningFlow) { flow.addressTimeout = deadline })
+	r := runAgainst(t, fakeServer{fault: faultSpamPongs}, func(flow *provisioningFlow) { flow.addressTimeout = deadline })
 	if r.FailedStep != "provisioning_address" || deref(r.Failure) != "generic_timeout_error" {
 		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
 	}
@@ -271,21 +294,21 @@ func TestProvisioningStepDeadlineIsNotExtendedByIgnoredFrames(t *testing.T) {
 }
 
 func TestProvisioningCloseDuringPing(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, closeOnPing: true})
+	r := runAgainst(t, fakeServer{fault: faultCloseOnPing})
 	if r.FailedStep != "ping" || deref(r.Failure) != "eof_error" {
 		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
 	}
 }
 
 func TestProvisioningUnsolicitedPongBeforeEcho(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, junkPongFirst: true})
+	r := runAgainst(t, fakeServer{fault: faultJunkPongFirst})
 	if r.Failure != nil || r.PingEchoed == nil || !*r.PingEchoed {
 		t.Fatalf("expected the echo to be found after a junk pong: echoed=%v failure=%q", r.PingEchoed, deref(r.Failure))
 	}
 }
 
 func TestProvisioningKeepaliveWrongIDAndStatus(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, keepaliveWrongID: true, keepaliveStatus: 500})
+	r := runAgainst(t, fakeServer{fault: faultKeepaliveWrongAnswer})
 	if r.Failure != nil {
 		t.Fatal(deref(r.Failure))
 	}
@@ -297,20 +320,20 @@ func TestProvisioningKeepaliveWrongIDAndStatus(t *testing.T) {
 }
 
 func TestProvisioningCompressedMessages(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, compress: true})
+	r := runAgainst(t, fakeServer{compress: true})
 	if r.Failure != nil || !r.AddressReceived || len(r.Keepalives) != 3 || !r.Keepalives[2].SignalTimestamp {
 		t.Fatalf("compressed flow failed: %+v failure=%q", r, deref(r.Failure))
 	}
 }
 
 func TestProvisioningMalformedInputs(t *testing.T) {
-	for name, f := range map[string]fakeServer{
-		"corrupt deflate":            {corruptCompressed: true},
-		"address without address":    {addressWithoutAddr: true},
-		"frame above the size limit": {oversizedFrame: true},
-		"reserved opcode":            {reservedOpcode: true},
+	for name, fault := range map[string]fault{
+		"corrupt deflate":            faultCorruptCompressed,
+		"address without address":    faultAddressWithoutAddress,
+		"frame above the size limit": faultOversizedFrame,
+		"reserved opcode":            faultReservedOpcode,
 	} {
-		r := runAgainst(t, f)
+		r := runAgainst(t, fakeServer{fault: fault})
 		if r.FailedStep != "provisioning_address" || deref(r.Failure) != FailureMalformedMessage {
 			t.Errorf("%s: got %q/%q", name, r.FailedStep, deref(r.Failure))
 		}
@@ -318,7 +341,7 @@ func TestProvisioningMalformedInputs(t *testing.T) {
 }
 
 func TestProvisioningKeepaliveFailureSetsT(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, ignoreKeepalives: true},
+	r := runAgainst(t, fakeServer{fault: faultIgnoreKeepalives},
 		func(flow *provisioningFlow) { flow.keepaliveTimeout = 200 * time.Millisecond })
 	if r.FailedStep != "keepalive" || len(r.Keepalives) != 1 {
 		t.Fatalf("expected the first keepalive to fail, got step %q with %d keepalives", r.FailedStep, len(r.Keepalives))
@@ -332,7 +355,7 @@ func TestProvisioningKeepaliveFailureSetsT(t *testing.T) {
 // the server sends a message after the address and closes, so the ack's write fails, and the EOF
 // queued behind that message is the reason.
 func TestProvisioningWriteFailureSkipsQueuedMessages(t *testing.T) {
-	r := runAgainst(t, fakeServer{sendAddress: true, extraAfterAddress: true, stopAfterAddress: true})
+	r := runAgainst(t, fakeServer{fault: faultMessageThenClose})
 	if r.FailedStep != "ack" || deref(r.Failure) != "eof_error" {
 		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
 	}
