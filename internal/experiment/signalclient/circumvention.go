@@ -260,13 +260,9 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 	}
 	stop := context.AfterFunc(tctx, func() { _ = tr.conn.Close() })
 	defer stop()
-	tunnelUA := ooniUserAgent // identify the test to the relay; libsignal itself sends none
-	if in.m.config.AppUserAgent {
-		tunnelUA = ""
-	}
-	if in.m.config.UserAgent != "" {
-		tunnelUA = in.m.config.UserAgent
-	}
+	// libsignal sends its connection manager's User-Agent (the app's, plus " libsignal/<version>") on
+	// the tunnel upgrade too (rust/net/infra/src/route/proxy.rs, ConnectionProxyConfig::Reflector)
+	tunnelUA := in.m.config.userAgent(HelloLibsignalReflector)
 	up, err := tunnelUpgrade(connectCtx, tr.conn, hostHeader, target.Hostname, tunnelUA)
 	var status int64
 	if up != nil {

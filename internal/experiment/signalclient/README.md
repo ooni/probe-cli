@@ -74,8 +74,10 @@ The test is not enabled by default: set `OONI_FORCE_ENABLE_EXPERIMENT=1` to run 
   DNS lookup has its own 30 s, and the provisioning steps keep their usual limits.
 - **Route `host_header`, `front` and `front_client_hello`** describe the route's first
   connection. `tls_handshakes` records each connection's SNI.
-- **The User-Agent on the reflector tunnel's upgrade** identifies the test, as the targets' does.
-  With `AppUserAgent` none is sent, as libsignal sends none.
+- **The User-Agent on the reflector tunnel's upgrade** is libsignal's, as on libsignal's routes:
+  the OONI one with ` libsignal/<version>` by default, the app's with `AppUserAgent`. libsignal
+  sends its connection manager's User-Agent on the tunnel too
+  (`rust/net/infra/src/route/proxy.rs`).
 
 ## Tests
 

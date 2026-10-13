@@ -93,6 +93,7 @@ func (s *qaFront) serve(conn net.Conn) {
 	}
 	b := s.factory.behavior
 	if strings.EqualFold(req.Header.Get("Upgrade"), "websocket") && req.URL.Path == reflectorPath && reflectorHosts[req.Host] {
+		qaSeenUserAgents.add(req.UserAgent(), "tunnel:"+req.Host)
 		upstream, ok := qaUpstreams[req.Header.Get("X-Signal-Host")]
 		if b.refuseUpgrade || !ok {
 			fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
@@ -412,5 +413,26 @@ func TestQACircumventionConnectBudgetIsPerTarget(t *testing.T) {
 	}
 	if len(r.Targets) != 2 || r.FailedOperation != "tls_handshake" {
 		t.Errorf("route: %d targets, %q %q", len(r.Targets), r.FailedOperation, deref(r.Failure))
+	}
+}
+
+// The reflector tunnel's upgrade carries libsignal's User-Agent (the app's, plus libsignal's
+// token): the OONI one by default, the app's with AppUserAgent.
+func TestQACircumventionTunnelUserAgent(t *testing.T) {
+	for _, c := range []struct {
+		config Config
+		want   string
+	}{
+		{Config{Circumvention: RouteReflectorF, Controls: ControlsOff}, ooniUserAgent + " libsignal/0.105.0"},
+		{Config{Circumvention: RouteReflectorF, Controls: ControlsOff, AppUserAgent: true},
+			"Signal-Android/8.31.1 Android/34 libsignal/0.105.0"},
+	} {
+		env := newQAEnv(t, nil)
+		runQAWith(t, env, c.config)
+		seen := qaSeenUserAgents.seen()
+		env.Close()
+		if hosts := seen[c.want]; !contains(hosts, "tunnel:reflector-signal.global.ssl.fastly.net") {
+			t.Errorf("AppUserAgent=%v: tunnel upgrade not sent with %q (saw %v)", c.config.AppUserAgent, c.want, seen)
+		}
 	}
 }
