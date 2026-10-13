@@ -204,7 +204,7 @@ func innerByName(r *RouteResult) map[string]*TargetResult {
 func TestQACircumventionOffByDefault(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, _ := runQA(t, env)
+	tk, _ := runQA(t, env, Config{})
 	data, err := json.Marshal(tk)
 	if err != nil {
 		t.Fatal(err)
@@ -217,7 +217,7 @@ func TestQACircumventionOffByDefault(t *testing.T) {
 func TestQACircumventionAllRoutes(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, byName := runQAWith(t, env, Config{Circumvention: "all", CircumventionCountry: "pk", Controls: ControlsOff})
+	tk, byName := runQA(t, env, Config{Circumvention: "all", CircumventionCountry: "pk", Controls: ControlsOff})
 	expectOK(t, byName, allTargets...)
 	routes := byRoute(tk)
 	if len(tk.Circumvention) != 4 {
@@ -298,7 +298,7 @@ func TestQACircumventionFrontSNIBlocked(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "pinterest.com"})
-	tk, byName := runQAWith(t, env, Config{Circumvention: "reflector_f,reflector_g", Controls: ControlsOff,
+	tk, byName := runQA(t, env, Config{Circumvention: "reflector_f,reflector_g", Controls: ControlsOff,
 		Fronts: "reflector_f=reflector-signal.global.ssl.fastly.net@pinterest.com"})
 	expectOK(t, byName, allTargets...)
 	routes := byRoute(tk)
@@ -315,7 +315,7 @@ func TestQACircumventionFrontSNIBlocked(t *testing.T) {
 func TestQACircumventionTunnelRefused(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaFastlyFrontAddr: {refuseUpgrade: true}})
 	defer env.Close()
-	tk, _ := runQAWith(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff})
+	tk, _ := runQA(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff})
 	r := byRoute(tk)[RouteReflectorF]
 	if r.FailedOperation != tunnelUpgradeOperation || deref(r.Failure) != FailureWebSocketUpgradeRefused ||
 		r.TunnelStatus == nil || *r.TunnelStatus != 403 {
@@ -334,7 +334,7 @@ func TestQACircumventionInnerTLSIsVerified(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	other := mustSelfSignedPEM(t)
-	tk, _ := runQAWith(t, env, Config{Circumvention: RouteReflectorG, Controls: ControlsOff, SignalCA: other})
+	tk, _ := runQA(t, env, Config{Circumvention: RouteReflectorG, Controls: ControlsOff, SignalCA: other})
 	r := byRoute(tk)[RouteReflectorG]
 	if r.Failure != nil || r.TunnelStatus == nil || *r.TunnelStatus != 101 {
 		t.Fatalf("the front itself is verified with Google's roots, not SignalCA: %+v failure=%q", r, deref(r.Failure))
@@ -350,7 +350,7 @@ func TestQACircumventionAndroidFrontsByCountry(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	for country, want := range map[string]string{"EG": "www.google.com.eg", "BR": "www.google.com", "": "www.google.com"} {
-		tk, _ := runQAWith(t, env, Config{Circumvention: RouteAndroidG, CircumventionCountry: country, Controls: ControlsOff})
+		tk, _ := runQA(t, env, Config{Circumvention: RouteAndroidG, CircumventionCountry: country, Controls: ControlsOff})
 		r := byRoute(tk)[RouteAndroidG]
 		if r.Front != want || r.Failure != nil {
 			t.Errorf("%q: front %q failure %q", country, r.Front, deref(r.Failure))
@@ -360,13 +360,12 @@ func TestQACircumventionAndroidFrontsByCountry(t *testing.T) {
 
 // A service whose fronts were replaced separately resolves and dials its own front.
 func TestQACircumventionPerServiceFront(t *testing.T) {
-	defer func(d time.Duration) { opTimeout = d }(opTimeout)
-	opTimeout = time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.AddRecordToAllResolvers("front.storage.example", "", "10.10.34.36") // nothing there
-	tk, _ := runQAWith(t, env, Config{Circumvention: RouteAndroidF, Controls: ControlsOff,
-		Fronts: "android_f.storage=storage.signal.org.global.prod.fastly.net@front.storage.example"})
+	tk, _ := runQA(t, env, Config{Circumvention: RouteAndroidF, Controls: ControlsOff,
+		Fronts: "android_f.storage=storage.signal.org.global.prod.fastly.net@front.storage.example"},
+		func(m *Measurer) { m.limits.op = time.Second })
 	r := byRoute(tk)[RouteAndroidF]
 	inner := innerByName(r)
 	if chat := inner["chat_android"]; chat.Failure != nil || *chat.Address != net.JoinHostPort(qaFastlyFrontAddr, "443") {
@@ -381,7 +380,7 @@ func TestQACircumventionPerServiceFront(t *testing.T) {
 func TestQACircumventionFrontDoesNotResolve(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, _ := runQAWith(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff,
+	tk, _ := runQA(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff,
 		Fronts: "reflector_f=reflector-signal.global.ssl.fastly.net@nx.front.example"})
 	r := byRoute(tk)[RouteReflectorF]
 	if r.FailedOperation != "resolve" || r.Failure == nil || r.TunnelStatus == nil || *r.TunnelStatus != 0 || len(r.Targets) != 0 {
@@ -396,18 +395,18 @@ func TestQACircumventionFrontDoesNotResolve(t *testing.T) {
 // Each target of a route has its own operation limit, as a direct target does: a blackholed
 // front costs each of a reflector route's tunnels one budget, and no more.
 func TestQACircumventionConnectBudgetIsPerTarget(t *testing.T) {
-	defer func(d time.Duration) { opTimeout = d }(opTimeout)
-	opTimeout = 2 * time.Second
+	const op = 2 * time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "pinterest.com"})
-	tk, _ := runQAWith(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff,
-		Fronts: "reflector_f=reflector-signal.global.ssl.fastly.net@pinterest.com"})
+	tk, _ := runQA(t, env, Config{Circumvention: RouteReflectorF, Controls: ControlsOff,
+		Fronts: "reflector_f=reflector-signal.global.ssl.fastly.net@pinterest.com"},
+		func(m *Measurer) { m.limits.op = op })
 	r := byRoute(tk)[RouteReflectorF]
 	for _, inner := range r.Targets {
 		took := inner.T - inner.T0
 		if inner.FailedOperation != "tls_handshake" || deref(inner.Failure) != "generic_timeout_error" ||
-			took < opTimeout.Seconds()-0.5 || took > opTimeout.Seconds()+1 {
+			took < op.Seconds()-0.5 || took > op.Seconds()+1 {
 			t.Errorf("%s: %q %q after %.2f s", inner.Name, inner.FailedOperation, deref(inner.Failure), took)
 		}
 	}
@@ -428,7 +427,7 @@ func TestQACircumventionTunnelUserAgent(t *testing.T) {
 			"Signal-Android/8.31.1 Android/34 libsignal/0.105.0"},
 	} {
 		env := newQAEnv(t, nil)
-		runQAWith(t, env, c.config)
+		runQA(t, env, c.config)
 		seen := qaSeenUserAgents.seen()
 		env.Close()
 		if hosts := seen[c.want]; !contains(hosts, "tunnel:reflector-signal.global.ssl.fastly.net") {

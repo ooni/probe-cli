@@ -54,12 +54,6 @@ type KeepaliveResult struct {
 	Failure         *string `json:"failure"`
 }
 
-// Timeouts for each step (variables so tests can shorten them).
-var (
-	addressTimeout   = 10 * time.Second // ProvisioningSocket.kt
-	keepaliveTimeout = 10 * time.Second
-)
-
 type frame struct {
 	op      byte
 	payload []byte
@@ -72,18 +66,25 @@ const pendingReadErrorWait = 200 * time.Millisecond
 // errStepTimeout is a step that did not complete in time (classified as generic_timeout_error).
 var errStepTimeout = fmt.Errorf("signal_client: provisioning step: %w", context.DeadlineExceeded)
 
-// runProvisioning drives the flow on an upgraded WebSocket. paddings lists the keepalive body
-// sizes; idle is how long to stay quiet after the ack (0: not at all); checkpoint, when not nil,
-// is called after each step (the caller drains its trace's bounded event buffers there).
-func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings []int, idle time.Duration,
+// provisioningFlow is how runProvisioning runs the flow.
+type provisioningFlow struct {
+	paddings         []int         // the keepalives' body sizes
+	idle             time.Duration // how long to stay quiet after the ack (0: not at all)
+	addressTimeout   time.Duration // waiting for the server's address
+	keepaliveTimeout time.Duration // waiting for each keepalive's response, and for the PONG
+}
+
+// runProvisioning drives the flow on an upgraded WebSocket. checkpoint, when not nil, is called
+// after each step (the caller drains its trace's bounded event buffers there).
+func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, flow provisioningFlow,
 	checkpoint func()) *ProvisioningResult {
-	res := &ProvisioningResult{IdleSeconds: int64(idle / time.Second)}
+	res := &ProvisioningResult{IdleSeconds: int64(flow.idle / time.Second)}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	if checkpoint == nil {
 		checkpoint = func() {}
 	}
-	s := newSession(ctx, ws)
+	s := newSession(ctx, ws, flow)
 	fail := func(step string, err error) *ProvisioningResult {
 		res.FailedStep, res.Failure = step, measurexlite.NewFailure(err)
 		return res
@@ -104,15 +105,15 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 	res.Acked = true
 	checkpoint()
 
-	if idle > 0 {
-		if err := s.idle(idle); err != nil {
+	if flow.idle > 0 {
+		if err := s.idle(flow.idle); err != nil {
 			return fail("idle", err)
 		}
 		checkpoint()
 	}
 
 	// 3. keepalives, some padded
-	for i, pad := range paddings {
+	for i, pad := range flow.paddings {
 		kr, err := s.keepalive(uint64(i), pad, zero) // #nosec G115 -- a few keepalives
 		res.Keepalives = append(res.Keepalives, kr)
 		if err != nil {
@@ -138,12 +139,13 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 type session struct {
 	ctx    context.Context
 	ws     *wsConn
+	flow   provisioningFlow
 	frames chan frame
 }
 
 // newSession starts reading ws's frames until a read error or ctx's end.
-func newSession(ctx context.Context, ws *wsConn) *session {
-	s := &session{ctx: ctx, ws: ws, frames: make(chan frame, 16)}
+func newSession(ctx context.Context, ws *wsConn, flow provisioningFlow) *session {
+	s := &session{ctx: ctx, ws: ws, flow: flow, frames: make(chan frame, 16)}
 	go func() {
 		for {
 			op, p, err := ws.readFrame()
@@ -213,7 +215,7 @@ func (s *session) send(op byte, payload []byte) error {
 // awaitAddress waits for the server's REQUEST PUT /v1/address and returns it and its address.
 // The first binary message must be that request.
 func (s *session) awaitAddress() (*signalpb.WebSocketRequestMessage, string, error) {
-	f, err := s.recv(time.Now().Add(addressTimeout), isBinary)
+	f, err := s.recv(time.Now().Add(s.flow.addressTimeout), isBinary)
 	if err != nil {
 		return nil, "", err
 	}
@@ -258,7 +260,7 @@ func (s *session) keepalive(i uint64, pad int, zero time.Time) (*KeepaliveResult
 		return fail(err)
 	}
 	var resp *signalpb.WebSocketResponseMessage
-	_, err := s.recv(time.Now().Add(keepaliveTimeout), func(f frame) bool {
+	_, err := s.recv(time.Now().Add(s.flow.keepaliveTimeout), func(f frame) bool {
 		if f.op != opBinary {
 			return false
 		}
@@ -290,7 +292,7 @@ func (s *session) ping() (bool, error) {
 		return false, err
 	}
 	sawOtherPong := false
-	_, err := s.recv(time.Now().Add(keepaliveTimeout), func(f frame) bool {
+	_, err := s.recv(time.Now().Add(s.flow.keepaliveTimeout), func(f frame) bool {
 		if f.op == opPong && !bytes.Equal(f.payload, payload) {
 			sawOtherPong = true
 			return false

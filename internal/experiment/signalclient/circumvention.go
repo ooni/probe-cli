@@ -171,7 +171,7 @@ type routeInnerRun struct {
 
 // resolveFront returns the address of a front's first IPv4 address, with the system resolver.
 func (in *routeInnerRun) resolveFront(ctx context.Context, index int64, front string, tags ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	ctx, cancel := context.WithTimeout(ctx, in.m.limits.op)
 	defer cancel()
 	trace := measurexlite.NewTrace(index, in.zero, tags...)
 	addrs, err := trace.NewStdlibResolver(in.logger).LookupHost(ctx, front)
@@ -192,13 +192,13 @@ func (in *routeInnerRun) newResult(target Target, hello Hello) *TargetResult {
 }
 
 // connectFront records the inner target's evidence in a new trace and connects to the front: TCP
-// and TLS within opTimeout. On failure, it records the failure in res and returns a nil
+// and TLS within limits.op. On failure, it records the failure in res and returns a nil
 // *tlsResult. Each later step (the tunnel's upgrade, the inner handshake, the upgrade or GET) has
-// its own opTimeout.
+// its own limits.op.
 func (in *routeInnerRun) connectFront(ctx context.Context, res *TargetResult, hello Hello, front string) (
 	*measurexlite.Trace, *tlsResult) {
 	trace := measurexlite.NewTrace(in.index, in.zero, in.tags...)
-	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	ctx, cancel := context.WithTimeout(ctx, in.m.limits.op)
 	defer cancel()
 	tr, err := dialTLS(ctx, trace, in.logger, in.frontAddress, front, hello, in.frontRoots)
 	in.tk.recordTLS(trace, tr)
@@ -231,7 +231,7 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 	defer stop()
 	// libsignal sends its connection manager's User-Agent (the app's, plus " libsignal/<version>") on
 	// the tunnel upgrade too (rust/net/infra/src/route/proxy.rs, ConnectionProxyConfig::Reflector)
-	upgradeCtx, cancelUpgrade := context.WithTimeout(ctx, opTimeout)
+	upgradeCtx, cancelUpgrade := context.WithTimeout(ctx, in.m.limits.op)
 	defer cancelUpgrade()
 	up, err := tunnelUpgrade(upgradeCtx, tr.conn, hostHeader, target.Hostname, in.m.config.userAgent(ClientLibsignal))
 	if up != nil {
@@ -242,7 +242,7 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 		res.FailedOperation, res.Failure = tunnelUpgradeOperation, measurexlite.NewFailure(err)
 		return res, tunnelStatus, true
 	}
-	innerCtx, cancelInner := context.WithTimeout(ctx, opTimeout)
+	innerCtx, cancelInner := context.WithTimeout(ctx, in.m.limits.op)
 	defer cancelInner()
 	itr, err := handshakeTLS(innerCtx, trace, newTunnelConn(up, tr.conn), "", target.Hostname, target.Hello, in.signalRoots)
 	in.tk.recordTLS(trace, itr)
@@ -251,7 +251,7 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 		return res, tunnelStatus, false
 	}
 	res.ALPN, res.LeafKeyType = itr.alpn, itr.leafKey
-	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
+	opCtx, cancelOp := context.WithTimeout(ctx, in.m.limits.op)
 	defer cancelOp()
 	in.m.exercise(ctx, opCtx, itr, target.request(), in.zero, res, in.drainer(trace))
 	return res, tunnelStatus, false
@@ -288,7 +288,7 @@ func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front st
 		return res, true
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
-	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
+	opCtx, cancelOp := context.WithTimeout(ctx, in.m.limits.op)
 	defer cancelOp()
 	req := request{method: target.Method, hostHeader: fc.hostHeader, path: fc.pathPrefix + inner.path, provision: true}
 	in.m.exercise(ctx, opCtx, tr, req, in.zero, res, in.drainer(trace))

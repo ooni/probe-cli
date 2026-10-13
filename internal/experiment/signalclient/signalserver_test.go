@@ -69,7 +69,7 @@ func provisionAgainstSignalServer(t *testing.T, hello Hello, sni string, h2 bool
 	}
 	defer up.closer.Close()
 	t.Logf("upgrade: status %d, x-signal-timestamp %v, extensions %q", up.status, up.signalTimestamp, up.extensions)
-	res := runProvisioning(ctx, up.ws, zero, keepalivePaddings, 0, nil)
+	res := runProvisioning(ctx, up.ws, zero, NewExperimentMeasurer(Config{}).(*Measurer).provisioningFlow(), nil)
 	if res.Failure != nil {
 		t.Fatalf("provisioning failed at %s: %s (%+v)", res.FailedStep, *res.Failure, res)
 	}

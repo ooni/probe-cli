@@ -54,15 +54,6 @@ type ControlResult struct {
 	T               float64   `json:"t"`
 }
 
-// Limits (variables so tests can shorten them). The controls run until the test's clock runs out;
-// each has a short limit so that many fit after the targets.
-var (
-	controlsParallelism     = 16
-	dohTimeout              = 5 * time.Second
-	udpTimeout              = 5 * time.Second
-	controlHandshakeTimeout = 5 * time.Second
-)
-
 // controlPriority orders the controls' start, most telling first, so that when the test's clock
 // runs out the controls left unstarted are the least informative ones.
 var controlPriority = map[string]int{ControlDoH: 0, ControlStatic: 1, ControlDecoySNI: 2, ControlUDP: 3,
@@ -301,10 +292,10 @@ func (cr *controlRunner) derivedFor(key controlKey, job *controlJob) *controlJob
 	return nil
 }
 
-// run starts the controls in order, at most controlsParallelism at a time, until ctx (the test's
+// run starts the controls in order, at most limits.controlsParallelism at a time, until ctx (the test's
 // clock) is done, and records them. It returns whether some were never started.
 func (cr *controlRunner) run(ctx context.Context, tk *TestKeys) (truncated bool) {
-	sem := make(chan struct{}, controlsParallelism)
+	sem := make(chan struct{}, cr.m.limits.controlsParallelism)
 	var wg sync.WaitGroup
 	for i, job := range cr.jobs {
 		select {
@@ -349,7 +340,7 @@ func (cr *controlRunner) doh(ctx context.Context, job *controlJob, host string) 
 	defer job.collect(trace)
 	for _, url := range dohResolvers {
 		res.Resolver = url
-		qctx, cancel := context.WithTimeout(ctx, dohTimeout)
+		qctx, cancel := context.WithTimeout(ctx, cr.m.limits.doh)
 		reso := trace.NewParallelDNSOverHTTPSResolver(cr.logger, url)
 		addrs, err := reso.LookupHost(qctx, host)
 		reso.CloseIdleConnections()
@@ -371,7 +362,7 @@ func (cr *controlRunner) doh(ctx context.Context, job *controlJob, host string) 
 // udp sends an A query for host to 1.1.1.1:53 over UDP, as Signal-Android's REST clients do.
 func (cr *controlRunner) udp(ctx context.Context, job *controlJob, host string) *ControlResult {
 	res := &ControlResult{Kind: ControlUDP, Resolver: udpResolver, T0: time.Since(cr.zero).Seconds()}
-	ctx, cancel := context.WithTimeout(ctx, udpTimeout)
+	ctx, cancel := context.WithTimeout(ctx, cr.m.limits.udp)
 	defer cancel()
 	trace := job.newTrace(cr.zero)
 	defer job.collect(trace)
@@ -408,7 +399,7 @@ func (cr *controlRunner) handshake(ctx context.Context, job *controlJob, kind st
 	res := &ControlResult{Kind: kind, Address: address, AddressSource: a.source, SNI: sni, ClientHello: hello.Name,
 		Verified: &verify, Status: &zeroStatus, SignalTimestamp: &noTimestamp, T0: time.Since(cr.zero).Seconds()}
 	defer func() { res.T = time.Since(cr.zero).Seconds() }()
-	ctx, cancel := context.WithTimeout(ctx, controlHandshakeTimeout)
+	ctx, cancel := context.WithTimeout(ctx, cr.m.limits.controlHandshake)
 	defer cancel()
 	trace := job.newTrace(cr.zero)
 	defer job.collect(trace)

@@ -387,25 +387,27 @@ func newQAEnv(t *testing.T, behaviors map[string]qaBehavior) *netemx.QAEnv {
 	return env
 }
 
-// runQA runs the experiment inside env and returns its test keys by target name.
-func runQA(t *testing.T, env *netemx.QAEnv) (*TestKeys, map[string]*TargetResult) {
-	t.Helper()
-	return runQAWith(t, env, Config{})
+// qaOption changes the Measurer of a QA run (its targets, its limits).
+type qaOption func(*Measurer)
+
+// withTargets measures targets instead of DefaultTargets.
+func withTargets(targets ...Target) qaOption {
+	return func(m *Measurer) { m.targets = targets }
 }
 
-// runQAWith is runQA with a config.
-func runQAWith(t *testing.T, env *netemx.QAEnv, config Config) (*TestKeys, map[string]*TargetResult) {
-	t.Helper()
-	return runQATargets(t, env, config, DefaultTargets)
-}
-
-// runQATargets is runQAWith with a target list.
-func runQATargets(t *testing.T, env *netemx.QAEnv, config Config, targets []Target) (*TestKeys, map[string]*TargetResult) {
+// runQA runs the experiment inside env with config and returns its test keys, and its targets by
+// name. In the simulated network most static addresses have no host, and a SYN to them is
+// dropped rather than refused, so the controls' handshakes get 2 s instead of 5 unless an option
+// says otherwise.
+func runQA(t *testing.T, env *netemx.QAEnv, config Config, options ...qaOption) (*TestKeys, map[string]*TargetResult) {
 	t.Helper()
 	var tk *TestKeys
 	env.Do(func() {
 		m := NewExperimentMeasurer(config).(*Measurer)
-		m.targets = targets
+		m.limits.controlHandshake = 2 * time.Second
+		for _, option := range options {
+			option(m)
+		}
 		m.roots = func() ([]*x509.Certificate, error) { return []*x509.Certificate{env.ClientStack.CACert()}, nil }
 		m.googleRoots = func() (*x509.CertPool, error) { return env.ClientStack.DefaultCertPool(), nil }
 		meas := &model.Measurement{MeasurementStartTimeSaved: time.Now()}
@@ -452,7 +454,7 @@ var allTargets = []string{"chat_libsignal", "chat_android", "cdsi", "svr2", "svr
 func TestQAEverythingReachable(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, byName := runQA(t, env)
+	tk, byName := runQA(t, env, Config{})
 	expectOK(t, byName, allTargets...)
 	if tk.SignalServiceStatus != "ok" {
 		t.Errorf("service status %q", tk.SignalServiceStatus)
@@ -488,7 +490,7 @@ func TestQADNSBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{Logger: log.Log, Domain: "chat.signal.org"}) // no addresses: NXDOMAIN
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_android"], "resolve", "dns_nxdomain_error")
 	expectOK(t, byName, "chat_libsignal", "cdsi", "storage")
 }
@@ -497,7 +499,7 @@ func TestQAIPBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{Logger: log.Log, ServerIPAddress: qaGRPCChatAddr, ServerPort: 443})
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_libsignal"], "connect", "connection_refused")
 	expectOK(t, byName, "chat_android", "cdsi", "storage")
 }
@@ -506,7 +508,7 @@ func TestQASNIBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	tk, byName := runQA(t, env)
+	tk, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_libsignal"], "tls_handshake", "connection_reset")
 	expectOK(t, byName, "chat_android", "cdsi", "storage")
 	if !tk.MeasurementSummaryKeys().Anomaly() {
@@ -524,7 +526,7 @@ func TestQAFingerprintBlocking(t *testing.T) {
 		String: "\x11\xec\x00\x1d"})
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: qaGRPCChatAddr, ServerPort: 443,
 		String: "\x11\xec\x00\x1d"})
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_android"], "tls_handshake", "connection_reset")
 	expectOK(t, byName, "chat_libsignal")
 }
@@ -532,7 +534,7 @@ func TestQAFingerprintBlocking(t *testing.T) {
 func TestQAInjectedReplyWithoutTimestamp(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noTimestamp: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
 	if r.Failure != nil || r.SignalTimestamp {
 		t.Fatalf("expected success without timestamp, got %+v failure=%q", r, deref(r.Failure))
@@ -548,11 +550,9 @@ func TestQAInjectedReplyWithoutTimestamp(t *testing.T) {
 }
 
 func TestQAProvisioningAddressNeverArrives(t *testing.T) {
-	defer func(d time.Duration) { addressTimeout = d }(addressTimeout)
-	addressTimeout = 500 * time.Millisecond
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {noAddress: true}, qaChatAddr: {noAddress: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.address = 500 * time.Millisecond })
 	expectFailure(t, byName["chat_libsignal"], "provisioning_address", "generic_timeout_error")
 	expectFailure(t, byName["chat_android"], "provisioning_address", "generic_timeout_error")
 }
@@ -560,7 +560,7 @@ func TestQAProvisioningAddressNeverArrives(t *testing.T) {
 func TestQASessionKilledAfterUpgrade(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {closeAfterUpgrade: true}, qaChatAddr: {closeAfterUpgrade: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_libsignal"], "provisioning_address", "eof_error")
 	expectFailure(t, byName["chat_android"], "provisioning_address", "eof_error")
 }
@@ -568,7 +568,7 @@ func TestQASessionKilledAfterUpgrade(t *testing.T) {
 func TestQANoExtendedConnect(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {noConnectProtocol: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_libsignal"], "websocket_upgrade", FailureExtendedConnectNotSupported)
 	expectOK(t, byName, "chat_android")
 }
@@ -577,7 +577,7 @@ func TestQASignalReportsOutage(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.AddRecordToAllResolvers("uptime.signal.org", "", "127.0.0.2")
-	tk, _ := runQA(t, env)
+	tk, _ := runQA(t, env, Config{})
 	if tk.SignalServiceStatus != "outage" {
 		t.Fatalf("service status %q", tk.SignalServiceStatus)
 	}
@@ -589,7 +589,7 @@ func TestQASignalReportsOutage(t *testing.T) {
 func TestQAUpgradeRefused(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {refuseUpgrade: true}, qaChatAddr: {refuseUpgrade: true}})
 	defer env.Close()
-	tk, byName := runQA(t, env)
+	tk, byName := runQA(t, env, Config{})
 	if tk.MeasurementSummaryKeys().Anomaly() { // a refusal inside Signal-verified TLS is the server's
 		t.Error("anomaly for a refusal by the server")
 	}
@@ -606,7 +606,7 @@ func TestQAUpgradeRefused(t *testing.T) {
 func TestQAUpgradeWithWrongAccept(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {badAccept: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	expectFailure(t, byName["chat_android"], "websocket_upgrade", FailureWebSocketUpgradeInvalid)
 	if byName["chat_android"].Status != 101 {
 		t.Errorf("status %d", byName["chat_android"].Status)
@@ -617,7 +617,7 @@ func TestQAUpgradeWithWrongAccept(t *testing.T) {
 func TestQAUserAgentIdentifiesOONIByDefault(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	seen := qaSeenUserAgents.seen()
 	for ua := range seen {
 		if !strings.HasPrefix(ua, "ooniprobe-signal_client/") || !strings.Contains(ua, "(+https://ooni.org)") {
@@ -635,7 +635,7 @@ func TestQAUserAgentIdentifiesOONIByDefault(t *testing.T) {
 func TestQAAppUserAgent(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	_, byName := runQAWith(t, env, Config{AppUserAgent: true})
+	_, byName := runQA(t, env, Config{AppUserAgent: true})
 	seen := qaSeenUserAgents.seen()
 	for ua, hosts := range seen {
 		if strings.Contains(ua, "ooniprobe") {
@@ -660,7 +660,7 @@ func TestQAAppUserAgent(t *testing.T) {
 func TestQAEnclaveAcceptingUpgradeIsReached(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaEnclaveAddr: {enclaveAccepts: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	for _, name := range []string{"cdsi", "svr2", "svrb"} {
 		r := byName[name]
 		if r.Failure != nil || r.FailedOperation != "" || r.Status != 101 {
@@ -674,7 +674,7 @@ func TestQABrokenHelloIsATLSFailure(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	broken := Hello{Name: "broken", raw: []byte{0x01, 0x00, 0x00, 0x01, 0x00}}
-	_, byName := runQATargets(t, env, Config{}, []Target{{"broken", "storage.signal.org", ClientAndroid, broken, MethodHTTPSGet, "/"}})
+	_, byName := runQA(t, env, Config{}, withTargets(Target{"broken", "storage.signal.org", ClientAndroid, broken, MethodHTTPSGet, "/"}))
 	r := byName["broken"]
 	if r.FailedOperation != "tls_handshake" || r.Failure == nil {
 		t.Fatalf("expected a tls_handshake failure, got op %q failure %q", r.FailedOperation, deref(r.Failure))
@@ -684,7 +684,7 @@ func TestQABrokenHelloIsATLSFailure(t *testing.T) {
 func TestQAEnclave401IsReached(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaEnclaveAddr: {enclave401: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	for _, name := range []string{"cdsi", "svr2", "svrb"} {
 		if r := byName[name]; r.Failure != nil || r.Status != 401 {
 			t.Errorf("%s: status %d failure %q", name, r.Status, deref(r.Failure))
@@ -695,7 +695,7 @@ func TestQAEnclave401IsReached(t *testing.T) {
 func TestQAPermessageDeflateNegotiated(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {deflate: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
 	if r.Failure != nil || r.WSExtensions != "permessage-deflate" || r.Provisioning == nil || !r.Provisioning.AddressReceived ||
 		len(r.Provisioning.Keepalives) != 3 {
@@ -706,7 +706,7 @@ func TestQAPermessageDeflateNegotiated(t *testing.T) {
 func TestQAStreamResetAfterAddress(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {resetAfterAddress: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_libsignal"]
 	if r.Failure == nil || r.Provisioning == nil || !r.Provisioning.AddressReceived {
 		t.Fatalf("expected a failure after the address, got %+v", r)
@@ -719,7 +719,7 @@ func TestQAStreamResetAfterAddress(t *testing.T) {
 func TestQAConnectionKilledAfterAddress(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaGRPCChatAddr: {killAfterAddress: true}, qaChatAddr: {killAfterAddress: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	for _, name := range []string{"chat_libsignal", "chat_android"} {
 		r := byName[name]
 		if r.Failure == nil || !r.Provisioning.AddressReceived {
@@ -735,7 +735,7 @@ func TestQAConnectionKilledAfterAddress(t *testing.T) {
 func TestQATruncatedBodyIsAFailure(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaCDNAddr: {truncateBody: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	for name, alpn := range map[string]string{"storage": "h2", "updates2_desktop": ""} { // both protocols
 		r := byName[name]
 		if r.ALPN != alpn {
@@ -749,16 +749,15 @@ func TestQATruncatedBodyIsAFailure(t *testing.T) {
 
 // A TLS blackhole costs the operation limit, not the whole provisioning budget.
 func TestQAConnectBudgetIsEnforced(t *testing.T) {
-	defer func(d, c time.Duration) { opTimeout, controlHandshakeTimeout = d, c }(opTimeout, controlHandshakeTimeout)
-	opTimeout, controlHandshakeTimeout = 2*time.Second, time.Second
+	const op = 2 * time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "chat.signal.org"})
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.op, m.limits.controlHandshake = op, time.Second })
 	r := byName["chat_android"]
 	expectFailure(t, r, "tls_handshake", "generic_timeout_error")
-	if took := r.T - r.T0; took > opTimeout.Seconds()+1 {
-		t.Errorf("chat_android took %.1f s with a %v operation limit", took, opTimeout)
+	if took := r.T - r.T0; took > op.Seconds()+1 {
+		t.Errorf("chat_android took %.1f s with a %v operation limit", took, op)
 	}
 	expectOK(t, byName, "chat_libsignal")
 }
@@ -766,7 +765,7 @@ func TestQAConnectBudgetIsEnforced(t *testing.T) {
 func TestQATLSRecordsAreTaggedWithTheTarget(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, _ := runQA(t, env)
+	tk, _ := runQA(t, env, Config{})
 	seen := map[string]bool{}
 	for _, hs := range tk.TLSHandshakes {
 		if len(hs.Tags) != 1 {
@@ -784,14 +783,13 @@ func TestQATLSRecordsAreTaggedWithTheTarget(t *testing.T) {
 // With every target's TLS blackholed, the targets run concurrently: the phase takes about one
 // operation limit, not one per target (ts-041 Time limits).
 func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
-	defer func(d time.Duration) { opTimeout = d }(opTimeout)
-	opTimeout = 2 * time.Second
+	const op = 2 * time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	for _, target := range DefaultTargets {
 		env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: target.Hostname})
 	}
-	tk, _ := runQAWith(t, env, Config{Controls: ControlsOff})
+	tk, _ := runQA(t, env, Config{Controls: ControlsOff}, func(m *Measurer) { m.limits.op = op })
 	first, last := tk.Targets[0].T0, tk.Targets[0].T
 	for _, r := range tk.Targets {
 		if r.FailedOperation != "tls_handshake" || deref(r.Failure) != "generic_timeout_error" {
@@ -799,8 +797,8 @@ func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
 		}
 		first, last = min(first, r.T0), max(last, r.T)
 	}
-	if took := last - first; took > 2*opTimeout.Seconds() {
-		t.Errorf("targets took %.1f s with a %v operation limit: not concurrent", took, opTimeout)
+	if took := last - first; took > 2*op.Seconds() {
+		t.Errorf("targets took %.1f s with a %v operation limit: not concurrent", took, op)
 	}
 	if !tk.MeasurementSummaryKeys().Anomaly() {
 		t.Error("no anomaly with every target blackholed")
@@ -809,15 +807,13 @@ func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
 
 // A step cut short by the test's clock is interrupted, not a timeout of the network's.
 func TestQAProvisioningCutByTheClock(t *testing.T) {
-	defer func(d time.Duration) { testTimeout = d }(testTimeout)
-	testTimeout = 2 * time.Second // the address step would wait 10 s
+	const clock = 2 * time.Second // the address step would wait 10 s
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noAddress: true}})
 	defer env.Close()
-	tk, byName := runQAWith(t, env, Config{Controls: ControlsOff})
+	_, byName := runQA(t, env, Config{Controls: ControlsOff}, func(m *Measurer) { m.limits.test = clock })
 	expectFailure(t, byName["chat_android"], "provisioning_address", "interrupted")
 	expectOK(t, byName, "chat_libsignal", "storage")
-	if took := byName["chat_android"].T - byName["chat_android"].T0; took > testTimeout.Seconds()+1 {
-		t.Errorf("chat_android took %.1f s with a %v clock", took, testTimeout)
+	if took := byName["chat_android"].T - byName["chat_android"].T0; took > clock.Seconds()+1 {
+		t.Errorf("chat_android took %.1f s with a %v clock", took, clock)
 	}
-	_ = tk
 }

@@ -24,6 +24,8 @@ type Measurer struct {
 	config  Config
 	targets []Target
 
+	limits limits
+
 	// trust anchors (tests replace these)
 	roots        func() ([]*x509.Certificate, error) // Signal's
 	googleRoots  func() (*x509.CertPool, error)      // the Google fronts'
@@ -32,8 +34,8 @@ type Measurer struct {
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config, targets: DefaultTargets, roots: signalRoots, googleRoots: googleRoots,
-		mozillaRoots: mozillaRoots}
+	return &Measurer{config: config, targets: DefaultTargets, limits: defaultLimits, roots: signalRoots,
+		googleRoots: googleRoots, mozillaRoots: mozillaRoots}
 }
 
 // ExperimentName implements model.ExperimentMeasurer.
@@ -59,10 +61,10 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.SignalRoots = anchors.sha256
 	roots := anchors.pool
 
-	// One clock for the whole test (testTimeout). Whatever it cuts short is recorded as
+	// One clock for the whole test (limits.test). Whatever it cuts short is recorded as
 	// interrupted (markInterrupted), never as a network timeout.
-	clockEnds := (time.Since(zero) + testTimeout).Seconds()
-	runCtx, stop := context.WithTimeoutCause(ctx, testTimeout, errTestClock)
+	clockEnds := (time.Since(zero) + m.limits.test).Seconds()
+	runCtx, stop := context.WithTimeoutCause(ctx, m.limits.test, errTestClock)
 	defer stop()
 	progress := newProgress(args.Callbacks, len(m.targets), len(opts.routes))
 
@@ -155,7 +157,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 // measureBeacon resolves Signal's outage beacon, uptime.signal.org, with the system resolver:
 // 127.0.0.1 when the service is up, 127.0.0.2 during an outage (ts-041 Service status control).
 func (m *Measurer) measureBeacon(ctx context.Context, logger model.Logger, zero time.Time, tk *TestKeys) {
-	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	ctx, cancel := context.WithTimeout(ctx, m.limits.op)
 	defer cancel()
 	trace := measurexlite.NewTrace(0, zero)
 	addrs, err := trace.NewStdlibResolver(logger).LookupHost(ctx, "uptime.signal.org")
@@ -193,7 +195,7 @@ func (p *progress) step(message string) {
 }
 
 // measureTarget measures target into res, recording its network events in tk. Each operation
-// (DNS, TCP and TLS, the upgrade or GET, each provisioning step) has opTimeout; the test's clock
+// (DNS, TCP and TLS, the upgrade or GET, each provisioning step) has its limit; the test's clock
 // bounds the whole. It calls connected once the target has connected or failed to, before any
 // provisioning flow.
 func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero time.Time, index int64,
@@ -207,7 +209,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	ol := logx.NewOperationLogger(logger, "signal_client: %s %s", target.Name, target.Hostname)
 	defer func() { ol.Stop(errorOrNil(res.Failure)) }()
 
-	resolveCtx, cancelResolve := context.WithTimeout(ctx, opTimeout)
+	resolveCtx, cancelResolve := context.WithTimeout(ctx, m.limits.op)
 	addrs, err := trace.NewStdlibResolver(logger).LookupHost(resolveCtx, target.Hostname)
 	cancelResolve()
 	tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
@@ -223,7 +225,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	address := net.JoinHostPort(ip, "443")
 	*res.Address = address
 
-	dialCtx, cancelDial := context.WithTimeout(ctx, opTimeout)
+	dialCtx, cancelDial := context.WithTimeout(ctx, m.limits.op)
 	tr, err := dialTLS(dialCtx, trace, logger, address, target.Hostname, target.Hello, roots)
 	cancelDial()
 	tk.recordTLS(trace, tr)
@@ -239,7 +241,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		connected()
 		tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) // the buffer holds 64
 	}
-	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
+	opCtx, cancelOp := context.WithTimeout(ctx, m.limits.op)
 	defer cancelOp()
 	m.exercise(ctx, opCtx, tr, target.request(), zero, res, drain)
 }
@@ -300,7 +302,7 @@ func (m *Measurer) exercise(ctx, opCtx context.Context, tr *tlsResult, req reque
 			return
 		}
 		checkpoint()
-		res.Provisioning = runProvisioning(ctx, up.ws, zero, keepalivePaddings, idleDuration(m.config.IdleSeconds), checkpoint)
+		res.Provisioning = runProvisioning(ctx, up.ws, zero, m.provisioningFlow(), checkpoint)
 		if res.Provisioning.Failure != nil {
 			res.Failure, res.FailedOperation = res.Provisioning.Failure, res.Provisioning.FailedStep
 		}
@@ -319,15 +321,40 @@ const (
 	routeIndexStep = 10
 )
 
-// Time limits (ts-041 Time limits; variables so tests can shorten them).
-var (
-	// testTimeout is the whole test's clock.
-	testTimeout = 60 * time.Second
+// limits are the test's time limits (ts-041 Time limits) and how many controls run at once.
+type limits struct {
+	// test is the whole test's clock.
+	test time.Duration
 
-	// opTimeout bounds each network operation of a target or route: DNS, TCP and TLS, the
-	// upgrade or GET (provisioning steps have their own, also 10 s).
-	opTimeout = 10 * time.Second
-)
+	// op bounds each network operation of a target or route: DNS, TCP and TLS, the upgrade or GET.
+	op time.Duration
+
+	// address and keepalive bound the provisioning steps: waiting for the server's address
+	// (as ProvisioningSocket.kt does), and for each keepalive's response and the PONG.
+	address, keepalive time.Duration
+
+	// The controls run until the test's clock runs out; each has a short limit so that many fit
+	// after the targets.
+	doh, udp, controlHandshake time.Duration
+	controlsParallelism        int
+}
+
+var defaultLimits = limits{
+	test:                60 * time.Second,
+	op:                  10 * time.Second,
+	address:             10 * time.Second,
+	keepalive:           10 * time.Second,
+	doh:                 5 * time.Second,
+	udp:                 5 * time.Second,
+	controlHandshake:    5 * time.Second,
+	controlsParallelism: 16,
+}
+
+// provisioningFlow is the provisioning flow this measurement runs.
+func (m *Measurer) provisioningFlow() provisioningFlow {
+	return provisioningFlow{paddings: keepalivePaddings, idle: idleDuration(m.config.IdleSeconds),
+		addressTimeout: m.limits.address, keepaliveTimeout: m.limits.keepalive}
+}
 
 // maxIdleSeconds bounds IdleSeconds. Signal's connections are never idle longer than about 30 s
 // (Signal-Android's provisioning keepalive every 30 s; libsignal pings after 31 s idle), so a

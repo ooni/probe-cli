@@ -60,7 +60,7 @@ func TestQAControlsDNSBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{Logger: log.Log, Domain: "chat.signal.org"})
-	tk, byName := runQA(t, env)
+	tk, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
 	expectFailure(t, r, "resolve", "dns_nxdomain_error")
 	if got := strings.Join(kindsOf(r), ","); got != "doh,udp_1111,static_address,static_address,static_address" {
@@ -109,9 +109,7 @@ func TestQAControlsForgedAnswer(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.ISPResolverConfig().AddRecord("storage.signal.org", "", "10.10.34.35") // nothing there
-	defer func(d time.Duration) { opTimeout = d }(opTimeout)
-	opTimeout = time.Second
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.op = time.Second })
 	r := byName["storage"]
 	if r.FailedOperation != "connect" {
 		t.Fatalf("storage: %q %q", r.FailedOperation, deref(r.Failure))
@@ -132,7 +130,7 @@ func TestQAControlsIPBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{Logger: log.Log, ServerIPAddress: qaGRPCChatAddr, ServerPort: 443})
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_libsignal"]
 	expectFailure(t, r, "connect", "connection_refused")
 	c := controlsOf(r)
@@ -151,7 +149,7 @@ func TestQAControlsSNIBlocking(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_libsignal"]
 	expectFailure(t, r, "tls_handshake", "connection_reset")
 	if got := strings.Join(kindsOf(r), ","); got != "doh,udp_1111,static_address,static_address,decoy_sni,alternate_hello,browser_hello,tls12" {
@@ -187,7 +185,7 @@ func TestQAControlsFingerprintBlocking(t *testing.T) {
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: qaChatAddr, ServerPort: 443,
 		String: "\x11\xec\x00\x1d"})
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
 	expectFailure(t, r, "tls_handshake", "connection_reset")
 	c := controlsOf(r)
@@ -209,7 +207,7 @@ func TestQAControlsFingerprintBlocking(t *testing.T) {
 func TestQAControlsNotAfterUpgradeRefused(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {refuseUpgrade: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{})
 	r := byName["chat_android"]
 	expectFailure(t, r, "websocket_upgrade", FailureWebSocketUpgradeRefused)
 	if len(r.Controls) != 0 {
@@ -228,11 +226,9 @@ func TestQAControlsNotAfterUpgradeRefused(t *testing.T) {
 
 // A provisioning step that fails after Signal answered gets no controls by default.
 func TestQAControlsNotAfterSignalAnswered(t *testing.T) {
-	defer func(d time.Duration) { addressTimeout = d }(addressTimeout)
-	addressTimeout = 300 * time.Millisecond
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noAddress: true}})
 	defer env.Close()
-	_, byName := runQA(t, env)
+	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.address = 300 * time.Millisecond })
 	expectFailure(t, byName["chat_android"], "provisioning_address", "generic_timeout_error")
 	expectNoControls(t, byName, allTargets...)
 }
@@ -241,7 +237,7 @@ func TestQAControlsOff(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	tk, byName := runQAWith(t, env, Config{Controls: ControlsOff})
+	tk, byName := runQA(t, env, Config{Controls: ControlsOff})
 	expectNoControls(t, byName, allTargets...)
 	data, _ := json.Marshal(tk.Targets[0])
 	if !strings.Contains(string(data), `"controls":null`) {
@@ -253,7 +249,7 @@ func TestQAControlsOff(t *testing.T) {
 func TestQAControlsAlways(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, byName := runQAWith(t, env, Config{Controls: ControlsAlways})
+	tk, byName := runQA(t, env, Config{Controls: ControlsAlways})
 	expectOK(t, byName, allTargets...)
 	for _, name := range allTargets {
 		c := controlsOf(byName[name])
@@ -289,14 +285,14 @@ func TestQAControlsAlways(t *testing.T) {
 // When the test's clock runs out during the controls, those not started are not recorded
 // (signal_controls_truncated), and those cut short are interrupted, not timeouts.
 func TestQAControlsCutByTheClock(t *testing.T) {
-	defer func(d time.Duration, n int) { testTimeout, controlsParallelism = d, n }(testTimeout, controlsParallelism)
-	testTimeout, controlsParallelism = 1500*time.Millisecond, 1 // the doh control takes about 2 s here
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{Logger: log.Log, Domain: "chat.signal.org"}) // fails at once
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForServerEndpoint{Logger: log.Log, ServerIPAddress: netemx.AddressCloudflareDNSCom1111,
 		ServerPort: 443, ServerProtocol: layers.IPProtocolTCP}) // the first control (doh) is still running when the clock runs out
-	tk, byName := runQA(t, env)
+	tk, byName := runQA(t, env, Config{}, func(m *Measurer) {
+		m.limits.test, m.limits.controlsParallelism = 1500*time.Millisecond, 1 // the doh control takes about 2 s here
+	})
 	r := byName["chat_android"]
 	if !tk.ControlsTruncated {
 		for _, c := range r.Controls {
@@ -332,14 +328,14 @@ func TestQASignalCA(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	ca := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: env.ClientStack.CACert().Raw}))
-	tk, byName := runQAWith(t, env, Config{SignalCA: ca, Controls: ControlsOff})
+	tk, byName := runQA(t, env, Config{SignalCA: ca, Controls: ControlsOff})
 	expectOK(t, byName, allTargets...)
 	sum := sha256.Sum256(env.ClientStack.CACert().Raw)
 	if len(tk.SignalRoots) != 1 || tk.SignalRoots[0] != hex.EncodeToString(sum[:]) {
 		t.Errorf("signal_roots %v", tk.SignalRoots)
 	}
 
-	tk, byName = runQAWith(t, env, Config{SignalCA: mustSelfSignedPEM(t), Controls: ControlsOff})
+	tk, byName = runQA(t, env, Config{SignalCA: mustSelfSignedPEM(t), Controls: ControlsOff})
 	for _, name := range allTargets {
 		expectFailure(t, byName[name], "tls_handshake", "ssl_unknown_authority")
 	}
@@ -353,7 +349,7 @@ func TestQAControlsStaticAddressesOption(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{Logger: log.Log, Domain: "chat.signal.org"})
-	_, byName := runQAWith(t, env, Config{StaticAddresses: "chat.signal.org=76.223.92.165"})
+	_, byName := runQA(t, env, Config{StaticAddresses: "chat.signal.org=76.223.92.165"})
 	static := controlsOf(byName["chat_android"])[ControlStatic]
 	// the option's address, then the DoH answer, which is no longer in any list
 	if len(static) != 2 || static[0].Address != "76.223.92.165:443" || static[0].AddressSource != "option" ||
@@ -371,7 +367,7 @@ func TestQAControlsUseSignalCA(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	_, byName := runQAWith(t, env, Config{SignalCA: mustSelfSignedPEM(t)})
+	_, byName := runQA(t, env, Config{SignalCA: mustSelfSignedPEM(t)})
 	c := controlsOf(byName["chat_android"]) // its target failed verification: tls_handshake
 	if s := c[ControlStatic][0]; deref(s.Failure) != "ssl_unknown_authority" {
 		t.Errorf("static_address: %q", deref(s.Failure))

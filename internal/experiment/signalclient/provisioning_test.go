@@ -150,13 +150,13 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 	}
 }
 
-func runAgainst(t *testing.T, f fakeServer) *ProvisioningResult {
+// runAgainst runs the flow against f, with the measurement's flow changed by adjust.
+func runAgainst(t *testing.T, f fakeServer, adjust ...func(*provisioningFlow)) *ProvisioningResult {
 	t.Helper()
-	return runAgainstIdle(t, f, 0)
-}
-
-func runAgainstIdle(t *testing.T, f fakeServer, idle time.Duration) *ProvisioningResult {
-	t.Helper()
+	flow := NewExperimentMeasurer(Config{}).(*Measurer).provisioningFlow()
+	for _, fn := range adjust {
+		fn(&flow)
+	}
 	client, server := net.Pipe()
 	defer client.Close()
 	go f.run(t, server)
@@ -164,7 +164,7 @@ func runAgainstIdle(t *testing.T, f fakeServer, idle time.Duration) *Provisionin
 	defer cancel()
 	ws := newWSConn(client, client)
 	ws.deflate = f.compress || f.corruptCompressed // as if negotiated
-	return runProvisioning(ctx, ws, time.Now(), []int{0, 1024, 16384}, idle, nil)
+	return runProvisioning(ctx, ws, time.Now(), flow, nil)
 }
 
 func TestProvisioningHappyPath(t *testing.T) {
@@ -186,9 +186,7 @@ func TestProvisioningHappyPath(t *testing.T) {
 }
 
 func TestProvisioningNoAddress(t *testing.T) {
-	defer func(d time.Duration) { addressTimeout = d }(addressTimeout)
-	addressTimeout = 200 * time.Millisecond
-	r := runAgainst(t, fakeServer{})
+	r := runAgainst(t, fakeServer{}, func(flow *provisioningFlow) { flow.addressTimeout = 200 * time.Millisecond })
 	if r.FailedStep != "provisioning_address" || deref(r.Failure) != "generic_timeout_error" {
 		t.Fatalf("got step %q failure %q", r.FailedStep, deref(r.Failure))
 	}
@@ -214,9 +212,8 @@ func TestProvisioningReplyWithoutTimestamp(t *testing.T) {
 }
 
 func TestProvisioningPongMismatch(t *testing.T) {
-	defer func(d time.Duration) { keepaliveTimeout = d }(keepaliveTimeout)
-	keepaliveTimeout = 300 * time.Millisecond
-	r := runAgainst(t, fakeServer{sendAddress: true, badPong: true})
+	r := runAgainst(t, fakeServer{sendAddress: true, badPong: true},
+		func(flow *provisioningFlow) { flow.keepaliveTimeout = 300 * time.Millisecond })
 	if r.PingEchoed == nil || *r.PingEchoed {
 		t.Fatalf("expected ping_echoed=false, got %v", r.PingEchoed)
 	}
@@ -233,7 +230,8 @@ func deref(s *string) string {
 func TestProvisioningIdleSurvivesServerPing(t *testing.T) {
 	var gotPong atomic.Bool
 	idle := 300 * time.Millisecond
-	r := runAgainstIdle(t, fakeServer{sendAddress: true, pingAfterAck: true, gotPong: &gotPong}, idle)
+	r := runAgainst(t, fakeServer{sendAddress: true, pingAfterAck: true, gotPong: &gotPong},
+		func(flow *provisioningFlow) { flow.idle = idle })
 	if r.Failure != nil {
 		t.Fatal(deref(r.Failure))
 	}
@@ -261,15 +259,14 @@ func TestProvisioningTimestampHeaderNameIsExact(t *testing.T) {
 // Ignored frames must not extend a step: the address step fails at its deadline even though
 // the server keeps sending unsolicited pongs.
 func TestProvisioningStepDeadlineIsNotExtendedByIgnoredFrames(t *testing.T) {
-	defer func(d time.Duration) { addressTimeout = d }(addressTimeout)
-	addressTimeout = 300 * time.Millisecond
+	const deadline = 300 * time.Millisecond
 	start := time.Now()
-	r := runAgainst(t, fakeServer{spamPongs: true})
+	r := runAgainst(t, fakeServer{spamPongs: true}, func(flow *provisioningFlow) { flow.addressTimeout = deadline })
 	if r.FailedStep != "provisioning_address" || deref(r.Failure) != "generic_timeout_error" {
 		t.Fatalf("got %q/%q", r.FailedStep, deref(r.Failure))
 	}
 	if elapsed := time.Since(start); elapsed > time.Second {
-		t.Fatalf("the step took %v despite its %v deadline", elapsed, addressTimeout)
+		t.Fatalf("the step took %v despite its %v deadline", elapsed, deadline)
 	}
 }
 
@@ -321,9 +318,8 @@ func TestProvisioningMalformedInputs(t *testing.T) {
 }
 
 func TestProvisioningKeepaliveFailureSetsT(t *testing.T) {
-	defer func(d time.Duration) { keepaliveTimeout = d }(keepaliveTimeout)
-	keepaliveTimeout = 200 * time.Millisecond
-	r := runAgainst(t, fakeServer{sendAddress: true, ignoreKeepalives: true})
+	r := runAgainst(t, fakeServer{sendAddress: true, ignoreKeepalives: true},
+		func(flow *provisioningFlow) { flow.keepaliveTimeout = 200 * time.Millisecond })
 	if r.FailedStep != "keepalive" || len(r.Keepalives) != 1 {
 		t.Fatalf("expected the first keepalive to fail, got step %q with %d keepalives", r.FailedStep, len(r.Keepalives))
 	}
