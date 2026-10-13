@@ -8,6 +8,7 @@ package signalclient
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -60,14 +61,73 @@ func result(operation string, failure *string) string {
 	return operation + " " + *failure
 }
 
-// netem has no IPv6: the IPv6 static addresses fail at connect.
+// netem has no IPv6: the IPv6 static addresses fail at connect (and the doh control's fallback to
+// Cloudflare's IPv6 resolver cannot be exercised).
 const qaNoIPv6 = "connect host_unreachable"
+
+// qaGRPCStaticAddr is grpc.chat.signal.org's static address that has a simulated host.
+const qaGRPCStaticAddr = "76.223.66.180"
+
+// TLS 1.3 hellos carry supported_versions: libsignal's offers TLS 1.3 only, Android's and
+// Chrome's end with TLS 1.3 then 1.2. Go's TLS 1.2 hello (the tls12 control) has neither.
+const (
+	qaLibsignalSupportedVersions = "\x00\x2b\x00\x03\x02\x03\x04"
+	qaTLS13Then12                = "\x03\x04\x03\x03"
+)
+
+// qaTLSRecordOfAHello starts the first TLS record of every ClientHello sent here.
+const qaTLSRecordOfAHello = "\x16\x03\x01"
+
+// targetNamed returns the default target with name.
+func targetNamed(name string) Target {
+	for _, target := range DefaultTargets {
+		if target.Name == name {
+			return target
+		}
+	}
+	panic("no target " + name)
+}
 
 // qaHybridThenX25519 is X25519MLKEM768 followed by x25519 in a hello's supported groups, which
 // Signal-Android's and Desktop's hellos list and libsignal's does not: a fingerprinting censor's
 // pattern.
 var qaHybridThenX25519 = string(binary.BigEndian.AppendUint16(binary.BigEndian.AppendUint16(nil,
 	uint16(utls.X25519MLKEM768)), uint16(utls.X25519)))
+
+// qaForgeChatToInterceptor makes the system resolver answer chat.signal.org with qaInterceptorAddr.
+func qaForgeChatToInterceptor(env *qaEnv) {
+	env.ISPResolverConfig().AddRecord("chat.signal.org", "", qaInterceptorAddr)
+}
+
+// qaInterceptedChat is chat_android's outcome when the interceptor's certificate fails with
+// failure: the handshakes that verify fail like the target, those that do not complete, and the
+// static addresses reach Signal.
+func qaInterceptedChat(failure string) map[string]qaOutcome {
+	return map[string]qaOutcome{"chat_android": {
+		Target: "tls_handshake " + failure,
+		Controls: []string{
+			"doh: ok",
+			"udp_1111: ok",
+			"static_address(android): ok",
+			"static_address(android): ok",
+			"static_address(desktop): " + qaNoIPv6,
+			"decoy_sni: ok", // not verified
+			"alternate_hello: tls_handshake " + failure,
+			"browser_hello: ok", // not verified
+			"tls12: tls_handshake " + failure,
+		}}}
+}
+
+// qaInterceptorCertificateRecorded checks that the interceptor's certificates are in the evidence.
+func qaInterceptorCertificateRecorded(t *testing.T, tk *TestKeys, _ map[string]*TargetResult) {
+	for _, hs := range tk.TLSHandshakes {
+		if strings.Join(hs.Tags, ",") == "chat_android" && hs.Address == qaInterceptorAddr+":443" &&
+			len(hs.PeerCertificates) > 0 {
+			return
+		}
+	}
+	t.Error("no chat_android handshake with the interceptor's certificates")
+}
 
 func TestQAConclusions(t *testing.T) {
 	for _, c := range []qaConclusion{{
@@ -154,6 +214,24 @@ func TestQAConclusions(t *testing.T) {
 			}
 		},
 	}, {
+		// every address of the host fails at connect
+		name: "Address (IP) blocking",
+		configure: func(env *qaEnv) {
+			for _, addr := range []string{qaGRPCChatAddr, qaGRPCStaticAddr} {
+				env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{Logger: log.Log,
+					ServerIPAddress: addr, ServerPort: 443})
+			}
+		},
+		want: map[string]qaOutcome{"chat_libsignal": {
+			Target: "connect connection_refused",
+			Controls: []string{
+				"doh: ok",
+				"udp_1111: ok",
+				"static_address(libsignal): connect connection_refused",
+				"static_address(libsignal): " + qaNoIPv6,
+			}}},
+		anomaly: true,
+	}, {
 		// the decoy completes on the same address; every real-SNI handshake fails
 		name: "SNI-based blocking",
 		configure: func(env *qaEnv) {
@@ -198,6 +276,26 @@ func TestQAConclusions(t *testing.T) {
 			}
 		},
 	}, {
+		// every hello to the address is reset, the decoy's too; the other address works
+		name: "Blocking of TLS to the address",
+		configure: func(env *qaEnv) {
+			env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: qaGRPCChatAddr,
+				ServerPort: 443, String: qaTLSRecordOfAHello})
+		},
+		want: map[string]qaOutcome{"chat_libsignal": {
+			Target: "tls_handshake connection_reset",
+			Controls: []string{
+				"doh: ok",
+				"udp_1111: ok",
+				"static_address(libsignal): ok",
+				"static_address(libsignal): " + qaNoIPv6,
+				"decoy_sni: tls_handshake connection_reset",
+				"alternate_hello: tls_handshake connection_reset",
+				"browser_hello: tls_handshake connection_reset",
+				"tls12: tls_handshake connection_reset",
+			}}},
+		anomaly: true,
+	}, {
 		// chat_android's hello is reset on both chat front ends, libsignal's is not: alternate_hello
 		// completes on the same address and SNI, and the decoy, which keeps the target's hello,
 		// fails like it
@@ -225,6 +323,83 @@ func TestQAConclusions(t *testing.T) {
 			if alt := controlsOf(byName["chat_android"])[ControlAlternate][0]; alt.ClientHello != HelloLibsignal.Name ||
 				alt.LeafKeyType == "" {
 				t.Errorf("alternate_hello: %+v", alt)
+			}
+		},
+	}, {
+		// every TLS 1.3 hello to the host is reset; Go's TLS 1.2 hello completes
+		name: "TLS 1.3-specific interference",
+		configure: func(env *qaEnv) {
+			for _, addr := range []string{qaGRPCChatAddr, qaGRPCStaticAddr} {
+				for _, pattern := range []string{qaLibsignalSupportedVersions, qaTLS13Then12} {
+					env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: addr,
+						ServerPort: 443, String: pattern})
+				}
+			}
+		},
+		want: map[string]qaOutcome{"chat_libsignal": {
+			Target: "tls_handshake connection_reset",
+			Controls: []string{
+				"doh: ok",
+				"udp_1111: ok",
+				"static_address(libsignal): tls_handshake connection_reset",
+				"static_address(libsignal): " + qaNoIPv6,
+				"decoy_sni: tls_handshake connection_reset",
+				"alternate_hello: tls_handshake connection_reset",
+				"browser_hello: tls_handshake connection_reset",
+				"tls12: ok", // the simulated server accepts TLS 1.2; the real one answers protocol_version
+			}}},
+		anomaly: true,
+	}, {
+		// the system resolver sends the target to a middlebox with its own certificate for the
+		// name; DoH's answer is a static address, which reaches Signal
+		name:      "Interception: a certificate for the name from another issuer",
+		faults:    map[string]fault{qaInterceptorAddr: faultImpostorCertificate},
+		configure: qaForgeChatToInterceptor,
+		want:      qaInterceptedChat("ssl_unknown_authority"),
+		anomaly:   true,
+		check:     qaInterceptorCertificateRecorded,
+	}, {
+		// as above, with a certificate for a blockpage domain: Go checks the name before the
+		// issuer, so the failure says hostname even though the certificate is also self-signed
+		// (the certificates in tls_handshakes tell the two apart)
+		name:      "Interception: a blockpage certificate",
+		faults:    map[string]fault{qaInterceptorAddr: faultBlockpageCertificate},
+		configure: qaForgeChatToInterceptor,
+		want:      qaInterceptedChat("ssl_invalid_hostname"),
+		anomaly:   true,
+		check:     qaInterceptorCertificateRecorded,
+	}, {
+		// the GET is reset after the handshake: the controls run and complete their handshakes
+		name:   "Possible interference after the handshake: http_round_trip",
+		faults: map[string]fault{qaCDNAddr: faultResetRequest},
+		options: []qaOption{withTargets(targetNamed("storage")),
+			func(m *Measurer) { m.limits.controlHandshake = time.Second }},
+		want: map[string]qaOutcome{"storage": {
+			Target: "http_round_trip eof_error",
+			Controls: []string{
+				"doh: ok",
+				"udp_1111: ok",
+				"static_address(android): connect generic_timeout_error", // static addresses without a simulated host
+				"static_address(desktop): connect generic_timeout_error",
+				"static_address(desktop): " + qaNoIPv6,
+				"decoy_sni: ok",
+				"alternate_hello: ok",
+			}}},
+		anomaly: true,
+	}, {
+		// only the 16 KiB keepalive fails: the 1 KiB one and the unpadded one get their answers
+		name:    "Interference after the handshake: only large messages fail",
+		faults:  map[string]fault{qaChatAddr: faultKillLargeMessages},
+		want:    map[string]qaOutcome{"chat_android": {Target: "keepalive eof_error"}},
+		anomaly: true,
+		check: func(t *testing.T, _ *TestKeys, byName map[string]*TargetResult) {
+			var got []string
+			for _, k := range byName["chat_android"].Provisioning.Keepalives {
+				got = append(got, fmt.Sprintf("%d: %s", k.Padding, result("", k.Failure)))
+			}
+			want := []string{"0: ok", "1024: ok", "16384:  eof_error"}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("keepalives (-want +got):\n%s", diff)
 			}
 		},
 	}, {

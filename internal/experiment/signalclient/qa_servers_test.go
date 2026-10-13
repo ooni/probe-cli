@@ -35,6 +35,18 @@ const (
 	qaCDNAddr      = "104.18.10.47"   // storage, cdn*, updates2, sfu
 )
 
+// qaBlockpageDomain is the name on a middlebox's blockpage certificate.
+const qaBlockpageDomain = "blockpage.example"
+
+func qaSelfSignedCertificate(t *testing.T, name string) tls.Certificate {
+	certPEM, keyPEM := mustSelfSigned(t, name)
+	return runtimex.Try1(tls.X509KeyPair(certPEM, keyPEM))
+}
+
+// qaInterceptorAddr is a host that exists only when faults name it: where a forged DNS answer
+// sends a target, to a server that is not Signal.
+const qaInterceptorAddr = "203.0.113.10"
+
 // Addresses of the simulated fronts.
 const (
 	qaFastlyFrontAddr = "151.101.1.194" // github.githubassets.com, pinterest.com, www.redditstatic.com
@@ -103,6 +115,9 @@ func newQAEnv(t *testing.T, faults map[string]fault) *qaEnv {
 	for addr, hosts := range qaStaticAddrs {
 		options = append(options, front(addr, hosts...))
 	}
+	if _, ok := faults[qaInterceptorAddr]; ok { // only when a scenario sends traffic there
+		options = append(options, front(qaInterceptorAddr, "chat.signal.org"))
+	}
 	env := netemx.MustNewQAEnv(options...)
 	for _, name := range fastlyFronts {
 		env.AddRecordToAllResolvers(name, "", qaFastlyFrontAddr)
@@ -163,6 +178,12 @@ func (s *qaSignalServer) MustStart() {
 	ln := runtimex.Try1(s.stack.ListenTCP("tcp", addr))
 	config := s.stack.MustNewServerTLSConfig(s.factory.names[0], s.factory.names[1:]...)
 	config.NextProtos = []string{"h2", "http/1.1"}
+	switch s.factory.fault {
+	case faultImpostorCertificate:
+		config.Certificates = []tls.Certificate{qaSelfSignedCertificate(s.factory.t, s.factory.names[0])}
+	case faultBlockpageCertificate:
+		config.Certificates = []tls.Certificate{qaSelfSignedCertificate(s.factory.t, qaBlockpageDomain)}
+	}
 	s.listener = tls.NewListener(ln, config)
 	go func() {
 		for {
@@ -244,6 +265,8 @@ func (s *qaSignalServer) serveH1Request(conn net.Conn, br *bufio.Reader, req *ht
 			"Sec-WebSocket-Accept: %s\r\n\r\n", websocketAccept(req.Header.Get("Sec-WebSocket-Key")))
 	case upgrade: // an enclave path without credentials
 		fmt.Fprintf(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+	case s.factory.fault == faultResetRequest:
+		return // the caller closes the connection
 	case s.factory.fault == faultTruncateBody:
 		fmt.Fprintf(conn, "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\nshort")
 	default:
@@ -323,6 +346,10 @@ func (s *qaSignalServer) serveH2(conn net.Conn) {
 					}
 				}()
 				continue
+			}
+			if s.factory.fault == faultResetRequest {
+				conn.Close()
+				return
 			}
 			if s.factory.fault == faultTruncateBody {
 				respond(f.StreamID, 200, false)

@@ -64,16 +64,16 @@ func TestGoogleRoots(t *testing.T) {
 	}
 }
 
-// mustSelfSigned returns a self-signed ECDSA certificate for example.com and its key, PEM-encoded.
-// The certificate can sign, so it is also a root unrelated to the simulated network's CA.
-func mustSelfSigned(t *testing.T) (certPEM, keyPEM []byte) {
+// mustSelfSigned returns a self-signed ECDSA certificate for name and its key, PEM-encoded. The
+// certificate can sign, so it is also a root unrelated to the simulated network's CA.
+func mustSelfSigned(t *testing.T, name string) (certPEM, keyPEM []byte) {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "example.com"},
-		DNSNames: []string{"example.com"}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour),
+	tmpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: name},
+		DNSNames: []string{name}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour),
 		IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
 	if err != nil {
@@ -90,6 +90,6 @@ func mustSelfSigned(t *testing.T) (certPEM, keyPEM []byte) {
 // otherRoot is mustSelfSigned's certificate, for SignalCA.
 func otherRoot(t *testing.T) string {
 	t.Helper()
-	cert, _ := mustSelfSigned(t)
+	cert, _ := mustSelfSigned(t, "example.com")
 	return string(cert)
 }

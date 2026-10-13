@@ -262,7 +262,7 @@ func TestHelloVersions(t *testing.T) {
 // handshakeVersion runs h against a local Go TLS server (unverified) and returns the version.
 func handshakeVersion(t *testing.T, h Hello) uint16 {
 	t.Helper()
-	certPEM, keyPEM := mustSelfSigned(t)
+	certPEM, keyPEM := mustSelfSigned(t, "example.com")
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
 		t.Fatal(err)

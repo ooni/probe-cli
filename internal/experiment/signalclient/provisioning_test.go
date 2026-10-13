@@ -34,21 +34,25 @@ const (
 	faultReservedOpcode        // a frame with reserved opcode 0x3 instead of the address
 	faultMessageThenClose      // another message right after the address, then the stream ends
 	faultIgnoreKeepalives      // never answer keepalives
+	faultKillLargeMessages     // end the stream on a message above 8 KiB, as a size-triggered middlebox would
 	faultKeepaliveWrongAnswer  // answer keepalives with another id and status 500
 	faultBadPong               // answer the client's PING with another payload
 	faultJunkPongFirst         // answer the client's PING with an unrelated pong, then the echo
 	faultCloseOnPing           // answer the client's PING with a close frame (TCP stays open)
 
 	// the front ends
-	faultResetAfterAddress // HTTP/2: RST_STREAM right after the address
-	faultKillAfterAddress  // close the TCP connection right after the address
-	faultNoConnectProtocol // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
-	faultRefuseUpgrade     // 403 to the provisioning upgrade, as a CDN's geoblock would
-	faultBadAccept         // a 101 with the wrong Sec-WebSocket-Accept (HTTP/1.1)
-	faultEnclaveAccepts    // accept enclave upgrades without credentials (101)
-	faultEnclave401        // 401 to enclave upgrades, as for a real enclave id without credentials
-	faultTruncateBody      // GET responses: promise 1000 bytes, send 5, close the connection
-	deflate                // not a fault: accept permessage-deflate (HTTP/1.1), compress every message
+	faultResetAfterAddress    // HTTP/2: RST_STREAM right after the address
+	faultKillAfterAddress     // close the TCP connection right after the address
+	faultNoConnectProtocol    // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
+	faultRefuseUpgrade        // 403 to the provisioning upgrade, as a CDN's geoblock would
+	faultBadAccept            // a 101 with the wrong Sec-WebSocket-Accept (HTTP/1.1)
+	faultEnclaveAccepts       // accept enclave upgrades without credentials (101)
+	faultEnclave401           // 401 to enclave upgrades, as for a real enclave id without credentials
+	faultTruncateBody         // GET responses: promise 1000 bytes, send 5, close the connection
+	faultResetRequest         // close the connection when a GET arrives, before any response
+	faultImpostorCertificate  // a self-signed certificate for the requested name, as an intercepting middlebox's
+	faultBlockpageCertificate // a self-signed certificate for a blockpage domain, as many middleboxes present
+	deflate                   // not a fault: accept permessage-deflate (HTTP/1.1), compress every message
 )
 
 // fakeServer plays Signal's side of a provisioning socket.
@@ -140,6 +144,9 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		case opClose:
 			return
 		case opBinary:
+			if f.fault == faultKillLargeMessages && len(p) > 8192 {
+				return
+			}
 			msg, err := parseMessage(p)
 			if err != nil {
 				t.Errorf("server: %v", err)
