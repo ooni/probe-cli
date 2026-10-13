@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"math"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
@@ -85,21 +86,21 @@ func serverRequest(verb, path string, id uint64, body []byte) []byte {
 func serverFrame(fin bool, rsv1 bool, op byte, payload []byte) []byte {
 	b0 := op
 	if fin {
-		b0 |= 0x80
+		b0 |= finBit
 	}
 	if rsv1 {
-		b0 |= 0x40
+		b0 |= rsv1Bit
 	}
 	out := []byte{b0}
 	switch n := len(payload); {
-	case n < 126:
+	case n < length16:
 		out = append(out, byte(n))
-	case n < 65536:
-		out = append(out, 126, byte(n>>8), byte(n))
+	case n <= math.MaxUint16:
+		out = append(out, length16, byte(n>>8), byte(n))
 	default:
 		var l [8]byte
 		binary.BigEndian.PutUint64(l[:], uint64(n))
-		out = append(append(out, 127), l[:]...)
+		out = append(append(out, length64), l[:]...)
 	}
 	return append(out, payload...)
 }

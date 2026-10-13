@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -130,7 +131,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, flow provi
 	res.PingEchoed = &echoed
 	checkpoint()
 
-	_ = ws.writeFrame(opClose, []byte{0x03, 0xe8}) // 1000, normal closure; the flow already succeeded
+	_ = ws.writeFrame(opClose, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")) // the flow already succeeded
 	return res
 }
 
@@ -286,7 +287,7 @@ func (s *session) keepalive(i uint64, pad int, zero time.Time) (*KeepaliveResult
 // (RFC 6455 allows them) are skipped; the result is false only if pongs arrived but none echoed
 // the payload, and a timeout if none arrived.
 func (s *session) ping() (bool, error) {
-	payload := make([]byte, 125)
+	payload := make([]byte, maxControlPayload)
 	_, _ = rand.Read(payload)
 	if err := s.send(opPing, payload); err != nil {
 		return false, err

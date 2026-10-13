@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
@@ -27,7 +28,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// WebSocket opcodes.
+// WebSocket opcodes (RFC 6455 section 5.2). Control frames are those from opClose up, which
+// readRawFrame relies on.
 const (
 	opContinuation = 0x0
 	opBinary       = 0x2
@@ -36,8 +38,31 @@ const (
 	opPong         = 0xA
 )
 
+// The frame header (RFC 6455 section 5.2): the first byte's flags and opcode, the second byte's
+// mask flag and payload length, which 126 and 127 extend to 16 and 64 bits.
+const (
+	finBit       = 0x80
+	rsv1Bit      = 0x40 // permessage-deflate's "compressed" flag (RFC 7692)
+	rsv2rsv3Bits = 0x30
+	opcodeBits   = 0x0F
+	maskBit      = 0x80
+	lengthBits   = 0x7F
+	length16     = 126
+	length64     = 127
+
+	maxFrameHeader    = 2 + 8 + 4 // with a 64-bit length and a mask
+	maxControlPayload = 125
+)
+
 // maxFramePayload bounds what we accept from the server (Signal's messages here are tiny).
 const maxFramePayload = 1 << 20
+
+// permessage-deflate (RFC 7692 section 7.2.2): the sender strips the 0x00 0x00 0xff 0xff that
+// ends each compressed message; the receiver appends it, and an empty final block, to inflate the
+// message. The sender's LZ77 window, and so the dictionary of the next message, is 32 KiB.
+var deflateTail = []byte{0x00, 0x00, 0xff, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff}
+
+const deflateWindow = 1 << 15
 
 // errFrameTooLarge means the server sent a frame larger than maxFramePayload.
 var errFrameTooLarge = errors.New("signal_client: websocket frame too large")
@@ -77,8 +102,7 @@ type wsConn struct {
 
 // inflate decompresses one permessage-deflate message.
 func (c *wsConn) inflate(p []byte) ([]byte, error) {
-	tail := []byte{0x00, 0x00, 0xff, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff} // sync flush + final empty block
-	r := flate.NewReaderDict(io.MultiReader(bytes.NewReader(p), bytes.NewReader(tail)), c.window)
+	r := flate.NewReaderDict(io.MultiReader(bytes.NewReader(p), bytes.NewReader(deflateTail)), c.window)
 	out, err := netxlite.ReadAllContext(context.Background(), io.LimitReader(r, maxFramePayload+1)) // in memory
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errInflate, err)
@@ -87,8 +111,8 @@ func (c *wsConn) inflate(p []byte) ([]byte, error) {
 		return nil, errFrameTooLarge
 	}
 	c.window = append(c.window, out...)
-	if len(c.window) > 32768 {
-		c.window = c.window[len(c.window)-32768:]
+	if len(c.window) > deflateWindow {
+		c.window = c.window[len(c.window)-deflateWindow:]
 	}
 	return out, nil
 }
@@ -103,19 +127,19 @@ func newWSConn(r io.Reader, w io.Writer) *wsConn {
 
 // writeFrame sends one final, masked frame.
 func (c *wsConn) writeFrame(opcode byte, payload []byte) error {
-	var hdr [14]byte
-	hdr[0] = 0x80 | opcode
+	var hdr [maxFrameHeader]byte
+	hdr[0] = finBit | opcode
 	n := len(payload)
 	off := 2
 	switch {
-	case n < 126:
-		hdr[1] = 0x80 | byte(n)
-	case n < 65536:
-		hdr[1] = 0x80 | 126
+	case n < length16:
+		hdr[1] = maskBit | byte(n)
+	case n <= math.MaxUint16:
+		hdr[1] = maskBit | length16
 		binary.BigEndian.PutUint16(hdr[2:], uint16(n))
 		off = 4
 	default:
-		hdr[1] = 0x80 | 127
+		hdr[1] = maskBit | length64
 		binary.BigEndian.PutUint64(hdr[2:], uint64(n))
 		off = 10
 	}
@@ -178,14 +202,14 @@ func (c *wsConn) readRawFrame() (rawFrame, error) {
 	if _, err := io.ReadFull(c.r, h[:]); err != nil {
 		return rawFrame{}, err
 	}
-	f := rawFrame{fin: h[0]&0x80 != 0, rsv1: h[0]&0x40 != 0, op: h[0] & 0x0F}
-	masked, n := h[1]&0x80 != 0, uint64(h[1]&0x7F)
+	f := rawFrame{fin: h[0]&finBit != 0, rsv1: h[0]&rsv1Bit != 0, op: h[0] & opcodeBits}
+	masked, n := h[1]&maskBit != 0, uint64(h[1]&lengthBits)
 	switch op := f.op; {
-	case h[0]&0x30 != 0: // RSV2, RSV3: no extension we negotiate defines them
+	case h[0]&rsv2rsv3Bits != 0: // no extension we negotiate defines them
 		return f, fmt.Errorf("%w: RSV2 or RSV3 set", errProtocolViolation)
 	case op > opBinary && op < opClose, op > opPong:
 		return f, fmt.Errorf("%w: reserved opcode %#x", errProtocolViolation, op)
-	case op >= opClose && (!f.fin || n > 125):
+	case op >= opClose && (!f.fin || n > maxControlPayload):
 		return f, fmt.Errorf("%w: fragmented or oversized control frame", errProtocolViolation)
 	case f.rsv1 && (!c.deflate || op == opContinuation || op >= opClose): // RFC 7692 section 6
 		return f, fmt.Errorf("%w: RSV1 set where compression is not allowed", errProtocolViolation)
@@ -195,13 +219,13 @@ func (c *wsConn) readRawFrame() (rawFrame, error) {
 		return f, fmt.Errorf("%w: new message before the previous one ended", errProtocolViolation)
 	}
 	switch n { // extended payload lengths
-	case 126:
+	case length16:
 		var b [2]byte
 		if _, err := io.ReadFull(c.r, b[:]); err != nil {
 			return f, err
 		}
 		n = uint64(binary.BigEndian.Uint16(b[:]))
-	case 127:
+	case length64:
 		var b [8]byte
 		if _, err := io.ReadFull(c.r, b[:]); err != nil {
 			return f, err

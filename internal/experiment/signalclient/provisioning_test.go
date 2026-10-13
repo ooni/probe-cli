@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/ooni/probe-cli/v3/internal/experiment/signalclient/signalpb"
 	"google.golang.org/protobuf/proto"
 )
@@ -129,7 +130,7 @@ func (f fakeServer) serve(t *testing.T, r io.Reader, w io.Writer) {
 		case opPing:
 			switch f.fault {
 			case faultCloseOnPing:
-				send(opClose, []byte{0x03, 0xe8})
+				send(opClose, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 				continue
 			case faultJunkPongFirst:
 				send(opPong, []byte("not the payload"))
