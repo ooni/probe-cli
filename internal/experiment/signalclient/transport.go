@@ -247,7 +247,7 @@ func upgradeH1(ctx context.Context, conn net.Conn, req, wsKey string) (*upgradeR
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != "",
 		extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
-		out.response, _ = sampleResponse(ctx, resp) // bounded, within the connect budget
+		out.response, _ = sampleResponse(ctx, resp) // bounded, within the operation's limit
 		_ = conn.Close()                            // first: Body.Close would otherwise drain an endless body until the deadline
 		_ = resp.Body.Close()
 		return out, upgradeRefused()
@@ -296,7 +296,7 @@ func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, use
 	req.Header[":protocol"] = []string{"websocket"}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Sec-WebSocket-Version", "13")
-	stopHeaderTimer := context.AfterFunc(connectCtx, cancelReq) // no headers within the connect budget
+	stopHeaderTimer := context.AfterFunc(connectCtx, cancelReq) // no headers within the operation's limit
 	resp, err := cc.RoundTrip(req)
 	headerTimeout := !stopHeaderTimer() && ctx.Err() == nil // the timer fired, not the parent ctx
 	if headerTimeout {
@@ -316,7 +316,7 @@ func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, use
 	}
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
 	if resp.StatusCode/100 != 2 { // libsignal accepts any 2xx
-		out.response, _ = sampleResponse(ctx, resp) // bounded, within the connect budget
+		out.response, _ = sampleResponse(ctx, resp) // bounded, within the operation's limit
 		cancelReq()
 		_ = cc.Close() // first: closing the body may wait for the connection's write lock
 		_ = pw.Close()

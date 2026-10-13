@@ -21,7 +21,9 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 // controlsOf indexes a target's controls by kind (several static_address controls are listed
@@ -107,8 +109,8 @@ func TestQAControlsForgedAnswer(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.ISPResolverConfig().AddRecord("storage.signal.org", "", "10.10.34.35") // nothing there
-	defer func(d time.Duration) { connectBudget = d }(connectBudget)
-	connectBudget = time.Second
+	defer func(d time.Duration) { opTimeout = d }(opTimeout)
+	opTimeout = time.Second
 	_, byName := runQA(t, env)
 	r := byName["storage"]
 	if r.FailedOperation != "connect" {
@@ -284,21 +286,26 @@ func TestQAControlsAlways(t *testing.T) {
 	}
 }
 
-func TestQAControlsTruncated(t *testing.T) {
-	defer func(d time.Duration) { controlsBudget = d }(controlsBudget)
-	controlsBudget = time.Nanosecond
+// When the test's clock runs out during the controls, those not started are not recorded
+// (signal_controls_truncated), and those cut short are interrupted, not timeouts.
+func TestQAControlsCutByTheClock(t *testing.T) {
+	defer func(d time.Duration, n int) { testTimeout, controlsParallelism = d, n }(testTimeout, controlsParallelism)
+	testTimeout, controlsParallelism = 1500*time.Millisecond, 1 // the doh control takes about 2 s here
 	env := newQAEnv(t, nil)
 	defer env.Close()
-	tk, byName := runQAWith(t, env, Config{Controls: ControlsAlways})
+	env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{Logger: log.Log, Domain: "chat.signal.org"}) // fails at once
+	env.DPIEngine().AddRule(&netem.DPIDropTrafficForServerEndpoint{Logger: log.Log, ServerIPAddress: netemx.AddressCloudflareDNSCom1111,
+		ServerPort: 443, ServerProtocol: layers.IPProtocolTCP}) // the first control (doh) is still running when the clock runs out
+	tk, byName := runQA(t, env)
+	r := byName["chat_android"]
 	if !tk.ControlsTruncated {
-		t.Fatal("not truncated")
+		for _, c := range r.Controls {
+			t.Logf("%s %s %q t0=%.2f t=%.2f", c.Kind, c.Resolver, deref(c.Failure), c.T0, c.T)
+		}
+		t.Fatalf("not truncated: chat_android %q %q", r.FailedOperation, deref(r.Failure))
 	}
-	n := 0
-	for _, name := range allTargets {
-		n += len(byName[name].Controls)
-	}
-	if n > controlsParallelism {
-		t.Errorf("%d controls recorded after the budget ran out", n)
+	if len(r.Controls) != 1 || r.Controls[0].Kind != ControlDoH || deref(r.Controls[0].Failure) != "interrupted" {
+		t.Fatalf("controls %+v", r.Controls)
 	}
 }
 

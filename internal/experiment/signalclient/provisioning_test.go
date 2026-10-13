@@ -255,18 +255,6 @@ func TestProvisioningTimestampHeaderNameIsExact(t *testing.T) {
 	}
 }
 
-func TestTargetTimeoutCoversEveryStep(t *testing.T) {
-	steps := addressTimeout + time.Duration(len(keepalivePaddings)+1)*keepaliveTimeout
-	for _, m := range []Method{MethodProvisioningH1, MethodProvisioningH2} {
-		if got := targetTimeout(m, 7*time.Second); got < connectBudget+steps+7*time.Second {
-			t.Errorf("%s: budget %v does not cover connect (%v) + steps (%v) + idle", m, got, connectBudget, steps)
-		}
-	}
-	if got := targetTimeout(MethodHTTPSGet, time.Hour); got != connectBudget {
-		t.Errorf("https_get budget %v should not include idle", got)
-	}
-}
-
 // Ignored frames must not extend a step: the address step fails at its deadline even though
 // the server keeps sending unsolicited pongs.
 func TestProvisioningStepDeadlineIsNotExtendedByIgnoredFrames(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"math/big"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -53,14 +54,19 @@ type ControlResult struct {
 	T               float64   `json:"t"`
 }
 
-// Limits (variables so tests can shorten them).
+// Limits (variables so tests can shorten them). The controls run until the test's clock runs out;
+// each has a short limit so that many fit after the targets.
 var (
-	controlsBudget          = 60 * time.Second
-	controlsParallelism     = 8
-	dohTimeout              = 10 * time.Second
+	controlsParallelism     = 16
+	dohTimeout              = 5 * time.Second
 	udpTimeout              = 5 * time.Second
-	controlHandshakeTimeout = 10 * time.Second
+	controlHandshakeTimeout = 5 * time.Second
 )
+
+// controlPriority orders the controls' start, most telling first, so that when the test's clock
+// runs out the controls left unstarted are the least informative ones.
+var controlPriority = map[string]int{ControlDoH: 0, ControlStatic: 1, ControlDecoySNI: 2, ControlUDP: 3,
+	ControlAlternate: 4, ControlBrowser: 5, ControlTLS12: 6}
 
 // The resolvers libsignal and Signal-Android fall back to. The IPv6 DoH resolver is used when
 // the IPv4 one fails.
@@ -150,26 +156,33 @@ func (cr *controlRunner) add(r *TargetResult, key, kind string, run func(context
 	cr.jobs = append(cr.jobs, job)
 }
 
-// plan decides the controls of every target, in target order and, within a target, in kind order.
-func (cr *controlRunner) plan(targets []Target, results []*TargetResult) {
+// plan decides the controls of every target from snapshots, each target's result when it finished
+// connecting (its provisioning flow may still be writing to results), and records them in results.
+// They start in controlPriority order, then target order.
+func (cr *controlRunner) plan(targets []Target, snapshots, results []*TargetResult) {
+	defer func() {
+		sort.SliceStable(cr.jobs, func(i, j int) bool {
+			return controlPriority[cr.jobs[i].kind] < controlPriority[cr.jobs[j].kind]
+		})
+	}()
 	for i, target := range targets {
-		r := results[i]
+		r, snap := results[i], snapshots[i]
 		always := cr.opts.controls == ControlsAlways
-		if !always && !failedBeforeSignalAnswered[r.FailedOperation] {
+		if !always && !failedBeforeSignalAnswered[snap.FailedOperation] {
 			continue
 		}
-		if !always && r.Failure != nil && answeredFailures[*r.Failure] {
+		if !always && snap.Failure != nil && answeredFailures[*snap.Failure] {
 			continue // the server answered (e.g. refused the upgrade): nothing on the path to explain
 		}
-		op := r.FailedOperation
+		op := snap.FailedOperation
 		tlsAnswered := always || op == netxlite.TLSHandshakeOperation || op == netxlite.HTTPRoundTripOperation ||
 			op == "websocket_upgrade"
 		tlsFailed := always || op == netxlite.TLSHandshakeOperation
 		host := target.Hostname
 		list := cr.opts.static[host]
 		tried := ""
-		if r.Address != nil && *r.Address != "" {
-			tried, _, _ = net.SplitHostPort(*r.Address)
+		if snap.Address != nil && *snap.Address != "" {
+			tried, _, _ = net.SplitHostPort(*snap.Address)
 		}
 
 		dohJob := cr.planDNS(r, ControlDoH, host)
@@ -265,11 +278,9 @@ func (cr *controlRunner) planStaticFromDoH(r *TargetResult, target Target, doh *
 	cr.jobs = append(cr.jobs, job)
 }
 
-// run starts the controls in order, at most controlsParallelism at a time, within
-// controlsBudget, and records them. It returns whether some were never started.
+// run starts the controls in order, at most controlsParallelism at a time, until ctx (the test's
+// clock) is done, and records them. It returns whether some were never started.
 func (cr *controlRunner) run(ctx context.Context, tk *TestKeys) (truncated bool) {
-	ctx, cancel := context.WithTimeout(ctx, controlsBudget)
-	defer cancel()
 	sem := make(chan struct{}, controlsParallelism)
 	var wg sync.WaitGroup
 	for i, job := range cr.jobs {
@@ -294,6 +305,8 @@ func (cr *controlRunner) run(ctx context.Context, tk *TestKeys) (truncated bool)
 	}
 	wg.Wait()
 
+	// recorded in plan order (target, then kind), whatever order they started in
+	sort.SliceStable(cr.jobs, func(i, j int) bool { return cr.jobs[i].index < cr.jobs[j].index })
 	for _, job := range cr.jobs {
 		tk.Queries = append(tk.Queries, job.queries...)
 		tk.TCPConnect = append(tk.TCPConnect, job.tcpConnect...)

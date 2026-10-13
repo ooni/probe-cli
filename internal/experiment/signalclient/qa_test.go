@@ -747,18 +747,18 @@ func TestQATruncatedBodyIsAFailure(t *testing.T) {
 	}
 }
 
-// A TLS blackhole costs the connect budget, not the whole provisioning budget.
+// A TLS blackhole costs the operation limit, not the whole provisioning budget.
 func TestQAConnectBudgetIsEnforced(t *testing.T) {
-	defer func(d, c time.Duration) { connectBudget, controlHandshakeTimeout = d, c }(connectBudget, controlHandshakeTimeout)
-	connectBudget, controlHandshakeTimeout = 2*time.Second, time.Second
+	defer func(d, c time.Duration) { opTimeout, controlHandshakeTimeout = d, c }(opTimeout, controlHandshakeTimeout)
+	opTimeout, controlHandshakeTimeout = 2*time.Second, time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "chat.signal.org"})
 	_, byName := runQA(t, env)
 	r := byName["chat_android"]
 	expectFailure(t, r, "tls_handshake", "generic_timeout_error")
-	if took := r.T - r.T0; took > connectBudget.Seconds()+1 {
-		t.Errorf("chat_android took %.1f s with a %v connect budget", took, connectBudget)
+	if took := r.T - r.T0; took > opTimeout.Seconds()+1 {
+		t.Errorf("chat_android took %.1f s with a %v operation limit", took, opTimeout)
 	}
 	expectOK(t, byName, "chat_libsignal")
 }
@@ -782,10 +782,10 @@ func TestQATLSRecordsAreTaggedWithTheTarget(t *testing.T) {
 }
 
 // With every target's TLS blackholed, the targets run concurrently: the phase takes about one
-// connect budget, not one per target (ts-041 Time limits).
+// operation limit, not one per target (ts-041 Time limits).
 func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
-	defer func(d time.Duration) { connectBudget = d }(connectBudget)
-	connectBudget = 2 * time.Second
+	defer func(d time.Duration) { opTimeout = d }(opTimeout)
+	opTimeout = 2 * time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	for _, target := range DefaultTargets {
@@ -799,10 +799,25 @@ func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
 		}
 		first, last = min(first, r.T0), max(last, r.T)
 	}
-	if took := last - first; took > 2*connectBudget.Seconds() {
-		t.Errorf("targets took %.1f s with a %v connect budget: not concurrent", took, connectBudget)
+	if took := last - first; took > 2*opTimeout.Seconds() {
+		t.Errorf("targets took %.1f s with a %v operation limit: not concurrent", took, opTimeout)
 	}
-	if tk.RunTruncated || !tk.MeasurementSummaryKeys().Anomaly() {
-		t.Errorf("run truncated %v, anomaly %v", tk.RunTruncated, tk.MeasurementSummaryKeys().Anomaly())
+	if !tk.MeasurementSummaryKeys().Anomaly() {
+		t.Error("no anomaly with every target blackholed")
 	}
+}
+
+// A step cut short by the test's clock is interrupted, not a timeout of the network's.
+func TestQAProvisioningCutByTheClock(t *testing.T) {
+	defer func(d time.Duration) { testTimeout = d }(testTimeout)
+	testTimeout = 2 * time.Second // the address step would wait 10 s
+	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {noAddress: true}})
+	defer env.Close()
+	tk, byName := runQAWith(t, env, Config{Controls: ControlsOff})
+	expectFailure(t, byName["chat_android"], "provisioning_address", "interrupted")
+	expectOK(t, byName, "chat_libsignal", "storage")
+	if took := byName["chat_android"].T - byName["chat_android"].T0; took > testTimeout.Seconds()+1 {
+		t.Errorf("chat_android took %.1f s with a %v clock", took, testTimeout)
+	}
+	_ = tk
 }

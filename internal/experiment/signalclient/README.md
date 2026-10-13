@@ -11,7 +11,7 @@ written as strings. An invalid option fails the run before anything is measured.
 
 | Option | Default | Effect |
 |---|---|---|
-| `IdleSeconds` | `0` | idle time on provisioning sockets, capped at 60 |
+| `IdleSeconds` | `0` | idle time on provisioning sockets, capped at 30 (Signal's keepalive interval) |
 | `AppUserAgent` | `false` | send the Signal apps' User-Agents instead of identifying as OONI Probe |
 | `UserAgent` | empty | User-Agent sent instead of either |
 | `SignalCA` | empty | PEM bundle that replaces Signal's two roots (targets, verifying controls, inner connections of the routes; not the fronts or DoH). Recorded in `signal_roots` |
@@ -68,10 +68,10 @@ The test is not enabled by default: set `OONI_FORCE_ENABLE_EXPERIMENT=1` to run 
   Android chat uses the WebSocket hello (`-websocket`, ALPN `http/1.1`), storage the HTTPS one
   (`h2,http/1.1`). A front given with `Fronts` that the client does not use gets the route's
   default hello (Gmail's on `android_g`).
-- **Connect budget through a route:** each target reached through a route has its own 30 s
-  connect budget, as a direct target does. It covers the TCP and TLS to the front, on the
-  reflectors the tunnel upgrade and the inner handshake, and then the upgrade or GET. The front's
-  DNS lookup has its own 30 s, and the provisioning steps keep their usual limits.
+- **Time limits:** one 60 s clock for the whole test, and 10 s for each network operation
+  (each control's has 5 s). Through a route, each step is an operation: the front's DNS, the TCP
+  and TLS to the front, on the reflectors the tunnel upgrade and the inner handshake, then the
+  upgrade or GET. Whatever the clock cuts short is recorded as `interrupted`.
 - **Route `host_header`, `front` and `front_client_hello`** describe the route's first
   connection. `tls_handshakes` records each connection's SNI.
 - **The User-Agent on the reflector tunnel's upgrade** is libsignal's, as on libsignal's routes:

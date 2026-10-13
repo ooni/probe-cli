@@ -90,21 +90,6 @@ func routeInners(route string) []routeInner {
 	}
 }
 
-// routeTimeout bounds one route: its front's DNS lookup, then its inner targets one after
-// another, each within its target budget (and, for an Android service with fronts of its own, its
-// own front lookup). It is the longest over all routes.
-func routeTimeout(idle time.Duration) time.Duration {
-	var longest time.Duration
-	for _, route := range allRoutes {
-		d := connectBudget
-		for _, in := range routeInners(route) {
-			d += connectBudget + targetTimeout(in.target.Method, idle)
-		}
-		longest = max(longest, d)
-	}
-	return longest
-}
-
 // measureRoute measures one route: it resolves the front with the system resolver, then, for
 // each inner target, connects to the front's first IPv4 address, handshakes with SNI set to the
 // front, and measures the target through it.
@@ -148,13 +133,12 @@ func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero t
 		return res
 	}
 
-	// resolve returns the address of a front's first IPv4 address, with the system resolver,
-	// within its own connect budget
+	// resolve returns the address of a front's first IPv4 address, with the system resolver
 	resolve := func(front string, tags ...string) (string, error) {
-		connectCtx, cancel := context.WithTimeout(ctx, connectBudget)
+		resolveCtx, cancel := context.WithTimeout(ctx, opTimeout)
 		defer cancel()
 		trace := measurexlite.NewTrace(index, zero, tags...)
-		addrs, err := trace.NewStdlibResolver(logger).LookupHost(connectCtx, front)
+		addrs, err := trace.NewStdlibResolver(logger).LookupHost(resolveCtx, front)
 		tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
 		if err == nil && firstIPv4(addrs) == "" {
 			err = errNoAddress
@@ -227,19 +211,17 @@ type routeInnerRun struct {
 	frontFailed  bool // the failure, if any, was the front's (not the inner target's)
 }
 
-// start creates the inner target's result, its budgets and trace, and dials the front. As on a
-// direct target, connectCtx is the target's connect budget: the TCP and TLS to the front and, on
-// the reflectors, the tunnel upgrade and the inner handshake, then the upgrade or GET.
+// start creates the inner target's result and trace, and connects to the front: TCP and TLS
+// within opTimeout. It returns a nil *tlsResult when that failed. Each later step (the tunnel's
+// upgrade, the inner handshake, the upgrade or GET) has its own opTimeout.
 func (in *routeInnerRun) start(ctx context.Context, target Target, hello Hello, front string) (
-	res *TargetResult, tctx, connectCtx context.Context, cancel func(), trace *measurexlite.Trace, tr *tlsResult) {
+	res *TargetResult, trace *measurexlite.Trace, tr *tlsResult) {
 	res = &TargetResult{Name: target.Name, Hostname: target.Hostname, ClientHello: hello.Name, Method: target.Method,
 		T0: time.Since(in.zero).Seconds()}
-	tctx, cancelT := context.WithTimeout(ctx, targetTimeout(target.Method, idleDuration(in.m.config.IdleSeconds)))
-	connectCtx, cancelC := context.WithTimeout(tctx, connectBudget)
-	cancel = func() { cancelC(); cancelT() }
 	trace = measurexlite.NewTrace(in.index, in.zero, in.tags...)
-	var err error
-	tr, err = dialTLS(connectCtx, trace, in.logger, in.zero, in.frontAddress, front, hello, in.frontRoots, in.tags...)
+	dialCtx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
+	tr, err := dialTLS(dialCtx, trace, in.logger, in.zero, in.frontAddress, front, hello, in.frontRoots, in.tags...)
 	in.tk.TCPConnect = append(in.tk.TCPConnect, trace.TCPConnects()...)
 	if tr != nil && tr.handshake != nil {
 		in.tk.TLSHandshakes = append(in.tk.TLSHandshakes, tr.handshake)
@@ -250,9 +232,9 @@ func (in *routeInnerRun) start(ctx context.Context, target Target, hello Hello, 
 		if tr == nil {
 			res.FailedOperation = netxlite.ConnectOperation
 		}
-		return res, tctx, connectCtx, cancel, trace, nil
+		return res, trace, nil
 	}
-	return res, tctx, connectCtx, cancel, trace, tr
+	return res, trace, tr
 }
 
 // drainer returns a checkpoint that moves the trace's network events to the test keys.
@@ -264,8 +246,7 @@ func (in *routeInnerRun) drainer(trace *measurexlite.Trace) func() {
 // verified against Signal's roots, then the target's method. It also returns the tunnel's status.
 func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front, hostHeader string) (*TargetResult, int64) {
 	target := inner.target
-	res, tctx, connectCtx, cancel, trace, tr := in.start(ctx, target, HelloLibsignalReflector, front)
-	defer cancel()
+	res, trace, tr := in.start(ctx, target, HelloLibsignalReflector, front)
 	defer func() { res.T = time.Since(in.zero).Seconds() }()
 	defer in.drainer(trace)()
 	res.ClientHello = target.Hello.Name
@@ -273,12 +254,14 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 	if tr == nil {
 		return res, 0
 	}
-	stop := context.AfterFunc(tctx, func() { _ = tr.conn.Close() })
+	stop := context.AfterFunc(ctx, func() { _ = tr.conn.Close() })
 	defer stop()
 	// libsignal sends its connection manager's User-Agent (the app's, plus " libsignal/<version>") on
 	// the tunnel upgrade too (rust/net/infra/src/route/proxy.rs, ConnectionProxyConfig::Reflector)
 	tunnelUA := in.m.config.userAgent(HelloLibsignalReflector)
-	up, err := tunnelUpgrade(connectCtx, tr.conn, hostHeader, target.Hostname, tunnelUA)
+	upgradeCtx, cancelUpgrade := context.WithTimeout(ctx, opTimeout)
+	defer cancelUpgrade()
+	up, err := tunnelUpgrade(upgradeCtx, tr.conn, hostHeader, target.Hostname, tunnelUA)
 	var status int64
 	if up != nil {
 		status = int64(up.status)
@@ -290,7 +273,9 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 		return res, status
 	}
 	tunnel := newTunnelConn(up, tr.conn)
-	itr, err := handshakeTLS(connectCtx, trace, in.zero, tunnel, "", target.Hostname, target.Hello, in.signalRoots, in.tags...)
+	innerCtx, cancelInner := context.WithTimeout(ctx, opTimeout)
+	defer cancelInner()
+	itr, err := handshakeTLS(innerCtx, trace, in.zero, tunnel, "", target.Hostname, target.Hello, in.signalRoots, in.tags...)
 	if itr != nil && itr.handshake != nil {
 		in.tk.TLSHandshakes = append(in.tk.TLSHandshakes, itr.handshake)
 	}
@@ -299,7 +284,9 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 		return res, status
 	}
 	res.ALPN, res.LeafKeyType = itr.alpn, itr.leafKey
-	in.m.exerciseInto(tctx, connectCtx, itr, target, target.Hostname, target.Path, res, in.zero, in.drainer(trace))
+	exerciseCtx, cancelExercise := context.WithTimeout(ctx, opTimeout)
+	defer cancelExercise()
+	in.m.exerciseInto(ctx, exerciseCtx, itr, target, target.Hostname, target.Path, res, in.zero, in.drainer(trace))
 	return res, status
 }
 
@@ -308,8 +295,7 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front string, fc frontConfig) *TargetResult {
 	target := inner.target
 	hello := frontHello(in.route, inner.service, front)
-	res, tctx, connectCtx, cancel, trace, tr := in.start(ctx, target, hello, front)
-	defer cancel()
+	res, trace, tr := in.start(ctx, target, hello, front)
 	defer func() { res.T = time.Since(in.zero).Seconds() }()
 	defer in.drainer(trace)()
 	address := in.frontAddress
@@ -319,6 +305,8 @@ func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front st
 		return res
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
-	in.m.exerciseInto(tctx, connectCtx, tr, target, fc.hostHeader, fc.pathPrefix+inner.path, res, in.zero, in.drainer(trace))
+	exerciseCtx, cancelExercise := context.WithTimeout(ctx, opTimeout)
+	defer cancelExercise()
+	in.m.exerciseInto(ctx, exerciseCtx, tr, target, fc.hostHeader, fc.pathPrefix+inner.path, res, in.zero, in.drainer(trace))
 	return res
 }

@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -75,9 +76,8 @@ var keepalivePaddings = []int{0, 1024, 16384}
 
 // Config contains the experiment config.
 type Config struct {
-	// IdleSeconds keeps each provisioning socket idle this long before the keepalives,
-	// to detect middleboxes that kill idle sessions (libsignal pings after 31 s, drops after 45 s).
-	// It is capped at maxIdleSeconds: Signal-Server closes provisioning sockets 90 s after they open.
+	// IdleSeconds keeps each provisioning socket idle this long before the keepalives, to detect
+	// middleboxes that kill idle sessions. It is capped at maxIdleSeconds.
 	IdleSeconds int64 `ooni:"seconds of idle time on provisioning sockets before keepalives (0 = none)"`
 
 	// AppUserAgent sends each real client's User-Agent instead of identifying as OONI Probe.
@@ -170,12 +170,8 @@ type TestKeys struct {
 	// the two built-in roots unless SignalCA replaced them.
 	SignalRoots []string `json:"signal_roots"`
 
-	// ControlsTruncated is true when the controls' time budget ran out before all were started.
+	// ControlsTruncated is true when the test's clock ran out before all controls were started.
 	ControlsTruncated bool `json:"signal_controls_truncated"`
-
-	// RunTruncated is true when the whole measurement's budget (runBudget) ran out, cutting short
-	// whatever was still running. Each phase has its own limits, so this is only a backstop.
-	RunTruncated bool `json:"signal_run_truncated"`
 
 	// Circumvention holds the circumvention routes (null unless Circumvention is set).
 	Circumvention []*RouteResult `json:"signal_circumvention"`
@@ -308,17 +304,110 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.SignalRoots = anchors.sha256
 	roots := anchors.pool
 
-	// the whole measurement's budget, a backstop: each phase below has its own limits
-	runCtx, cancelRun := context.WithTimeout(ctx, runBudget(idleDuration(m.config.IdleSeconds), len(opts.routes) > 0))
-	defer cancelRun()
-	defer func() { tk.RunTruncated = runCtx.Err() == context.DeadlineExceeded && ctx.Err() == nil }()
+	// One clock for the whole test (testTimeout). It cancels rather than times out, and whatever
+	// it cuts short is recorded as interrupted (markInterrupted), never as a network timeout.
+	runCtx, stop := context.WithCancel(ctx)
+	defer stop()
+	var firedAt atomic.Value // seconds since zero, when the clock ran out
+	clock := time.AfterFunc(testTimeout, func() {
+		firedAt.Store(time.Since(zero).Seconds())
+		stop()
+	})
+	defer clock.Stop()
 	progress := newProgress(args.Callbacks, len(m.targets), len(opts.routes))
 
-	// Signal's outage beacon, a control: if Signal says it is down, failures mean little.
+	// Everything starts at once: the beacon, the targets (concurrently, as the apps connect to
+	// them) and the routes. Each target and route records into its own TestKeys, merged in order.
+	var wg sync.WaitGroup
+	beacon := &TestKeys{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		m.measureBeacon(runCtx, logger, zero, beacon)
+		progress.step("signal_client: Signal's service status: " + beacon.SignalServiceStatus)
+	}()
+
+	tk.Targets = make([]*TargetResult, len(m.targets))
+	records := make([]*TestKeys, len(m.targets))
+	connected := make([]*TargetResult, len(m.targets)) // each target's result when it finished connecting
+	var connecting sync.WaitGroup
+	for i, target := range m.targets {
+		records[i] = &TestKeys{}
+		res := newTargetResult(target, zero)
+		tk.Targets[i] = res
+		wg.Add(1)
+		connecting.Add(1)
+		go func() {
+			defer wg.Done()
+			var once sync.Once
+			markConnected := func() {
+				once.Do(func() {
+					snapshot := *res
+					connected[i] = &snapshot
+					connecting.Done()
+				})
+			}
+			defer markConnected()
+			m.measureTarget(runCtx, logger, zero, int64(i+1), target, roots, res, records[i], markConnected)
+			progress.step("signal_client: " + target.Name)
+		}()
+	}
+
+	if len(opts.routes) > 0 {
+		tk.Circumvention = make([]*RouteResult, len(opts.routes))
+	}
+	routeRecords := make([]*TestKeys, len(opts.routes))
+	for i, route := range opts.routes {
+		routeRecords[i] = &TestKeys{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			index := int64(10000 + 10*i)
+			tk.Circumvention[i] = m.measureRoute(runCtx, logger, zero, index, route, opts, roots, routeRecords[i])
+			progress.step("signal_client: route " + route)
+		}()
+	}
+
+	// The controls start once every target has connected or failed to (DNS, TCP, TLS and the
+	// upgrade or GET), while provisioning flows may still run. They decide from those snapshots.
+	controls := &TestKeys{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		connecting.Wait()
+		if opts.controls != ControlsOff {
+			cr := newControlRunner(m, logger, zero, roots, opts, int64(len(m.targets)+1))
+			cr.plan(m.targets, connected, tk.Targets)
+			controls.ControlsTruncated = cr.run(runCtx, controls)
+		}
+		progress.step("signal_client: controls")
+	}()
+
+	wg.Wait()
+	clock.Stop()
+	tk.SignalServiceStatus = beacon.SignalServiceStatus
+	tk.mergeRecords(beacon)
+	for _, r := range records {
+		tk.mergeRecords(r)
+	}
+	tk.ControlsTruncated = controls.ControlsTruncated
+	tk.mergeRecords(controls)
+	for _, r := range routeRecords {
+		tk.mergeRecords(r)
+	}
+	if t, ok := firedAt.Load().(float64); ok {
+		tk.markInterrupted(t)
+	}
+	return nil
+}
+
+// measureBeacon resolves Signal's outage beacon, uptime.signal.org, with the system resolver:
+// 127.0.0.1 when the service is up, 127.0.0.2 during an outage (ts-041 Service status control).
+func (m *Measurer) measureBeacon(ctx context.Context, logger model.Logger, zero time.Time, tk *TestKeys) {
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
 	trace := measurexlite.NewTrace(0, zero)
-	beaconCtx, cancelBeacon := context.WithTimeout(runCtx, beaconTimeout)
-	addrs, err := trace.NewStdlibResolver(logger).LookupHost(beaconCtx, "uptime.signal.org")
-	cancelBeacon()
+	addrs, err := trace.NewStdlibResolver(logger).LookupHost(ctx, "uptime.signal.org")
 	tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
 	switch {
 	case err != nil:
@@ -330,56 +419,41 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	default:
 		tk.SignalServiceStatus = "unexpected_answer"
 	}
+}
 
-	progress.step("signal_client: Signal's service status: " + tk.SignalServiceStatus)
-
-	// the targets run concurrently, as the apps connect to them: the phase lasts as long as the
-	// slowest target, not the sum. Each records into its own TestKeys, merged in target order.
-	tk.Targets = make([]*TargetResult, len(m.targets))
-	records := make([]*TestKeys, len(m.targets))
-	var wg sync.WaitGroup
-	for i, target := range m.targets {
-		records[i] = &TestKeys{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			tk.Targets[i] = m.measureTarget(runCtx, logger, zero, int64(i+1), target, roots, records[i])
-			progress.step("signal_client: " + target.Name)
-		}()
-	}
-	wg.Wait()
-	for _, r := range records {
-		tk.mergeRecords(r)
-	}
-
-	// the controls run after every target, so they never delay or change a target's result
-	if opts.controls != ControlsOff {
-		cr := newControlRunner(m, logger, zero, roots, opts, int64(len(m.targets)+1))
-		cr.plan(m.targets, tk.Targets)
-		tk.ControlsTruncated = cr.run(runCtx, tk)
-	}
-	progress.step("signal_client: controls")
-
-	// then the circumvention routes, concurrently, which never change what the targets say
-	if len(opts.routes) > 0 {
-		tk.Circumvention = make([]*RouteResult, len(opts.routes))
-		records := make([]*TestKeys, len(opts.routes))
-		for i, route := range opts.routes {
-			records[i] = &TestKeys{}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				index := int64(10000 + 10*i)
-				tk.Circumvention[i] = m.measureRoute(runCtx, logger, zero, index, route, opts, roots, records[i])
-				progress.step("signal_client: route " + route)
-			}()
-		}
-		wg.Wait()
-		for _, r := range records {
-			tk.mergeRecords(r)
+// markInterrupted records as interrupted every failure that ended after the test's clock ran
+// out at firedAt (seconds since the start): they are the clock's, not the network's.
+func (tk *TestKeys) markInterrupted(firedAt float64) {
+	interrupted := netxlite.FailureInterrupted
+	mark := func(failure **string, t float64) {
+		if *failure != nil && t >= firedAt {
+			*failure = &interrupted
 		}
 	}
-	return nil
+	markTarget := func(r *TargetResult) {
+		if r == nil {
+			return
+		}
+		mark(&r.Failure, r.T)
+		if r.Provisioning != nil {
+			mark(&r.Provisioning.Failure, r.T)
+		}
+		for _, c := range r.Controls {
+			mark(&c.Failure, c.T)
+		}
+	}
+	for _, r := range tk.Targets {
+		markTarget(r)
+	}
+	for _, route := range tk.Circumvention {
+		if route == nil {
+			continue
+		}
+		mark(&route.Failure, route.T)
+		for _, r := range route.Targets {
+			markTarget(r)
+		}
+	}
 }
 
 // mergeRecords appends src's network records to tk's.
@@ -388,23 +462,6 @@ func (tk *TestKeys) mergeRecords(src *TestKeys) {
 	tk.TCPConnect = append(tk.TCPConnect, src.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, src.TLSHandshakes...)
 	tk.NetworkEvents = append(tk.NetworkEvents, src.NetworkEvents...)
-}
-
-// beaconTimeout bounds the outage beacon's DNS lookup.
-var beaconTimeout = 10 * time.Second
-
-// runMargin is the slack runBudget adds over the phases' own limits.
-const runMargin = 10 * time.Second
-
-// runBudget bounds the whole measurement (ts-041 Time limits): the beacon, the slowest target
-// (targets run concurrently), the controls and, with routes, the slowest route, plus a margin.
-// Every phase is bounded by its own limits; this is a backstop.
-func runBudget(idle time.Duration, routes bool) time.Duration {
-	b := beaconTimeout + targetTimeout(MethodProvisioningH1, idle) + controlsBudget + runMargin
-	if routes {
-		b += routeTimeout(idle)
-	}
-	return b
 }
 
 // progress reports the measurement's progress: the beacon, each target, the controls and each
@@ -427,40 +484,47 @@ func (p *progress) step(message string) {
 	p.callbacks.OnProgress(float64(p.done)/float64(p.total), message)
 }
 
-func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero time.Time, index int64,
-	target Target, roots *x509.CertPool, tk *TestKeys) *TargetResult {
+// newTargetResult is a target's result before it is measured.
+func newTargetResult(target Target, zero time.Time) *TargetResult {
 	address := ""
-	res := &TargetResult{Name: target.Name, Hostname: target.Hostname, Address: &address, ClientHello: target.Hello.Name,
+	return &TargetResult{Name: target.Name, Hostname: target.Hostname, Address: &address, ClientHello: target.Hello.Name,
 		Method: target.Method, T0: time.Since(zero).Seconds()}
+}
+
+// measureTarget measures target into res, recording its network events in tk. Each operation
+// (DNS, TCP and TLS, the upgrade or GET, each provisioning step) has opTimeout; the test's clock
+// bounds the whole. It calls connected once the target has connected or failed to, before any
+// provisioning flow.
+func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero time.Time, index int64,
+	target Target, roots *x509.CertPool, res *TargetResult, tk *TestKeys, connected func()) {
 	defer func() { res.T = time.Since(zero).Seconds() }()
-	fail := func(op string, err error) *TargetResult {
+	fail := func(op string, err error) {
 		res.FailedOperation, res.Failure = op, measurexlite.NewFailure(err)
-		return res
 	}
-	idle := idleDuration(m.config.IdleSeconds)
-	ctx, cancel := context.WithTimeout(ctx, targetTimeout(target.Method, idle))
-	defer cancel()
-	// DNS, TCP, TLS and the upgrade or GET share the connect budget; only the provisioning flow
-	// that follows uses the rest of ctx.
-	connectCtx, cancelConnect := context.WithTimeout(ctx, connectBudget)
-	defer cancelConnect()
 
 	trace := measurexlite.NewTrace(index, zero, target.Name)
 	ol := logx.NewOperationLogger(logger, "signal_client: %s %s", target.Name, target.Hostname)
 	defer func() { ol.Stop(errorOrNil(res.Failure)) }()
 
-	addrs, err := trace.NewStdlibResolver(logger).LookupHost(connectCtx, target.Hostname)
+	resolveCtx, cancelResolve := context.WithTimeout(ctx, opTimeout)
+	addrs, err := trace.NewStdlibResolver(logger).LookupHost(resolveCtx, target.Hostname)
+	cancelResolve()
 	tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
 	if err != nil {
-		return fail(netxlite.ResolveOperation, err)
+		fail(netxlite.ResolveOperation, err)
+		return
 	}
 	ip := firstIPv4(addrs)
 	if ip == "" {
-		return fail(netxlite.ResolveOperation, errNoAddress)
+		fail(netxlite.ResolveOperation, errNoAddress)
+		return
 	}
-	address = net.JoinHostPort(ip, "443")
+	address := net.JoinHostPort(ip, "443")
+	*res.Address = address
 
-	tr, err := dialTLS(connectCtx, trace, logger, zero, address, target.Hostname, target.Hello, roots, target.Name)
+	dialCtx, cancelDial := context.WithTimeout(ctx, opTimeout)
+	tr, err := dialTLS(dialCtx, trace, logger, zero, address, target.Hostname, target.Hello, roots, target.Name)
+	cancelDial()
 	tk.TCPConnect = append(tk.TCPConnect, trace.TCPConnects()...)
 	defer func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) }()
 	if tr != nil && tr.handshake != nil {
@@ -471,13 +535,19 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		if tr == nil {
 			op = netxlite.ConnectOperation
 		}
-		return fail(op, err)
+		fail(op, err)
+		return
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
 	res.UserAgent = m.config.userAgent(target.Hello)
-	drain := func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) } // the buffer holds 64
-	m.exerciseInto(ctx, connectCtx, tr, target, target.Hostname, target.Path, res, zero, drain)
-	return res
+	// the first checkpoint follows the upgrade, before the provisioning flow: connected then
+	drain := func() {
+		connected()
+		tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) // the buffer holds 64
+	}
+	upgradeCtx, cancelUpgrade := context.WithTimeout(ctx, opTimeout)
+	defer cancelUpgrade()
+	m.exerciseInto(ctx, upgradeCtx, tr, target, target.Hostname, target.Path, res, zero, drain)
 }
 
 // exerciseInto runs target's method on an established TLS connection and records the outcome
@@ -547,29 +617,24 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 	}
 }
 
-// connectBudget bounds DNS, TCP, TLS and the upgrade or GET of one target (a variable so tests
-// can shorten it).
-var connectBudget = 30 * time.Second
+// Time limits (ts-041 Time limits; variables so tests can shorten them).
+var (
+	// testTimeout is the whole test's clock.
+	testTimeout = 60 * time.Second
 
-// maxIdleSeconds bounds IdleSeconds. Signal-Server closes provisioning sockets 90 s after they
-// open (ProvisioningConnectListener's timeout); a longer idle would record Signal's own close as
-// a failure. 60 s leaves room for the address, the keepalives and the ping.
-const maxIdleSeconds = 60
+	// opTimeout bounds each network operation of a target or route: DNS, TCP and TLS, the
+	// upgrade or GET (provisioning steps have their own, also 10 s).
+	opTimeout = 10 * time.Second
+)
+
+// maxIdleSeconds bounds IdleSeconds. Signal's connections are never idle longer than about 30 s
+// (Signal-Android's provisioning keepalive every 30 s; libsignal pings after 31 s idle), so a
+// middlebox that kills idle sessions only matters to Signal if it kills them within that.
+const maxIdleSeconds = 30
 
 // idleDuration converts IdleSeconds, clamped to [0, maxIdleSeconds].
 func idleDuration(seconds int64) time.Duration {
 	return time.Duration(min(max(seconds, 0), maxIdleSeconds)) * time.Second
-}
-
-// targetTimeout is the time budget for one target: the connect budget, plus, on provisioning
-// sockets, every step's own timeout and the idle time, so that a slow but working server is never
-// cut off by the overall budget before a step's own timeout would fire.
-func targetTimeout(method Method, idle time.Duration) time.Duration {
-	if method != MethodProvisioningH1 && method != MethodProvisioningH2 {
-		return connectBudget
-	}
-	steps := addressTimeout + time.Duration(len(keepalivePaddings))*keepaliveTimeout + keepaliveTimeout // + ping
-	return connectBudget + steps + idle
 }
 
 func firstIPv4(addrs []string) string {

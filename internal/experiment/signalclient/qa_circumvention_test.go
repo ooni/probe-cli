@@ -360,8 +360,8 @@ func TestQACircumventionAndroidFrontsByCountry(t *testing.T) {
 
 // A service whose fronts were replaced separately resolves and dials its own front.
 func TestQACircumventionPerServiceFront(t *testing.T) {
-	defer func(d time.Duration) { connectBudget = d }(connectBudget)
-	connectBudget = time.Second
+	defer func(d time.Duration) { opTimeout = d }(opTimeout)
+	opTimeout = time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.AddRecordToAllResolvers("front.storage.example", "", "10.10.34.36") // nothing there
@@ -393,11 +393,11 @@ func TestQACircumventionFrontDoesNotResolve(t *testing.T) {
 	}
 }
 
-// Each target of a route has its own connect budget, as a direct target does: a blackholed
+// Each target of a route has its own operation limit, as a direct target does: a blackholed
 // front costs each of a reflector route's tunnels one budget, and no more.
 func TestQACircumventionConnectBudgetIsPerTarget(t *testing.T) {
-	defer func(d time.Duration) { connectBudget = d }(connectBudget)
-	connectBudget = 2 * time.Second
+	defer func(d time.Duration) { opTimeout = d }(opTimeout)
+	opTimeout = 2 * time.Second
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: "pinterest.com"})
@@ -407,7 +407,7 @@ func TestQACircumventionConnectBudgetIsPerTarget(t *testing.T) {
 	for _, inner := range r.Targets {
 		took := inner.T - inner.T0
 		if inner.FailedOperation != "tls_handshake" || deref(inner.Failure) != "generic_timeout_error" ||
-			took < connectBudget.Seconds()-0.5 || took > connectBudget.Seconds()+1 {
+			took < opTimeout.Seconds()-0.5 || took > opTimeout.Seconds()+1 {
 			t.Errorf("%s: %q %q after %.2f s", inner.Name, inner.FailedOperation, deref(inner.Failure), took)
 		}
 	}

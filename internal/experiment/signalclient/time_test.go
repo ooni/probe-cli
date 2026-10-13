@@ -1,23 +1,6 @@
 package signalclient
 
-import (
-	"testing"
-	"time"
-)
-
-// The whole measurement's budget is the sum of its phases' own limits plus a margin: 160 s with
-// the default options, 360 s with the circumvention routes (ts-041 Time limits).
-func TestRunBudget(t *testing.T) {
-	if got := runBudget(0, false); got != 160*time.Second {
-		t.Errorf("default: %v", got)
-	}
-	if got := runBudget(0, true); got != 360*time.Second {
-		t.Errorf("with routes: %v", got)
-	}
-	if got := runBudget(60*time.Second, false); got != 220*time.Second {
-		t.Errorf("with 60 s idle: %v", got)
-	}
-}
+import "testing"
 
 type recordedProgress struct{ values []float64 }
 
