@@ -133,71 +133,23 @@ func (c *wsConn) writeFrame(opcode byte, payload []byte) error {
 	return err
 }
 
-// readFrame returns the next complete message (continuation frames joined) or control frame.
-// Control frames that arrive between the fragments of a message are returned as they come,
-// and assembly of the message continues on the next call.
+// readFrame returns the next complete message (continuation frames joined, inflated when
+// compressed) or control frame. Control frames that arrive between the fragments of a message
+// are returned as they come, and assembly of the message continues on the next call.
 func (c *wsConn) readFrame() (byte, []byte, error) {
 	for {
-		var h [2]byte
-		if _, err := io.ReadFull(c.r, h[:]); err != nil {
+		f, err := c.readRawFrame()
+		if err != nil {
 			return 0, nil, err
 		}
-		fin, rsv1, op, masked := h[0]&0x80 != 0, h[0]&0x40 != 0, h[0]&0x0F, h[1]&0x80 != 0
-		switch {
-		case h[0]&0x30 != 0: // RSV2, RSV3: no extension we negotiate defines them
-			return 0, nil, fmt.Errorf("%w: RSV2 or RSV3 set", errProtocolViolation)
-		case op > opBinary && op < opClose, op > opPong:
-			return 0, nil, fmt.Errorf("%w: reserved opcode %#x", errProtocolViolation, op)
-		case op >= opClose && (!fin || h[1]&0x7F > 125):
-			return 0, nil, fmt.Errorf("%w: fragmented or oversized control frame", errProtocolViolation)
-		case rsv1 && (!c.deflate || op == opContinuation || op >= opClose): // RFC 7692 section 6
-			return 0, nil, fmt.Errorf("%w: RSV1 set where compression is not allowed", errProtocolViolation)
-		case op == opContinuation && !c.fragmenting:
-			return 0, nil, fmt.Errorf("%w: continuation frame without a message", errProtocolViolation)
-		case op != opContinuation && op < opClose && c.fragmenting:
-			return 0, nil, fmt.Errorf("%w: new message before the previous one ended", errProtocolViolation)
+		if f.op >= opClose { // control frames are never fragmented
+			return f.op, f.data, nil
 		}
-		n := uint64(h[1] & 0x7F)
-		switch n {
-		case 126:
-			var b [2]byte
-			if _, err := io.ReadFull(c.r, b[:]); err != nil {
-				return 0, nil, err
-			}
-			n = uint64(binary.BigEndian.Uint16(b[:]))
-		case 127:
-			var b [8]byte
-			if _, err := io.ReadFull(c.r, b[:]); err != nil {
-				return 0, nil, err
-			}
-			n = binary.BigEndian.Uint64(b[:])
+		if f.op != opContinuation { // first fragment of a new message
+			c.partial, c.partialOp, c.partialCompressed = nil, f.op, f.rsv1
 		}
-		if n > maxFramePayload || (op < opClose && n+uint64(len(c.partial)) > maxFramePayload) {
-			return 0, nil, errFrameTooLarge
-		}
-		var mask [4]byte
-		if masked { // servers must not mask, but tolerate it
-			if _, err := io.ReadFull(c.r, mask[:]); err != nil {
-				return 0, nil, err
-			}
-		}
-		data := make([]byte, n)
-		if _, err := io.ReadFull(c.r, data); err != nil {
-			return 0, nil, err
-		}
-		if masked {
-			for i := range data {
-				data[i] ^= mask[i%4]
-			}
-		}
-		if op >= opClose { // control frames are never fragmented
-			return op, data, nil
-		}
-		if op != opContinuation { // first fragment of a new message
-			c.partial, c.partialOp, c.partialCompressed = nil, op, rsv1
-		}
-		c.partial = append(c.partial, data...)
-		if !fin {
+		c.partial = append(c.partial, f.data...)
+		if !f.fin {
 			c.fragmenting = true
 			continue
 		}
@@ -209,6 +161,71 @@ func (c *wsConn) readFrame() (byte, []byte, error) {
 		}
 		return op, payload, nil
 	}
+}
+
+// rawFrame is one frame as read from the wire, unmasked.
+type rawFrame struct {
+	fin, rsv1 bool
+	op        byte
+	data      []byte
+}
+
+// readRawFrame reads one frame, rejecting what RFC 6455 and RFC 7692 forbid given the message
+// being assembled.
+func (c *wsConn) readRawFrame() (rawFrame, error) {
+	var h [2]byte
+	if _, err := io.ReadFull(c.r, h[:]); err != nil {
+		return rawFrame{}, err
+	}
+	f := rawFrame{fin: h[0]&0x80 != 0, rsv1: h[0]&0x40 != 0, op: h[0] & 0x0F}
+	masked, n := h[1]&0x80 != 0, uint64(h[1]&0x7F)
+	switch op := f.op; {
+	case h[0]&0x30 != 0: // RSV2, RSV3: no extension we negotiate defines them
+		return f, fmt.Errorf("%w: RSV2 or RSV3 set", errProtocolViolation)
+	case op > opBinary && op < opClose, op > opPong:
+		return f, fmt.Errorf("%w: reserved opcode %#x", errProtocolViolation, op)
+	case op >= opClose && (!f.fin || n > 125):
+		return f, fmt.Errorf("%w: fragmented or oversized control frame", errProtocolViolation)
+	case f.rsv1 && (!c.deflate || op == opContinuation || op >= opClose): // RFC 7692 section 6
+		return f, fmt.Errorf("%w: RSV1 set where compression is not allowed", errProtocolViolation)
+	case op == opContinuation && !c.fragmenting:
+		return f, fmt.Errorf("%w: continuation frame without a message", errProtocolViolation)
+	case op != opContinuation && op < opClose && c.fragmenting:
+		return f, fmt.Errorf("%w: new message before the previous one ended", errProtocolViolation)
+	}
+	switch n { // extended payload lengths
+	case 126:
+		var b [2]byte
+		if _, err := io.ReadFull(c.r, b[:]); err != nil {
+			return f, err
+		}
+		n = uint64(binary.BigEndian.Uint16(b[:]))
+	case 127:
+		var b [8]byte
+		if _, err := io.ReadFull(c.r, b[:]); err != nil {
+			return f, err
+		}
+		n = binary.BigEndian.Uint64(b[:])
+	}
+	if n > maxFramePayload || (f.op < opClose && n+uint64(len(c.partial)) > maxFramePayload) {
+		return f, errFrameTooLarge
+	}
+	var mask [4]byte
+	if masked { // servers must not mask, but tolerate it
+		if _, err := io.ReadFull(c.r, mask[:]); err != nil {
+			return f, err
+		}
+	}
+	f.data = make([]byte, n)
+	if _, err := io.ReadFull(c.r, f.data); err != nil {
+		return f, err
+	}
+	if masked {
+		for i := range f.data {
+			f.data[i] ^= mask[i%4]
+		}
+	}
+	return f, nil
 }
 
 // wsMessage is a decoded WebSocketMessage.

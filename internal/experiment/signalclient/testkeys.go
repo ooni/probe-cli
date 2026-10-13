@@ -34,6 +34,11 @@ type TargetResult struct {
 	T               float64             `json:"t"`
 }
 
+// setAnswer records what the server answered the target's upgrade or GET with.
+func (r *TargetResult) setAnswer(a answer) {
+	r.Status, r.SignalTimestamp, r.Response = int64(a.status), a.signalTimestamp, a.response
+}
+
 // TestKeys contains the experiment results.
 type TestKeys struct {
 	NetworkEvents []*model.ArchivalNetworkEvent             `json:"network_events"`

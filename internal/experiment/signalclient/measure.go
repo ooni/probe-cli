@@ -260,8 +260,8 @@ func (m *Measurer) exercise(ctx, opCtx context.Context, tr *tlsResult, req reque
 	ua := res.UserAgent
 	switch req.method {
 	case MethodHTTPSGet:
-		status, ts, sample, err := httpsGet(opCtx, tr.conn, tr.alpn, req.hostHeader, req.path, ua)
-		res.Status, res.SignalTimestamp, res.Response = int64(status), ts, sample
+		a, err := httpsGet(opCtx, tr.conn, tr.alpn, req.hostHeader, req.path, ua)
+		res.setAnswer(a)
 		if err != nil {
 			fail(netxlite.HTTPRoundTripOperation, err)
 		}
@@ -276,8 +276,8 @@ func (m *Measurer) exercise(ctx, opCtx context.Context, tr *tlsResult, req reque
 			up, err = websocketH1(opCtx, tr.conn, req.hostHeader, req.path, ua)
 		}
 		if up != nil {
-			res.Status, res.SignalTimestamp, res.WSExtensions = int64(up.status), up.signalTimestamp, up.extensions
-			res.Response = up.response
+			res.setAnswer(up.answer)
+			res.WSExtensions = up.extensions
 		}
 		if req.method == MethodEnclaveH1 {
 			// no credentials: 401 or 404 from the enclave front end is the expected answer

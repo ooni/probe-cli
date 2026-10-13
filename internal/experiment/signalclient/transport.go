@@ -26,17 +26,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/http/httpguts"
-	"golang.org/x/net/http2"
-)
-
-// libsignal 0.105.0's HTTP/2 client settings, from a decrypted capture: SETTINGS ENABLE_PUSH 0,
-// INITIAL_WINDOW_SIZE 2097152, MAX_FRAME_SIZE 16384, MAX_HEADER_LIST_SIZE 16384, then a
-// connection WINDOW_UPDATE of 5177345. x/net sends its settings in the same order.
-const (
-	libsignalStreamWindow     = 2097152
-	libsignalConnWindowUpdate = 5177345
-	libsignalMaxFrameSize     = 16384
-	libsignalMaxHeaderList    = 16384
 )
 
 // tlsResult is what dialTLS observed.
@@ -135,14 +124,24 @@ func leafKeyType(s tls.ConnectionState) string {
 	return s.PeerCertificates[0].PublicKeyAlgorithm.String()
 }
 
-// upgradeResult is the server's answer to a WebSocket upgrade or extended CONNECT.
-type upgradeResult struct {
+// answer is what the server answered an HTTP request with.
+type answer struct {
 	status          int
-	signalTimestamp bool
-	extensions      string          // Sec-WebSocket-Extensions the server accepted
-	response        *ResponseSample // a refusal's answer
-	ws              *wsConn
-	closer          io.Closer
+	signalTimestamp bool            // X-Signal-Timestamp was present: Signal's server answered
+	response        *ResponseSample // an https_get's response, or a refused upgrade's
+}
+
+func newAnswer(resp *http.Response) answer {
+	return answer{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
+}
+
+// upgradeResult is the server's answer to a WebSocket upgrade or extended CONNECT, and the
+// WebSocket when it was accepted.
+type upgradeResult struct {
+	answer
+	extensions string // Sec-WebSocket-Extensions the server accepted
+	ws         *wsConn
+	closer     io.Closer
 }
 
 // sampledHeaders are the response headers recorded: who answered (Signal, or which CDN) and why.
@@ -232,8 +231,7 @@ func upgradeH1(ctx context.Context, conn net.Conn, req, wsKey string) (*upgradeR
 	if err != nil {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
 	}
-	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != "",
-		extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
+	out := &upgradeResult{answer: newAnswer(resp), extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		out.response, _ = sampleResponse(ctx, resp) // bounded, within the operation's limit
 		_ = conn.Close()                            // first: Body.Close would otherwise drain an endless body until the deadline
@@ -253,102 +251,30 @@ func upgradeH1(ctx context.Context, conn net.Conn, req, wsKey string) (*upgradeR
 	return out, nil
 }
 
-// websocketH2 performs libsignal's RFC 8441 extended CONNECT on an established TLS conn. The
-// stream lives as long as ctx; waiting for the response headers is bounded by connectCtx.
-func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, userAgent string) (*upgradeResult, error) {
-	t1 := &http.Transport{HTTP2: &http.HTTP2Config{
-		MaxReceiveBufferPerStream:     libsignalStreamWindow,
-		MaxReceiveBufferPerConnection: libsignalConnWindowUpdate,
-		MaxReadFrameSize:              libsignalMaxFrameSize,
-	}}
-	//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
-	t2, err := http2.ConfigureTransports(t1)
-	if err != nil {
-		return nil, netxlite.NewTopLevelGenericErrWrapper(err)
-	}
-	//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
-	t2.MaxHeaderListSize = libsignalMaxHeaderList
-	cconn := &causeConn{Conn: conn}
-	//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
-	cc, err := t2.NewClientConn(cconn)
-	if err != nil {
-		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
-	}
-	pr, pw := io.Pipe()
-	reqCtx, cancelReq := context.WithCancel(ctx)
-	req, err := http.NewRequestWithContext(reqCtx, http.MethodConnect, "https://"+host+path, pr)
-	if err != nil {
-		cancelReq()
-		return nil, netxlite.NewTopLevelGenericErrWrapper(err)
-	}
-	req.Header[":protocol"] = []string{"websocket"}
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Sec-WebSocket-Version", "13")
-	stopHeaderTimer := context.AfterFunc(connectCtx, cancelReq) // no headers within the operation's limit
-	resp, err := cc.RoundTrip(req)
-	headerTimeout := !stopHeaderTimer() && ctx.Err() == nil // the timer fired, not the parent ctx
-	if headerTimeout {
-		err = context.DeadlineExceeded
-	}
-	if err != nil {
-		cancelReq()
-		_ = cc.Close() // before closing any response body (it may wait for the write lock)
-		_ = pw.Close()
-		if resp != nil {
-			_ = resp.Body.Close()
-		}
-		if strings.Contains(err.Error(), xnetExtendedConnectNotSupported) {
-			return nil, newFailure(FailureExtendedConnectNotSupported, netxlite.HTTPRoundTripOperation, err)
-		}
-		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
-	}
-	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
-	if resp.StatusCode/100 != 2 { // libsignal accepts any 2xx
-		out.response, _ = sampleResponse(ctx, resp) // bounded, within the operation's limit
-		cancelReq()
-		_ = cc.Close() // first: closing the body may wait for the connection's write lock
-		_ = pw.Close()
-		_ = resp.Body.Close()
-		return out, upgradeRefused()
-	}
-	out.ws = newWSConn(resp.Body, pw)
-	out.ws.cause = cconn.cause
-	out.closer = closerFunc(func() error {
-		cancelReq()
-		err := cc.Close() // first, for the same reason
-		_ = pw.Close()
-		_ = resp.Body.Close()
-		return err
-	})
-	return out, nil
-}
-
 type closerFunc func() error
 
 func (f closerFunc) Close() error { return f() }
 
 // httpsGet sends one GET over an established TLS conn, using HTTP/2 when it was negotiated,
-// as OkHttp does, and returns the status and whether Signal's timestamp header was present.
-// It reads at most 64 KiB of the body; an error while reading it is returned with the status.
-// It consumes conn: the conn is closed before returning.
-func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent string) (int, bool, *ResponseSample, error) {
+// as OkHttp does, and returns the answer. It reads at most 64 KiB of the body; an error while
+// reading it is returned with the answer. It consumes conn: the conn is closed before returning.
+func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent string) (answer, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+host+path, nil)
 	if err != nil {
-		return 0, false, nil, netxlite.NewTopLevelGenericErrWrapper(err)
+		return answer{}, netxlite.NewTopLevelGenericErrWrapper(err)
 	}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept-Encoding", "gzip")
 	var resp *http.Response
 	if alpn == "h2" {
-		//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
-		cc, err := (&http2.Transport{}).NewClientConn(conn)
+		cc, err := newH2ClientConn(conn, nil)
 		if err != nil {
-			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
+			return answer{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 		}
 		defer func() { _ = cc.Close() }()
 		resp, err = cc.RoundTrip(req)
 		if err != nil {
-			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
+			return answer{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 		}
 	} else {
 		if deadline, ok := ctx.Deadline(); ok {
@@ -356,22 +282,23 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 		}
 		req.Header.Set("Connection", "close")
 		if err := req.Write(conn); err != nil {
-			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err)
+			return answer{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err)
 		}
 		resp, err = http.ReadResponse(bufio.NewReader(conn), req)
 		if err != nil {
-			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
+			return answer{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
 		}
 	}
-	sample, bodyErr := sampleResponse(ctx, resp)
+	a := newAnswer(resp)
+	var bodyErr error
+	a.response, bodyErr = sampleResponse(ctx, resp)
 	if bodyErr == nil { // the rest of the body, up to 64 KiB, is read and discarded
 		_, bodyErr = netxlite.CopyContext(ctx, io.Discard, io.LimitReader(resp.Body, 1<<16))
 	}
 	_ = conn.Close() // first: Body.Close would otherwise drain an endless body until the deadline
 	_ = resp.Body.Close()
-	ts := resp.Header.Get("X-Signal-Timestamp") != ""
 	if bodyErr != nil {
-		return resp.StatusCode, ts, sample, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, bodyErr)
+		return a, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, bodyErr)
 	}
-	return resp.StatusCode, ts, sample, nil
+	return a, nil
 }
