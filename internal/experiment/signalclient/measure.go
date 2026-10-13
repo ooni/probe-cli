@@ -145,6 +145,7 @@ type TargetResult struct {
 	SignalTimestamp bool                `json:"x_signal_timestamp"`
 	WSExtensions    string              `json:"ws_extensions,omitempty"`
 	Provisioning    *ProvisioningResult `json:"provisioning,omitempty"`
+	Response        *ResponseSample     `json:"response,omitempty"` // https_get, or a refused upgrade
 	Failure         *string             `json:"failure"`
 	FailedOperation string              `json:"failed_operation,omitempty"`
 	Controls        []*ControlResult    `json:"controls"`
@@ -410,8 +411,8 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 	ua := res.UserAgent
 	switch target.Method {
 	case MethodHTTPSGet:
-		status, ts, err := httpsGet(connectCtx, tr.conn, tr.alpn, hostHeader, path, ua)
-		res.Status, res.SignalTimestamp = int64(status), ts
+		status, ts, sample, err := httpsGet(connectCtx, tr.conn, tr.alpn, hostHeader, path, ua)
+		res.Status, res.SignalTimestamp, res.Response = int64(status), ts, sample
 		if err != nil {
 			fail(netxlite.HTTPRoundTripOperation, err)
 		}
@@ -427,6 +428,7 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 		}
 		if up != nil {
 			res.Status, res.SignalTimestamp, res.WSExtensions = int64(up.status), up.signalTimestamp, up.extensions
+			res.Response = up.response
 		}
 		if target.Method == MethodEnclaveH1 {
 			// no credentials: 401 or 404 from the enclave front end is the expected answer

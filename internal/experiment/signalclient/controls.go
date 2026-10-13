@@ -158,6 +158,9 @@ func (cr *controlRunner) plan(targets []Target, results []*TargetResult) {
 		if !always && !failedBeforeSignalAnswered[r.FailedOperation] {
 			continue
 		}
+		if !always && r.Failure != nil && answeredFailures[*r.Failure] {
+			continue // the server answered (e.g. refused the upgrade): nothing on the path to explain
+		}
 		op := r.FailedOperation
 		tlsAnswered := always || op == netxlite.TLSHandshakeOperation || op == netxlite.HTTPRoundTripOperation ||
 			op == "websocket_upgrade"

@@ -202,14 +202,25 @@ func TestQAControlsFingerprintBlocking(t *testing.T) {
 
 // Interference after the handshake (a 403 to the upgrade): the TLS controls run, but not
 // browser_hello and tls12, which only follow a TLS failure.
-func TestQAControlsAfterUpgradeRefused(t *testing.T) {
+// A refused upgrade is the server's answer (TLS is verified against Signal's roots): no controls
+// run, and the refusal is recorded, scrubbed of IP addresses.
+func TestQAControlsNotAfterUpgradeRefused(t *testing.T) {
 	env := newQAEnv(t, map[string]qaBehavior{qaChatAddr: {refuseUpgrade: true}})
 	defer env.Close()
 	_, byName := runQA(t, env)
 	r := byName["chat_android"]
 	expectFailure(t, r, "websocket_upgrade", FailureWebSocketUpgradeRefused)
-	if got := strings.Join(kindsOf(r), ","); got != "doh,udp_1111,static_address,static_address,decoy_sni,alternate_hello" {
-		t.Errorf("controls %s", got)
+	if len(r.Controls) != 0 {
+		t.Errorf("controls %s", strings.Join(kindsOf(r), ","))
+	}
+	resp := r.Response
+	if resp == nil || resp.Status != 403 || resp.Headers["Server"] != "cloudflare" || resp.BodyIsTruncated ||
+		!strings.Contains(string(resp.Body), "Access denied") {
+		t.Fatalf("response %+v", resp)
+	}
+	data, err := json.Marshal(resp)
+	if err != nil || strings.Contains(string(data), "203.0.113.7") {
+		t.Errorf("response not scrubbed: %s %v", data, err)
 	}
 }
 

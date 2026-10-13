@@ -7,6 +7,7 @@ package signalclient
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha1" // #nosec G505 -- RFC 6455 defines Sec-WebSocket-Accept with SHA-1
@@ -129,9 +130,46 @@ func leafKeyType(s tls.ConnectionState) string {
 type upgradeResult struct {
 	status          int
 	signalTimestamp bool
-	extensions      string // Sec-WebSocket-Extensions the server accepted
+	extensions      string          // Sec-WebSocket-Extensions the server accepted
+	response        *ResponseSample // a refusal's answer
 	ws              *wsConn
 	closer          io.Closer
+}
+
+// ResponseSample is a bounded record of an HTTP answer (a refused upgrade, or an https_get's
+// response): enough to tell Signal's own answer from the CDN's, such as a geoblock or rate-limit
+// page. Header values and the body are scrubbed of IP addresses when serialized.
+type ResponseSample struct {
+	Status          int64                                              `json:"status"`
+	Headers         map[string]model.ArchivalScrubbedMaybeBinaryString `json:"headers"`
+	Body            model.ArchivalScrubbedMaybeBinaryString            `json:"body"`
+	BodyIsTruncated bool                                               `json:"body_is_truncated"`
+}
+
+// sampledHeaders are the response headers recorded: who answered (Signal, or which CDN) and why.
+var sampledHeaders = []string{"Server", "Via", "Content-Type", "Content-Length", "Content-Encoding",
+	"Retry-After", "X-Signal-Timestamp", "CF-Ray", "X-Cache", "X-Served-By", "X-Amz-Cf-Pop"}
+
+// bodySampleSize is how much of a response body is recorded.
+const bodySampleSize = 1024
+
+// sampleResponse records resp's status, sampledHeaders and up to bodySampleSize bytes of its
+// body, read within ctx. The error is the body's read error, if any.
+func sampleResponse(ctx context.Context, resp *http.Response) (*ResponseSample, error) {
+	s := &ResponseSample{Status: int64(resp.StatusCode), Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{}}
+	for _, h := range sampledHeaders {
+		if v := resp.Header.Values(h); len(v) > 0 {
+			s.Headers[h] = model.ArchivalScrubbedMaybeBinaryString(strings.Join(v, ", "))
+		}
+	}
+	var buf bytes.Buffer
+	_, err := netxlite.CopyContext(ctx, &buf, io.LimitReader(resp.Body, bodySampleSize+1))
+	body := buf.Bytes()
+	if len(body) > bodySampleSize {
+		body, s.BodyIsTruncated = body[:bodySampleSize], true
+	}
+	s.Body = model.ArchivalScrubbedMaybeBinaryString(body)
+	return s, err
 }
 
 // errUpgradeRefused means the server answered the upgrade with something other than success.
@@ -209,7 +247,8 @@ func upgradeH1(ctx context.Context, conn net.Conn, req, wsKey string) (*upgradeR
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != "",
 		extensions: resp.Header.Get("Sec-WebSocket-Extensions")}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
-		_ = conn.Close() // first: Body.Close would otherwise drain an endless body until the deadline
+		out.response, _ = sampleResponse(ctx, resp) // bounded, within the connect budget
+		_ = conn.Close()                            // first: Body.Close would otherwise drain an endless body until the deadline
 		_ = resp.Body.Close()
 		return out, upgradeRefused()
 	}
@@ -277,6 +316,7 @@ func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, use
 	}
 	out := &upgradeResult{status: resp.StatusCode, signalTimestamp: resp.Header.Get("X-Signal-Timestamp") != ""}
 	if resp.StatusCode/100 != 2 { // libsignal accepts any 2xx
+		out.response, _ = sampleResponse(ctx, resp) // bounded, within the connect budget
 		cancelReq()
 		_ = cc.Close() // first: closing the body may wait for the connection's write lock
 		_ = pw.Close()
@@ -352,10 +392,10 @@ func (f closerFunc) Close() error { return f() }
 // as OkHttp does, and returns the status and whether Signal's timestamp header was present.
 // It reads at most 64 KiB of the body; an error while reading it is returned with the status.
 // It consumes conn: the conn is closed before returning.
-func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent string) (int, bool, error) {
+func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent string) (int, bool, *ResponseSample, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+host+path, nil)
 	if err != nil {
-		return 0, false, netxlite.NewTopLevelGenericErrWrapper(err)
+		return 0, false, nil, netxlite.NewTopLevelGenericErrWrapper(err)
 	}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept-Encoding", "gzip")
@@ -364,12 +404,12 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 		//lint:ignore SA1019 x/net's HTTP/2 client is the one that runs on a uTLS conn: net/http's ClientConn dials itself and recognizes h2 only on *crypto/tls.Conn
 		cc, err := (&http2.Transport{}).NewClientConn(conn)
 		if err != nil {
-			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
+			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 		}
 		defer func() { _ = cc.Close() }()
 		resp, err = cc.RoundTrip(req)
 		if err != nil {
-			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
+			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
 		}
 	} else {
 		if deadline, ok := ctx.Deadline(); ok {
@@ -377,19 +417,22 @@ func httpsGet(ctx context.Context, conn net.Conn, alpn, host, path, userAgent st
 		}
 		req.Header.Set("Connection", "close")
 		if err := req.Write(conn); err != nil {
-			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err)
+			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.WriteOperation, err)
 		}
 		resp, err = http.ReadResponse(bufio.NewReader(conn), req)
 		if err != nil {
-			return 0, false, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
+			return 0, false, nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
 		}
 	}
-	_, bodyErr := netxlite.CopyContext(ctx, io.Discard, io.LimitReader(resp.Body, 1<<16))
+	sample, bodyErr := sampleResponse(ctx, resp)
+	if bodyErr == nil { // the rest of the body, up to 64 KiB, is read and discarded
+		_, bodyErr = netxlite.CopyContext(ctx, io.Discard, io.LimitReader(resp.Body, 1<<16))
+	}
 	_ = conn.Close() // first: Body.Close would otherwise drain an endless body until the deadline
 	_ = resp.Body.Close()
 	ts := resp.Header.Get("X-Signal-Timestamp") != ""
 	if bodyErr != nil {
-		return resp.StatusCode, ts, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, bodyErr)
+		return resp.StatusCode, ts, sample, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, bodyErr)
 	}
-	return resp.StatusCode, ts, nil
+	return resp.StatusCode, ts, sample, nil
 }

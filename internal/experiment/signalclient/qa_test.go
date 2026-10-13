@@ -44,7 +44,7 @@ type qaBehavior struct {
 	noAddress         bool // the provisioning address never arrives
 	closeAfterUpgrade bool // the stream ends right after the upgrade
 	noConnectProtocol bool // HTTP/2 SETTINGS without ENABLE_CONNECT_PROTOCOL
-	refuseUpgrade     bool // answer the provisioning upgrade with 403, as a blockpage would
+	refuseUpgrade     bool // answer the provisioning upgrade with 403, as a CDN's geoblock would
 	enclaveAccepts    bool // accept enclave upgrades without credentials (101)
 	enclave401        bool // answer enclave upgrades 401, as for a real enclave id without credentials
 	deflate           bool // accept permessage-deflate (HTTP/1.1) and compress every message
@@ -53,6 +53,9 @@ type qaBehavior struct {
 	truncateBody      bool // GET responses: promise 1000 bytes, send 5, close the connection
 	badAccept         bool // answer the HTTP/1.1 provisioning upgrade 101 with a wrong Sec-WebSocket-Accept
 }
+
+// qaGeoblockPage is the body of the fake refusal: a CDN-style page that echoes the client's address.
+const qaGeoblockPage = "<html><body>Access denied: your country (203.0.113.7) is not allowed</body></html>"
 
 // qaUserAgents records the User-Agent of every request the fake front ends receive, by host.
 type qaUserAgents struct {
@@ -168,8 +171,9 @@ func (s *qaSignalServer) serveH1Request(conn net.Conn, br *bufio.Reader, req *ht
 	s.factory.uas.add(req.UserAgent(), req.Host)
 	upgrade := strings.EqualFold(req.Header.Get("Upgrade"), "websocket")
 	switch {
-	case upgrade && s.factory.behavior.refuseUpgrade:
-		fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+	case upgrade && s.factory.behavior.refuseUpgrade: // a CDN's geoblock page, which echoes the client's IP
+		fmt.Fprintf(conn, "HTTP/1.1 403 Forbidden\r\nServer: cloudflare\r\nContent-Type: text/html\r\nContent-Length: %d\r\n"+
+			"Connection: close\r\n\r\n%s", len(qaGeoblockPage), qaGeoblockPage)
 	case upgrade && req.URL.Path == "/v1/websocket/provisioning/":
 		accept := websocketAccept(req.Header.Get("Sec-WebSocket-Key"))
 		if s.factory.behavior.badAccept {
@@ -471,6 +475,12 @@ func TestQAEverythingReachable(t *testing.T) {
 	}
 	if tk.MeasurementSummaryKeys().Anomaly() {
 		t.Error("anomaly with everything reachable")
+	}
+	if s := byName["storage"]; s.Response == nil || s.Response.Status != s.Status {
+		t.Errorf("https_get response not recorded: %+v", s.Response)
+	}
+	if byName["chat_android"].Response != nil {
+		t.Error("a successful upgrade recorded a response")
 	}
 }
 
