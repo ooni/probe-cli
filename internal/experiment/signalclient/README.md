@@ -53,11 +53,15 @@ The test is not enabled by default: set `OONI_FORCE_ENABLE_EXPERIMENT=1` to run 
 - **`Fronts`:**
   - An Android route without a service (`android_g=...`) sets both its services.
   - A service whose SNIs leave out the route's front resolves and dials its own front.
-- **Front choice:**
-  - The reflectors pick a front at random, as libsignal does.
-  - `android_f` picks at random for IR and CU (Signal-Android's Fastly countries), otherwise it uses
-    the first front.
-  - `android_g` uses the first front, which is the country's own Google domain when it has one.
+- **Front choice:** Signal-Android picks one of its configured fronts at random each time it
+  builds a client (`chooseUrl()` in `SignalUrlExtensions.kt`), for both the Google and the Fastly
+  configurations, and libsignal shuffles its fronts. The test:
+  - picks at random on the reflectors, as libsignal does;
+  - picks at random on `android_f` for IR and CU (Signal-Android's Fastly countries), and
+    otherwise uses the first front;
+  - always uses the first front on `android_g`: the country's own Google domain when it has one,
+    otherwise `www.google.com`. Unlike the app, this keeps measurements of one network comparable
+    across runs; `Fronts` measures any other front.
 - **Front hellos:** each front connection sends the hello Signal's client sends to that front,
   captured from the client's own code (`hellos/README.md`) and recorded by name:
   - reflectors: `libsignal-<v>-reflector`, the same on all eight fronts;

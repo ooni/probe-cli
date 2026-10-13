@@ -156,6 +156,8 @@ func parseFronts(option string, fronts map[string]frontConfig) error {
 // pickFront chooses the SNI a route uses: at random among the reflectors' fronts, as libsignal
 // does, and among the Fastly fronts for the countries Signal-Android sends there; otherwise the
 // first front, which for the Google front is the country's own domain when it has one.
+// Signal-Android itself picks at random among its fronts each time (chooseUrl); the fixed choice
+// keeps one network's measurements comparable across runs.
 func pickFront(route, country string, snis []string) string {
 	random := route == RouteReflectorF || route == RouteReflectorG || (route == RouteAndroidF && fastlyCountries[country])
 	if !random || len(snis) < 2 {
