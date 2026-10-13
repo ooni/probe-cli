@@ -1,0 +1,8 @@
+# Signal-Desktop (the .deb verified by fetch.sh) on a virtual display, to profile an unlinked install.
+# Build context: $WORK/desktop-profile (see profile.sh).
+FROM docker.io/library/debian:bookworm-slim
+COPY dl/signal-desktop.deb /tmp/signal-desktop.deb
+RUN apt-get update -qq \
+ && apt-get install -y -qq --no-install-recommends /tmp/signal-desktop.deb xvfb xauth imagemagick \
+      ca-certificates fonts-dejavu-core >/dev/null \
+ && rm -rf /var/lib/apt/lists/* /tmp/signal-desktop.deb
