@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 
 // Measurer performs the measurement.
 type Measurer struct {
-	config  Config
+	config  Config // from the richer-input target, set by Run
 	targets []Target
 
 	limits limits
@@ -32,9 +33,10 @@ type Measurer struct {
 	mozillaRoots func() (*x509.CertPool, error)      // the Fastly fronts'
 }
 
-// NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config, targets: DefaultTargets, limits: defaultLimits, roots: signalRoots,
+// NewExperimentMeasurer creates a new ExperimentMeasurer. Its configuration comes with each
+// richer-input target (see richerinput.go).
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{targets: DefaultTargets, limits: defaultLimits, roots: signalRoots,
 		googleRoots: googleRoots, mozillaRoots: mozillaRoots}
 }
 
@@ -44,8 +46,29 @@ func (m *Measurer) ExperimentName() string { return testName }
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string { return testVersion }
 
-// Run implements model.ExperimentMeasurer.
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+)
+
+// Run implements model.ExperimentMeasurer: it measures with the richer-input target's config.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*RicherInputTarget)
+	if !ok || target.Config == nil {
+		return ErrInvalidInputType
+	}
+	configured := *m
+	configured.config = *target.Config
+	return configured.run(ctx, args)
+}
+
+func (m *Measurer) run(ctx context.Context, args *model.ExperimentArgs) error {
 	logger := args.Session.Logger()
 	zero := args.Measurement.MeasurementStartTimeSaved
 	tk := &TestKeys{}

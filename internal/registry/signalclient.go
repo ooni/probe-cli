@@ -14,12 +14,13 @@ func init() {
 	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return signalclient.NewExperimentMeasurer(*config.(*signalclient.Config))
+				return signalclient.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &signalclient.Config{},
 			enabledByDefault: false,
 			inputPolicy:      model.InputNone,
+			newLoader:        signalclient.NewLoader,
 		}
 	})
 }

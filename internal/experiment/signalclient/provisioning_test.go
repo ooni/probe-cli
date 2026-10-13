@@ -183,7 +183,7 @@ func (f fakeServer) keepaliveAnswer(id uint64) []byte {
 // runAgainst runs the flow against f, with the measurement's flow changed by adjust.
 func runAgainst(t *testing.T, f fakeServer, adjust ...func(*provisioningFlow)) *ProvisioningResult {
 	t.Helper()
-	flow := NewExperimentMeasurer(Config{}).(*Measurer).provisioningFlow()
+	flow := newMeasurer(Config{}).provisioningFlow()
 	for _, fn := range adjust {
 		fn(&flow)
 	}

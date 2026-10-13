@@ -49,8 +49,9 @@ func TestRunRejectsBadOptions(t *testing.T) {
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 			Measurement: meas,
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+			Target:      &RicherInputTarget{Config: &config},
 		}
-		if err := NewExperimentMeasurer(config).Run(ctx, args); err == nil {
+		if err := NewExperimentMeasurer().Run(ctx, args); err == nil {
 			t.Errorf("%+v accepted", config)
 		}
 		if tk := meas.TestKeys.(*TestKeys); tk.Targets != nil || tk.Queries != nil {
@@ -60,11 +61,11 @@ func TestRunRejectsBadOptions(t *testing.T) {
 }
 
 func TestParseOptionsCountry(t *testing.T) {
-	m := NewExperimentMeasurer(Config{CircumventionCountry: " pk "}).(*Measurer)
+	m := newMeasurer(Config{CircumventionCountry: " pk "})
 	if opts, err := m.parseOptions("IT"); err != nil || opts.country != "PK" {
 		t.Errorf("%+v %v", opts, err)
 	}
-	m = NewExperimentMeasurer(Config{}).(*Measurer)
+	m = newMeasurer(Config{})
 	if opts, err := m.parseOptions("ir"); err != nil || opts.country != "IR" || opts.controls != ControlsOnFailure {
 		t.Errorf("%+v %v", opts, err)
 	}

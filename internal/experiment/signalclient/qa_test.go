@@ -34,7 +34,7 @@ func runQA(t *testing.T, env *qaEnv, config Config, options ...qaOption) (*TestK
 	t.Helper()
 	var tk *TestKeys
 	env.Do(func() {
-		m := NewExperimentMeasurer(config).(*Measurer)
+		m := NewExperimentMeasurer().(*Measurer)
 		m.limits.controlHandshake = 2 * time.Second
 		for _, option := range options {
 			option(m)
@@ -46,6 +46,7 @@ func runQA(t *testing.T, env *qaEnv, config Config, options ...qaOption) (*TestK
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 			Measurement: meas,
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+			Target:      &RicherInputTarget{Config: &config},
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
