@@ -43,7 +43,8 @@ func TestParseCircumvention(t *testing.T) {
 func TestRunRejectsBadOptions(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	for _, config := range []Config{{Controls: "x"}, {Circumvention: "x"}, {Fronts: "x"}, {StaticAddresses: "x"}, {SignalCA: "x"}} {
+	for _, config := range []Config{{Controls: "x"}, {Circumvention: "x"}, {CircumventionEnabledIn: "x"}, {Fronts: "x"},
+		{StaticAddresses: "x"}, {SignalCA: "x"}} {
 		meas := &model.Measurement{ProbeCC: "IT", MeasurementStartTimeSaved: time.Now()}
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
@@ -56,6 +57,33 @@ func TestRunRejectsBadOptions(t *testing.T) {
 		}
 		if tk := meas.TestKeys.(*TestKeys); tk.Targets != nil || tk.Queries != nil {
 			t.Errorf("%+v: measured before failing: %+v", config, tk)
+		}
+	}
+}
+
+// CircumventionEnabledIn measures the routes only where the probe's country is listed; an unknown
+// country is in no list.
+func TestCircumventionEnabledIn(t *testing.T) {
+	for _, c := range []struct {
+		enabledIn, probeCC string
+		routes             int
+	}{
+		{"", "IT", 4}, // no restriction
+		{"ir, RU", "IR", 4},
+		{"ir, RU", "ru", 4},
+		{"ir, RU", "IT", 0},
+		{"IR", "", 0},
+		{"IR", "ZZ", 0},
+		{" , ", "IT", 4}, // names no country: no restriction
+	} {
+		opts, err := newMeasurer(Config{Circumvention: "all", CircumventionEnabledIn: c.enabledIn}).parseOptions(c.probeCC)
+		if err != nil || len(opts.routes) != c.routes {
+			t.Errorf("%q in %q: %v routes, err %v; want %d", c.probeCC, c.enabledIn, opts, err, c.routes)
+		}
+	}
+	for _, bad := range []string{"IRN", "I1", "IR;RU"} {
+		if _, err := parseCountries(bad); err == nil {
+			t.Errorf("accepted %q", bad)
 		}
 	}
 }

@@ -43,6 +43,12 @@ type Config struct {
 	// reflector_f, reflector_g, android_g, android_f, or all. Empty: none.
 	Circumvention string `ooni:"circumvention routes: comma-separated reflector_f,reflector_g,android_g,android_f or all"`
 
+	// CircumventionEnabledIn, when set, measures the Circumvention routes only on probes in these
+	// countries: comma-separated ISO 3166-1 alpha-2 codes, compared with the probe's country (an
+	// unknown country is in none). One configuration, such as an OONI Run link's, can then name
+	// both the routes and the countries where measuring them is wanted.
+	CircumventionEnabledIn string `ooni:"measure the Circumvention routes only in these countries: comma-separated codes (default: anywhere)"`
+
 	// CircumventionCountry is the country whose Android front configuration android_g and
 	// android_f reproduce (default: the probe's country).
 	CircumventionCountry string `ooni:"country of the Android front configuration (default: the probe's)"`
@@ -96,6 +102,13 @@ func (m *Measurer) parseOptions(probeCC string) (*runOptions, error) {
 	if err != nil {
 		return nil, err
 	}
+	enabledIn, err := parseCountries(m.config.CircumventionEnabledIn)
+	if err != nil {
+		return nil, err
+	}
+	if enabledIn != nil && !enabledIn[strings.ToUpper(probeCC)] {
+		routes = nil
+	}
 	country := strings.ToUpper(strings.TrimSpace(m.config.CircumventionCountry))
 	if country == "" {
 		country = strings.ToUpper(probeCC)
@@ -146,6 +159,26 @@ func parseCircumvention(option string) ([]string, error) {
 		if want[r] {
 			out = append(out, r)
 		}
+	}
+	return out, nil
+}
+
+// parseCountries parses the CircumventionEnabledIn option into a set of country codes, or nil
+// when it names none.
+func parseCountries(option string) (map[string]bool, error) {
+	var out map[string]bool
+	for _, code := range strings.Split(option, ",") {
+		code = strings.ToUpper(strings.TrimSpace(code))
+		if code == "" {
+			continue
+		}
+		if len(code) != 2 || code[0] < 'A' || code[0] > 'Z' || code[1] < 'A' || code[1] > 'Z' {
+			return nil, fmt.Errorf("signal_client: CircumventionEnabledIn: %q is not a country code", code)
+		}
+		if out == nil {
+			out = map[string]bool{}
+		}
+		out[code] = true
 	}
 	return out, nil
 }

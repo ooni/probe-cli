@@ -77,6 +77,10 @@ func (m *Measurer) run(ctx context.Context, args *model.ExperimentArgs) error {
 	if err != nil {
 		return err
 	}
+	if m.config.Circumvention != "" && len(opts.routes) == 0 {
+		logger.Infof("signal_client: not measuring the circumvention routes: the probe's country (%q) is not in CircumventionEnabledIn",
+			args.Measurement.ProbeCC)
+	}
 	anchors, err := m.signalAnchors()
 	if err != nil {
 		return err

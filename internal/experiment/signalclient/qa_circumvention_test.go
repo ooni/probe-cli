@@ -45,6 +45,18 @@ func TestQACircumventionOffByDefault(t *testing.T) {
 	}
 }
 
+// Outside the countries CircumventionEnabledIn names (here, the simulated probe has no country),
+// no route is measured and the direct targets are unaffected.
+func TestQACircumventionNotEnabledInTheProbesCountry(t *testing.T) {
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	tk, byName := runQA(t, env, Config{Circumvention: "all", CircumventionEnabledIn: "IR,RU", Controls: ControlsOff})
+	if tk.Circumvention != nil {
+		t.Errorf("routes measured outside IR and RU: %d", len(tk.Circumvention))
+	}
+	expectOK(t, byName, allTargets...)
+}
+
 func TestQACircumventionAllRoutes(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
