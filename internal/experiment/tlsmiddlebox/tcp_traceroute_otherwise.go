@@ -1,4 +1,4 @@
-//go:build !(aix || darwin || dragonfly || freebsd || (js && wasm) || linux || nacl || netbsd || openbsd || solaris)
+//go:build !linux
 
 package tlsmiddlebox
 
