@@ -89,7 +89,8 @@ func routeInners(route string) []routeInner {
 
 // measureRoute measures one route: it resolves the front with the system resolver, then, for
 // each inner target, connects to the front's first IPv4 address, handshakes with SNI set to the
-// front, and measures the target through it.
+// front, and measures the target through it. The route fails with the first failure that was
+// the front's (TCP, TLS with the front, or a reflector's tunnel).
 func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero time.Time, index int64, route string,
 	opts *runOptions, signalRoots *x509.CertPool, tk *TestKeys) *RouteResult {
 	isReflector := route == RouteReflectorF || route == RouteReflectorG
@@ -109,88 +110,49 @@ func (m *Measurer) measureRoute(ctx context.Context, logger model.Logger, zero t
 	} else {
 		res.Country = opts.country
 	}
-	tag := "circumvention:" + route
 	ol := logx.NewOperationLogger(logger, "signal_client: %s via %s", route, res.Front)
 	defer func() { ol.Stop(errorOrNil(res.Failure)) }()
-	routeFail := func(op string, failure *string) {
-		if res.Failure == nil {
-			res.Failure, res.FailedOperation = failure, op
-		}
-	}
 
-	var frontRoots *x509.CertPool
-	var err error
-	if route == RouteReflectorG || route == RouteAndroidG {
-		frontRoots, err = m.googleRoots()
-	} else {
-		frontRoots, err = m.mozillaRoots()
-	}
+	frontRoots, err := m.frontRoots(route)
 	if err != nil {
-		routeFail(netxlite.TLSHandshakeOperation, measurexlite.NewFailure(err))
+		res.Failure, res.FailedOperation = measurexlite.NewFailure(err), netxlite.TLSHandshakeOperation
 		return res
 	}
-
-	// resolve returns the address of a front's first IPv4 address, with the system resolver
-	resolve := func(front string, tags ...string) (string, error) {
-		resolveCtx, cancel := context.WithTimeout(ctx, opTimeout)
-		defer cancel()
-		trace := measurexlite.NewTrace(index, zero, tags...)
-		addrs, err := trace.NewStdlibResolver(logger).LookupHost(resolveCtx, front)
-		tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
-		if err == nil && firstIPv4(addrs) == "" {
-			err = errNoAddress
-		}
-		if err != nil {
-			return "", err
-		}
-		return net.JoinHostPort(firstIPv4(addrs), "443"), nil
-	}
-	frontAddress, err := resolve(res.Front, tag)
-	if err != nil {
-		routeFail(netxlite.ResolveOperation, measurexlite.NewFailure(err))
+	in := &routeInnerRun{m: m, logger: logger, zero: zero, route: route, frontRoots: frontRoots,
+		signalRoots: signalRoots, tk: tk}
+	tag := "circumvention:" + route
+	if res.FrontAddress, err = in.resolveFront(ctx, index, res.Front, tag); err != nil {
+		res.Failure, res.FailedOperation = measurexlite.NewFailure(err), netxlite.ResolveOperation
 		return res
 	}
-	res.FrontAddress = frontAddress
 
 	for i, inner := range inners {
-		in := &routeInnerRun{m: m, logger: logger, zero: zero, index: index + int64(i+1), route: route,
-			tags: []string{tag, inner.target.Name}, frontAddress: res.FrontAddress, frontRoots: frontRoots,
-			signalRoots: signalRoots, tk: tk}
+		in.index, in.tags, in.frontAddress = index+int64(i+1), []string{tag, inner.target.Name}, res.FrontAddress
 		var r *TargetResult
+		var frontFailed bool
 		if isReflector {
 			var status int64
-			r, status = in.reflector(ctx, inner, res.Front, fc.hostHeader)
+			r, status, frontFailed = in.reflector(ctx, inner, res.Front, fc.hostHeader)
 			if i == 0 { // the first tunnel's
 				res.TunnelStatus = &status
 			}
 		} else {
-			sfc := opts.fronts[route+"."+inner.service]
-			front := res.Front
-			if !contains(sfc.snis, front) { // a service whose fronts were replaced separately: its own front
-				front = pickFront(route, opts.country, sfc.snis)
-				address, err := resolve(front, in.tags...)
-				if err != nil {
-					r = &TargetResult{Name: inner.target.Name, Hostname: inner.target.Hostname, ClientHello: frontHello(route, inner.service, front).Name,
-						Method: inner.target.Method, FailedOperation: netxlite.ResolveOperation,
-						Failure: measurexlite.NewFailure(err), T0: time.Since(zero).Seconds(), T: time.Since(zero).Seconds()}
-					res.Targets = append(res.Targets, r)
-					continue
-				}
-				in.frontAddress = address
-			}
-			r = in.android(ctx, inner, front, sfc)
+			r, frontFailed = in.android(ctx, inner, res.Front, opts)
 		}
 		res.Targets = append(res.Targets, r)
-		switch r.FailedOperation {
-		case netxlite.ConnectOperation, tunnelUpgradeOperation:
-			routeFail(r.FailedOperation, r.Failure)
-		case netxlite.TLSHandshakeOperation:
-			if !isReflector || in.frontFailed { // on reflectors, only the front's handshake
-				routeFail(r.FailedOperation, r.Failure)
-			}
+		if frontFailed && res.Failure == nil {
+			res.Failure, res.FailedOperation = r.Failure, r.FailedOperation
 		}
 	}
 	return res
+}
+
+// frontRoots are the roots a route's fronts are verified against: Google's or Mozilla's.
+func (m *Measurer) frontRoots(route string) (*x509.CertPool, error) {
+	if route == RouteReflectorG || route == RouteAndroidG {
+		return m.googleRoots()
+	}
+	return m.mozillaRoots()
 }
 
 // routeInnerRun measures one inner target of a route.
@@ -205,27 +167,46 @@ type routeInnerRun struct {
 	frontRoots   *x509.CertPool
 	signalRoots  *x509.CertPool
 	tk           *TestKeys
-	frontFailed  bool // the failure, if any, was the front's (not the inner target's)
 }
 
-// start creates the inner target's result and trace, and connects to the front: TCP and TLS
-// within opTimeout. It returns a nil *tlsResult when that failed. Each later step (the tunnel's
-// upgrade, the inner handshake, the upgrade or GET) has its own opTimeout.
-func (in *routeInnerRun) start(ctx context.Context, target Target, hello Hello, front string) (
-	res *TargetResult, trace *measurexlite.Trace, tr *tlsResult) {
-	res = &TargetResult{Name: target.Name, Hostname: target.Hostname, ClientHello: hello.Name, Method: target.Method,
-		T0: time.Since(in.zero).Seconds()}
-	trace = measurexlite.NewTrace(in.index, in.zero, in.tags...)
-	dialCtx, cancel := context.WithTimeout(ctx, opTimeout)
+// resolveFront returns the address of a front's first IPv4 address, with the system resolver.
+func (in *routeInnerRun) resolveFront(ctx context.Context, index int64, front string, tags ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
 	defer cancel()
-	tr, err := dialTLS(dialCtx, trace, in.logger, in.frontAddress, front, hello, in.frontRoots)
+	trace := measurexlite.NewTrace(index, in.zero, tags...)
+	addrs, err := trace.NewStdlibResolver(in.logger).LookupHost(ctx, front)
+	in.tk.Queries = append(in.tk.Queries, trace.DNSLookupsFromRoundTrip()...)
+	if err == nil && firstIPv4(addrs) == "" {
+		err = errNoAddress
+	}
+	if err != nil {
+		return "", err
+	}
+	return net.JoinHostPort(firstIPv4(addrs), "443"), nil
+}
+
+// newResult is an inner target's result before it is measured.
+func (in *routeInnerRun) newResult(target Target, hello Hello) *TargetResult {
+	return &TargetResult{Name: target.Name, Hostname: target.Hostname, ClientHello: hello.Name, Method: target.Method,
+		UserAgent: in.m.config.userAgent(target.Client), T0: time.Since(in.zero).Seconds()}
+}
+
+// connectFront records the inner target's evidence in a new trace and connects to the front: TCP
+// and TLS within opTimeout. On failure, it records the failure in res and returns a nil
+// *tlsResult. Each later step (the tunnel's upgrade, the inner handshake, the upgrade or GET) has
+// its own opTimeout.
+func (in *routeInnerRun) connectFront(ctx context.Context, res *TargetResult, hello Hello, front string) (
+	*measurexlite.Trace, *tlsResult) {
+	trace := measurexlite.NewTrace(in.index, in.zero, in.tags...)
+	ctx, cancel := context.WithTimeout(ctx, opTimeout)
+	defer cancel()
+	tr, err := dialTLS(ctx, trace, in.logger, in.frontAddress, front, hello, in.frontRoots)
 	in.tk.recordTLS(trace, tr)
 	if err != nil {
-		in.frontFailed = true
 		res.FailedOperation, res.Failure = failedOperation(err), measurexlite.NewFailure(err)
-		return res, trace, nil
+		return trace, nil
 	}
-	return res, trace, tr
+	return trace, tr
 }
 
 // drainer returns a checkpoint that moves the trace's network events to the test keys.
@@ -234,69 +215,82 @@ func (in *routeInnerRun) drainer(trace *measurexlite.Trace) func() {
 }
 
 // reflector measures target through a reflector tunnel: the libsignal hello inside the tunnel,
-// verified against Signal's roots, then the target's method. It also returns the tunnel's status.
-func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front, hostHeader string) (*TargetResult, int64) {
+// verified against Signal's roots, then the target's method. It also returns the tunnel's
+// status, and whether a failure was the front's (TCP, TLS or the tunnel's upgrade).
+func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front, hostHeader string) (
+	res *TargetResult, tunnelStatus int64, frontFailed bool) {
 	target := inner.target
-	res, trace, tr := in.start(ctx, target, HelloLibsignalReflector, front)
+	res = in.newResult(target, target.Hello)
 	defer func() { res.T = time.Since(in.zero).Seconds() }()
+	trace, tr := in.connectFront(ctx, res, HelloLibsignalReflector, front)
 	defer in.drainer(trace)()
-	res.ClientHello = target.Hello.Name
-	res.UserAgent = in.m.config.userAgent(target.Hello)
 	if tr == nil {
-		return res, 0
+		return res, 0, true
 	}
 	stop := context.AfterFunc(ctx, func() { _ = tr.conn.Close() })
 	defer stop()
 	// libsignal sends its connection manager's User-Agent (the app's, plus " libsignal/<version>") on
 	// the tunnel upgrade too (rust/net/infra/src/route/proxy.rs, ConnectionProxyConfig::Reflector)
-	tunnelUA := in.m.config.userAgent(HelloLibsignalReflector)
 	upgradeCtx, cancelUpgrade := context.WithTimeout(ctx, opTimeout)
 	defer cancelUpgrade()
-	up, err := tunnelUpgrade(upgradeCtx, tr.conn, hostHeader, target.Hostname, tunnelUA)
-	var status int64
+	up, err := tunnelUpgrade(upgradeCtx, tr.conn, hostHeader, target.Hostname, in.m.config.userAgent(ClientLibsignal))
 	if up != nil {
-		status = int64(up.status)
+		tunnelStatus = int64(up.status)
 	}
 	if err != nil {
 		_ = tr.conn.Close()
-		in.frontFailed = true
 		res.FailedOperation, res.Failure = tunnelUpgradeOperation, measurexlite.NewFailure(err)
-		return res, status
+		return res, tunnelStatus, true
 	}
-	tunnel := newTunnelConn(up, tr.conn)
 	innerCtx, cancelInner := context.WithTimeout(ctx, opTimeout)
 	defer cancelInner()
-	itr, err := handshakeTLS(innerCtx, trace, tunnel, "", target.Hostname, target.Hello, in.signalRoots)
+	itr, err := handshakeTLS(innerCtx, trace, newTunnelConn(up, tr.conn), "", target.Hostname, target.Hello, in.signalRoots)
 	in.tk.recordTLS(trace, itr)
 	if err != nil {
 		res.FailedOperation, res.Failure = failedOperation(err), measurexlite.NewFailure(err)
-		return res, status
+		return res, tunnelStatus, false
 	}
 	res.ALPN, res.LeafKeyType = itr.alpn, itr.leafKey
 	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
 	defer cancelOp()
 	in.m.exercise(ctx, opCtx, itr, target.request(), in.zero, res, in.drainer(trace))
-	return res, status
+	return res, tunnelStatus, false
 }
 
 // android measures target through an Android front: the front connection carries the request
-// itself, with the service's Host header and path prefix.
-func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front string, fc frontConfig) *TargetResult {
+// itself, with the service's Host header and path prefix. A service whose fronts the Fronts
+// option replaced separately is reached through its own front. It also returns whether a failure
+// was the front's (TCP or TLS).
+func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front string, opts *runOptions) (
+	res *TargetResult, frontFailed bool) {
 	target := inner.target
+	fc := opts.fronts[in.route+"."+inner.service]
+	routeFront := front
+	if !contains(fc.snis, front) {
+		front = pickFront(in.route, opts.country, fc.snis)
+	}
 	hello := frontHello(in.route, inner.service, front)
-	res, trace, tr := in.start(ctx, target, hello, front)
+	res = in.newResult(target, hello)
 	defer func() { res.T = time.Since(in.zero).Seconds() }()
-	defer in.drainer(trace)()
+	if front != routeFront {
+		address, err := in.resolveFront(ctx, in.index, front, in.tags...)
+		if err != nil {
+			res.FailedOperation, res.Failure = netxlite.ResolveOperation, measurexlite.NewFailure(err)
+			return res, false
+		}
+		in.frontAddress = address
+	}
 	address := in.frontAddress
 	res.Address = &address
-	res.UserAgent = in.m.config.userAgent(hello)
+	trace, tr := in.connectFront(ctx, res, hello, front)
+	defer in.drainer(trace)()
 	if tr == nil {
-		return res
+		return res, true
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
 	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
 	defer cancelOp()
 	req := request{method: target.Method, hostHeader: fc.hostHeader, path: fc.pathPrefix + inner.path, provision: true}
 	in.m.exercise(ctx, opCtx, tr, req, in.zero, res, in.drainer(trace))
-	return res
+	return res, false
 }

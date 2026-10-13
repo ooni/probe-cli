@@ -29,6 +29,7 @@ const (
 type Target struct {
 	Name     string
 	Hostname string
+	Client   Client
 	Hello    Hello
 	Method   Method
 	Path     string
@@ -41,18 +42,18 @@ const enclaveProbePath = "/v1/00000000000000000000000000000000000000000000000000
 // DefaultTargets are Signal's Signal-hosted endpoints, each with the hello and protocol of the
 // client that uses it (signal.md §1; hellos/README.md).
 var DefaultTargets = []Target{
-	{"chat_libsignal", "grpc.chat.signal.org", HelloLibsignal, MethodProvisioningH2, "/v1/websocket/provisioning/"},
-	{"chat_android", "chat.signal.org", HelloAndroidWebSocket, MethodProvisioningH1, "/v1/websocket/provisioning/"},
-	{"cdsi", "cdsi.signal.org", HelloLibsignalEnclave, MethodEnclaveH1, enclaveProbePath + "/discovery"},
-	{"svr2", "svr2.signal.org", HelloLibsignalEnclave, MethodEnclaveH1, enclaveProbePath},
-	{"svrb", "svrb.signal.org", HelloLibsignalEnclave, MethodEnclaveH1, enclaveProbePath},
-	{"storage", "storage.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
-	{"cdn", "cdn.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
-	{"cdn2", "cdn2.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
-	{"cdn3", "cdn3.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
-	{"updates2", "updates2.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
-	{"updates2_desktop", "updates2.signal.org", HelloDesktop, MethodHTTPSGet, "/desktop/latest-linux.yml"},
-	{"sfu", "sfu.voip.signal.org", HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"chat_libsignal", "grpc.chat.signal.org", ClientLibsignal, HelloLibsignal, MethodProvisioningH2, "/v1/websocket/provisioning/"},
+	{"chat_android", "chat.signal.org", ClientAndroid, HelloAndroidWebSocket, MethodProvisioningH1, "/v1/websocket/provisioning/"},
+	{"cdsi", "cdsi.signal.org", ClientLibsignal, HelloLibsignalEnclave, MethodEnclaveH1, enclaveProbePath + "/discovery"},
+	{"svr2", "svr2.signal.org", ClientLibsignal, HelloLibsignalEnclave, MethodEnclaveH1, enclaveProbePath},
+	{"svrb", "svrb.signal.org", ClientLibsignal, HelloLibsignalEnclave, MethodEnclaveH1, enclaveProbePath},
+	{"storage", "storage.signal.org", ClientAndroid, HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"cdn", "cdn.signal.org", ClientAndroid, HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"cdn2", "cdn2.signal.org", ClientAndroid, HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"cdn3", "cdn3.signal.org", ClientAndroid, HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"updates2", "updates2.signal.org", ClientAndroid, HelloAndroidREST, MethodHTTPSGet, "/"},
+	{"updates2_desktop", "updates2.signal.org", ClientDesktop, HelloDesktop, MethodHTTPSGet, "/desktop/latest-linux.yml"},
+	{"sfu", "sfu.voip.signal.org", ClientAndroid, HelloAndroidREST, MethodHTTPSGet, "/"},
 }
 
 // keepalivePaddings are the keepalive body sizes: none, message-sized, attachment-chunk-sized.

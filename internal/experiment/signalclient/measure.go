@@ -233,7 +233,7 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		return
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
-	res.UserAgent = m.config.userAgent(target.Hello)
+	res.UserAgent = m.config.userAgent(target.Client)
 	// the first checkpoint follows the upgrade, before the provisioning flow: connected then
 	drain := func() {
 		connected()

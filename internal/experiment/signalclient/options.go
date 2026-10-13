@@ -55,14 +55,14 @@ type Config struct {
 // ooniUserAgent identifies this test to Signal's servers.
 const ooniUserAgent = "ooniprobe-" + testName + "/" + testVersion + " (+https://ooni.org)"
 
-// userAgent is the User-Agent to send with hello.
-func (c *Config) userAgent(hello Hello) string {
+// userAgent is the User-Agent to send as client.
+func (c *Config) userAgent(client Client) string {
 	switch {
 	case c.UserAgent != "":
 		return c.UserAgent
-	case c.AppUserAgent && hello.appUserAgent != "":
-		return hello.appUserAgent
-	case hello.libsignal: // libsignal appends its own token, as it does for the apps
+	case c.AppUserAgent && client.userAgent != "":
+		return client.userAgent
+	case client.libsignal: // libsignal appends its own token, as it does for the apps
 		return ooniUserAgent + " libsignal/" + libsignalVersion
 	default:
 		return ooniUserAgent

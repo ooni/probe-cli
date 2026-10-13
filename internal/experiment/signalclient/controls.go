@@ -214,7 +214,7 @@ func (cr *controlRunner) plan(targets []Target, snapshots, results []*TargetResu
 		}
 		if tlsAnswered {
 			cr.planHandshake(r, ControlDecoySNI, target, same, target.Hello, false)
-			cr.planHandshake(r, ControlAlternate, target, same, alternateHello(target.Hello), true)
+			cr.planHandshake(r, ControlAlternate, target, same, alternateHello(target), true)
 		}
 		if tlsFailed {
 			cr.planHandshake(r, ControlBrowser, target, same, HelloChrome, false)
@@ -226,13 +226,13 @@ func (cr *controlRunner) plan(targets []Target, snapshots, results []*TargetResu
 	})
 }
 
-// alternateHello is another Signal client's hello: Android's REST hello for targets that use
-// libsignal's or Desktop's, libsignal's for targets that use an Android hello.
-func alternateHello(h Hello) Hello {
-	if h.libsignal || h.Name == HelloDesktop.Name {
-		return HelloAndroidREST
+// alternateHello is another Signal client's hello: Android's REST hello for libsignal's and
+// Desktop's targets, libsignal's for Android's.
+func alternateHello(t Target) Hello {
+	if t.Client == ClientAndroid {
+		return HelloLibsignal
 	}
-	return HelloLibsignal
+	return HelloAndroidREST
 }
 
 func (cr *controlRunner) planDNS(r *TargetResult, kind, host string) *controlJob {
@@ -427,7 +427,7 @@ func (cr *controlRunner) handshake(ctx context.Context, job *controlJob, kind st
 		_ = tr.conn.Close()
 		return res
 	}
-	tres := &TargetResult{UserAgent: cr.m.config.userAgent(target.Hello)}
+	tres := &TargetResult{UserAgent: cr.m.config.userAgent(target.Client)}
 	req := target.request()
 	req.provision = false // up to the upgrade or GET response
 	cr.m.exercise(ctx, ctx, tr, req, cr.zero, tres, nil)

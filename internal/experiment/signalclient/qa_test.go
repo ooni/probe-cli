@@ -674,7 +674,7 @@ func TestQABrokenHelloIsATLSFailure(t *testing.T) {
 	env := newQAEnv(t, nil)
 	defer env.Close()
 	broken := Hello{Name: "broken", raw: []byte{0x01, 0x00, 0x00, 0x01, 0x00}}
-	_, byName := runQATargets(t, env, Config{}, []Target{{"broken", "storage.signal.org", broken, MethodHTTPSGet, "/"}})
+	_, byName := runQATargets(t, env, Config{}, []Target{{"broken", "storage.signal.org", ClientAndroid, broken, MethodHTTPSGet, "/"}})
 	r := byName["broken"]
 	if r.FailedOperation != "tls_handshake" || r.Failure == nil {
 		t.Fatalf("expected a tls_handshake failure, got op %q failure %q", r.FailedOperation, deref(r.Failure))
