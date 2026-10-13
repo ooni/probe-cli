@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -172,6 +173,10 @@ type TestKeys struct {
 	// ControlsTruncated is true when the controls' time budget ran out before all were started.
 	ControlsTruncated bool `json:"signal_controls_truncated"`
 
+	// RunTruncated is true when the whole measurement's budget (runBudget) ran out, cutting short
+	// whatever was still running. Each phase has its own limits, so this is only a backstop.
+	RunTruncated bool `json:"signal_run_truncated"`
+
 	// Circumvention holds the circumvention routes (null unless Circumvention is set).
 	Circumvention []*RouteResult `json:"signal_circumvention"`
 }
@@ -303,9 +308,17 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.SignalRoots = anchors.sha256
 	roots := anchors.pool
 
+	// the whole measurement's budget, a backstop: each phase below has its own limits
+	runCtx, cancelRun := context.WithTimeout(ctx, runBudget(idleDuration(m.config.IdleSeconds), len(opts.routes) > 0))
+	defer cancelRun()
+	defer func() { tk.RunTruncated = runCtx.Err() == context.DeadlineExceeded && ctx.Err() == nil }()
+	progress := newProgress(args.Callbacks, len(m.targets), len(opts.routes))
+
 	// Signal's outage beacon, a control: if Signal says it is down, failures mean little.
 	trace := measurexlite.NewTrace(0, zero)
-	addrs, err := trace.NewStdlibResolver(logger).LookupHost(ctx, "uptime.signal.org")
+	beaconCtx, cancelBeacon := context.WithTimeout(runCtx, beaconTimeout)
+	addrs, err := trace.NewStdlibResolver(logger).LookupHost(beaconCtx, "uptime.signal.org")
+	cancelBeacon()
 	tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
 	switch {
 	case err != nil:
@@ -318,26 +331,100 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		tk.SignalServiceStatus = "unexpected_answer"
 	}
 
+	progress.step("signal_client: Signal's service status: " + tk.SignalServiceStatus)
+
+	// the targets run concurrently, as the apps connect to them: the phase lasts as long as the
+	// slowest target, not the sum. Each records into its own TestKeys, merged in target order.
+	tk.Targets = make([]*TargetResult, len(m.targets))
+	records := make([]*TestKeys, len(m.targets))
+	var wg sync.WaitGroup
 	for i, target := range m.targets {
-		tk.Targets = append(tk.Targets, m.measureTarget(ctx, logger, zero, int64(i+1), target, roots, tk))
+		records[i] = &TestKeys{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tk.Targets[i] = m.measureTarget(runCtx, logger, zero, int64(i+1), target, roots, records[i])
+			progress.step("signal_client: " + target.Name)
+		}()
+	}
+	wg.Wait()
+	for _, r := range records {
+		tk.mergeRecords(r)
 	}
 
 	// the controls run after every target, so they never delay or change a target's result
 	if opts.controls != ControlsOff {
 		cr := newControlRunner(m, logger, zero, roots, opts, int64(len(m.targets)+1))
 		cr.plan(m.targets, tk.Targets)
-		tk.ControlsTruncated = cr.run(ctx, tk)
+		tk.ControlsTruncated = cr.run(runCtx, tk)
 	}
+	progress.step("signal_client: controls")
 
-	// then the circumvention routes, which never change what the targets say
+	// then the circumvention routes, concurrently, which never change what the targets say
 	if len(opts.routes) > 0 {
-		tk.Circumvention = []*RouteResult{}
+		tk.Circumvention = make([]*RouteResult, len(opts.routes))
+		records := make([]*TestKeys, len(opts.routes))
 		for i, route := range opts.routes {
-			index := int64(10000 + 10*i)
-			tk.Circumvention = append(tk.Circumvention, m.measureRoute(ctx, logger, zero, index, route, opts, roots, tk))
+			records[i] = &TestKeys{}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				index := int64(10000 + 10*i)
+				tk.Circumvention[i] = m.measureRoute(runCtx, logger, zero, index, route, opts, roots, records[i])
+				progress.step("signal_client: route " + route)
+			}()
+		}
+		wg.Wait()
+		for _, r := range records {
+			tk.mergeRecords(r)
 		}
 	}
 	return nil
+}
+
+// mergeRecords appends src's network records to tk's.
+func (tk *TestKeys) mergeRecords(src *TestKeys) {
+	tk.Queries = append(tk.Queries, src.Queries...)
+	tk.TCPConnect = append(tk.TCPConnect, src.TCPConnect...)
+	tk.TLSHandshakes = append(tk.TLSHandshakes, src.TLSHandshakes...)
+	tk.NetworkEvents = append(tk.NetworkEvents, src.NetworkEvents...)
+}
+
+// beaconTimeout bounds the outage beacon's DNS lookup.
+var beaconTimeout = 10 * time.Second
+
+// runMargin is the slack runBudget adds over the phases' own limits.
+const runMargin = 10 * time.Second
+
+// runBudget bounds the whole measurement (ts-041 Time limits): the beacon, the slowest target
+// (targets run concurrently), the controls and, with routes, the slowest route, plus a margin.
+// Every phase is bounded by its own limits; this is a backstop.
+func runBudget(idle time.Duration, routes bool) time.Duration {
+	b := beaconTimeout + targetTimeout(MethodProvisioningH1, idle) + controlsBudget + runMargin
+	if routes {
+		b += routeTimeout(idle)
+	}
+	return b
+}
+
+// progress reports the measurement's progress: the beacon, each target, the controls and each
+// route are one step each. Steps may finish concurrently.
+type progress struct {
+	mu        sync.Mutex
+	callbacks model.ExperimentCallbacks
+	done      int
+	total     int
+}
+
+func newProgress(callbacks model.ExperimentCallbacks, targets, routes int) *progress {
+	return &progress{callbacks: callbacks, total: 1 + targets + 1 + routes}
+}
+
+func (p *progress) step(message string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.done++
+	p.callbacks.OnProgress(float64(p.done)/float64(p.total), message)
 }
 
 func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero time.Time, index int64,

@@ -780,3 +780,29 @@ func TestQATLSRecordsAreTaggedWithTheTarget(t *testing.T) {
 		}
 	}
 }
+
+// With every target's TLS blackholed, the targets run concurrently: the phase takes about one
+// connect budget, not one per target (ts-041 Time limits).
+func TestQAEverythingBlackholedRunsConcurrently(t *testing.T) {
+	defer func(d time.Duration) { connectBudget = d }(connectBudget)
+	connectBudget = 2 * time.Second
+	env := newQAEnv(t, nil)
+	defer env.Close()
+	for _, target := range DefaultTargets {
+		env.DPIEngine().AddRule(&netem.DPIDropTrafficForTLSSNI{Logger: log.Log, SNI: target.Hostname})
+	}
+	tk, _ := runQAWith(t, env, Config{Controls: ControlsOff})
+	first, last := tk.Targets[0].T0, tk.Targets[0].T
+	for _, r := range tk.Targets {
+		if r.FailedOperation != "tls_handshake" || deref(r.Failure) != "generic_timeout_error" {
+			t.Errorf("%s: %q %q", r.Name, r.FailedOperation, deref(r.Failure))
+		}
+		first, last = min(first, r.T0), max(last, r.T)
+	}
+	if took := last - first; took > 2*connectBudget.Seconds() {
+		t.Errorf("targets took %.1f s with a %v connect budget: not concurrent", took, connectBudget)
+	}
+	if tk.RunTruncated || !tk.MeasurementSummaryKeys().Anomaly() {
+		t.Errorf("run truncated %v, anomaly %v", tk.RunTruncated, tk.MeasurementSummaryKeys().Anomaly())
+	}
+}

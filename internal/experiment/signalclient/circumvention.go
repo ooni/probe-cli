@@ -90,6 +90,21 @@ func routeInners(route string) []routeInner {
 	}
 }
 
+// routeTimeout bounds one route: its front's DNS lookup, then its inner targets one after
+// another, each within its target budget (and, for an Android service with fronts of its own, its
+// own front lookup). It is the longest over all routes.
+func routeTimeout(idle time.Duration) time.Duration {
+	var longest time.Duration
+	for _, route := range allRoutes {
+		d := connectBudget
+		for _, in := range routeInners(route) {
+			d += connectBudget + targetTimeout(in.target.Method, idle)
+		}
+		longest = max(longest, d)
+	}
+	return longest
+}
+
 // measureRoute measures one route: it resolves the front with the system resolver, then, for
 // each inner target, connects to the front's first IPv4 address, handshakes with SNI set to the
 // front, and measures the target through it.
