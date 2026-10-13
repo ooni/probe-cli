@@ -22,6 +22,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// Circumvention route names.
+const (
+	RouteReflectorF = "reflector_f"
+	RouteReflectorG = "reflector_g"
+	RouteAndroidG   = "android_g"
+	RouteAndroidF   = "android_f"
+)
+
+// allRoutes is every route, in the order they run.
+var allRoutes = []string{RouteReflectorF, RouteReflectorG, RouteAndroidG, RouteAndroidF}
+
 // RouteResult is the outcome of one circumvention route.
 type RouteResult struct {
 	Route            string          `json:"route"`
@@ -38,41 +49,17 @@ type RouteResult struct {
 	T                float64         `json:"t"`
 }
 
-// FailedOperation of a reflector tunnel's upgrade.
-const tunnelUpgradeOperation = "tunnel_upgrade"
+// The failed operations of a WebSocket upgrade (or extended CONNECT) and of a reflector tunnel's upgrade.
+const (
+	websocketUpgradeOperation = "websocket_upgrade"
+	tunnelUpgradeOperation    = "tunnel_upgrade"
+)
 
 // routeInner is one target measured through a route.
 type routeInner struct {
 	target  Target // the target as measured directly (its hello is the inner one on reflectors)
 	service string // Android routes: "chat" or "storage"
 	path    string // Android routes: the path before the service prefix
-}
-
-// googleMapsFronts are the Google fronts Signal-Android reaches with GMAPS_CONNECTION_SPEC; its
-// other Google fronts (www.google.com, googlemail.com, android.clients.google.com and the
-// countries' domains) use GMAIL_CONNECTION_SPEC or PLAY_CONNECTION_SPEC, the same list.
-var googleMapsFronts = map[string]bool{"clients3.google.com": true, "clients4.google.com": true}
-
-// frontHello is the hello a route's client sends to front for service ("chat" or "storage").
-// A front given with the Fronts option that Signal-Android does not use gets the hello of the
-// route's default fronts (Gmail's on android_g).
-func frontHello(route, service, front string) Hello {
-	switch {
-	case route == RouteReflectorF || route == RouteReflectorG:
-		return HelloLibsignalReflector
-	case route == RouteAndroidF && service == "chat":
-		return HelloAndroidModernWebSocket
-	case route == RouteAndroidF:
-		return HelloAndroidModernREST
-	case googleMapsFronts[front] && service == "chat":
-		return HelloAndroidGmapsWebSocket
-	case googleMapsFronts[front]:
-		return HelloAndroidGmapsREST
-	case service == "chat":
-		return HelloAndroidGmailWebSocket
-	default:
-		return HelloAndroidGmailREST
-	}
 }
 
 // routeInners returns what a route measures.

@@ -126,7 +126,7 @@ func (c *Config) userAgent(hello Hello) string {
 	case c.AppUserAgent && hello.appUserAgent != "":
 		return hello.appUserAgent
 	case hello.libsignal: // libsignal appends its own token, as it does for the apps
-		return ooniUserAgent + " libsignal/0.105.0"
+		return ooniUserAgent + " libsignal/" + libsignalVersion
 	default:
 		return ooniUserAgent
 	}
@@ -253,39 +253,6 @@ func (m *Measurer) ExperimentName() string { return testName }
 
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string { return testVersion }
-
-// Experiment-specific failure strings (in addition to df-007's).
-const (
-	// FailureExtendedConnectNotSupported: the HTTP/2 server did not offer RFC 8441 extended CONNECT.
-	FailureExtendedConnectNotSupported = "extended_connect_not_supported"
-
-	// FailureWebSocketUpgradeRefused: the server answered the WebSocket upgrade or extended
-	// CONNECT with a status other than success (see the target's status).
-	FailureWebSocketUpgradeRefused = "websocket_upgrade_refused"
-
-	// FailureWebSocketUpgradeInvalid: the server answered the HTTP/1.1 upgrade with 101 but without
-	// the Upgrade, Connection or Sec-WebSocket-Accept headers RFC 6455 requires, which the apps'
-	// WebSocket clients reject.
-	FailureWebSocketUpgradeInvalid = "websocket_upgrade_invalid"
-
-	// FailureUnexpectedMessage: the server sent a WebSocket message the flow does not allow.
-	FailureUnexpectedMessage = "unexpected_message"
-
-	// FailureMalformedMessage: a WebSocket message was not a valid WebSocketMessage protobuf, could
-	// not be inflated, or exceeded the size limit, or a frame violated RFC 6455 or RFC 7692.
-	FailureMalformedMessage = "malformed_message"
-
-	// FailureHTTP2StreamReset: the peer reset the HTTP/2 stream carrying the WebSocket.
-	FailureHTTP2StreamReset = "http2_stream_reset"
-)
-
-// newFailure wraps err so that it is recorded with the given failure string.
-func newFailure(failure, operation string, err error) error {
-	return &netxlite.ErrWrapper{Failure: failure, Operation: operation, WrappedErr: err}
-}
-
-// errNoAddress means DNS returned no usable address.
-var errNoAddress = newFailure(netxlite.FailureDNSNoAnswer, netxlite.ResolveOperation, errors.New("no usable address"))
 
 // Run implements model.ExperimentMeasurer.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
@@ -596,11 +563,11 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 				_ = up.closer.Close()
 				return
 			}
-			fail("websocket_upgrade", err)
+			fail(websocketUpgradeOperation, err)
 			return
 		}
 		if err != nil {
-			fail("websocket_upgrade", err)
+			fail(websocketUpgradeOperation, err)
 			return
 		}
 		defer up.closer.Close()

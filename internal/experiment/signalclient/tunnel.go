@@ -11,7 +11,6 @@ import (
 	"errors"
 	"net"
 	"sync"
-	"time"
 )
 
 // maxTunnelFrame is libsignal's MAX_OUTBOUND_FRAME_SIZE: writes are split into binary frames of
@@ -101,8 +100,3 @@ func (c *tunnelConn) Write(p []byte) (int, error) {
 	}
 	return len(p), nil
 }
-
-// SetDeadline and friends apply to the front connection, which carries every frame.
-func (c *tunnelConn) SetDeadline(t time.Time) error      { return c.Conn.SetDeadline(t) }
-func (c *tunnelConn) SetReadDeadline(t time.Time) error  { return c.Conn.SetReadDeadline(t) }
-func (c *tunnelConn) SetWriteDeadline(t time.Time) error { return c.Conn.SetWriteDeadline(t) }

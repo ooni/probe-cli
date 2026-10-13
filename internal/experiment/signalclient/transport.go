@@ -14,13 +14,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -63,7 +61,9 @@ func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger
 }
 
 // handshakeTLS runs the TLS handshake of hello on conn (a TCP connection, or a tunnel whose
-// address is recorded as given). It closes conn on failure.
+// address is recorded as given). It closes conn on failure. It does not use measurexlite's
+// handshaker: netxlite's uTLS takes a ClientHelloID, not the ClientHelloSpec a captured hello
+// needs (echcheck makes the same choice), so the handshake is recorded here.
 func handshakeTLS(ctx context.Context, trace *measurexlite.Trace, zero time.Time, conn net.Conn,
 	address, sni string, hello Hello, roots *x509.CertPool, tags ...string) (*tlsResult, error) {
 	tlsFailure := func(err error) (*tlsResult, error) {
@@ -172,14 +172,6 @@ func sampleResponse(ctx context.Context, resp *http.Response) (*ResponseSample, 
 	return s, err
 }
 
-// errUpgradeRefused means the server answered the upgrade with something other than success.
-var errUpgradeRefused = errors.New("signal_client: websocket upgrade refused")
-
-// upgradeRefused records errUpgradeRefused with its failure string.
-func upgradeRefused() error {
-	return newFailure(FailureWebSocketUpgradeRefused, netxlite.HTTPRoundTripOperation, errUpgradeRefused)
-}
-
 // deflateAccepted is whether a Sec-WebSocket-Extensions answer accepts permessage-deflate.
 func deflateAccepted(extensions string) bool {
 	for _, ext := range strings.Split(extensions, ",") {
@@ -190,9 +182,6 @@ func deflateAccepted(extensions string) bool {
 	}
 	return false
 }
-
-// errUpgradeInvalid means a 101 answer lacked the headers RFC 6455 section 4.1 requires.
-var errUpgradeInvalid = errors.New("signal_client: invalid websocket upgrade response")
 
 // websocketAccept is the Sec-WebSocket-Accept value a server must return for key.
 func websocketAccept(key string) string {
@@ -309,7 +298,7 @@ func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, use
 		if resp != nil {
 			_ = resp.Body.Close()
 		}
-		if strings.Contains(err.Error(), "extended connect not supported") { // x/net's error is unexported
+		if strings.Contains(err.Error(), xnetExtendedConnectNotSupported) {
 			return nil, newFailure(FailureExtendedConnectNotSupported, netxlite.HTTPRoundTripOperation, err)
 		}
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.HTTPRoundTripOperation, err)
@@ -333,55 +322,6 @@ func websocketH2(ctx, connectCtx context.Context, conn net.Conn, host, path, use
 		return err
 	})
 	return out, nil
-}
-
-// causeConn remembers the first error the network returned on Read. When the peer closes or
-// resets the connection, x/net closes its own socket in reaction, and later reads and writes see
-// that local close ("use of closed network connection", "client conn is closed") instead of the
-// peer's action. The recorded cause lets us report what happened on the wire.
-type causeConn struct {
-	net.Conn
-	mu  sync.Mutex
-	err error
-}
-
-func (c *causeConn) Read(p []byte) (int, error) {
-	n, err := c.Conn.Read(p)
-	if err != nil {
-		c.mu.Lock()
-		if c.err == nil {
-			c.err = err
-		}
-		c.mu.Unlock()
-	}
-	return n, err
-}
-
-// cause returns the first read error from the network, or nil.
-func (c *causeConn) cause() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.err
-}
-
-// isLocalCloseError reports errors that only say our side of the connection is closed.
-func isLocalCloseError(err error) bool {
-	return errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) ||
-		strings.Contains(err.Error(), "http2: client conn is closed")
-}
-
-// classifyHTTP2 gives HTTP/2 stream and connection failures their failure strings: x/net reports
-// a peer's RST_STREAM as a StreamError, and a connection that died under the client as the
-// unexported "client conn is closed". It returns nil for other errors.
-func classifyHTTP2(err error, operation string) error {
-	var se http2.StreamError
-	switch {
-	case errors.As(err, &se):
-		return newFailure(FailureHTTP2StreamReset, operation, err)
-	case strings.Contains(err.Error(), "http2: client conn is closed"):
-		return newFailure(netxlite.FailureEOFError, operation, err)
-	}
-	return nil
 }
 
 type closerFunc func() error

@@ -78,7 +78,7 @@ var (
 // failedBeforeSignalAnswered are the failed operations after which on_failure runs controls.
 var failedBeforeSignalAnswered = map[string]bool{
 	netxlite.ResolveOperation: true, netxlite.ConnectOperation: true, netxlite.TLSHandshakeOperation: true,
-	netxlite.HTTPRoundTripOperation: true, "websocket_upgrade": true,
+	netxlite.HTTPRoundTripOperation: true, websocketUpgradeOperation: true,
 }
 
 // controlJob is one control, possibly shared by several targets.
@@ -176,7 +176,7 @@ func (cr *controlRunner) plan(targets []Target, snapshots, results []*TargetResu
 		}
 		op := snap.FailedOperation
 		tlsAnswered := always || op == netxlite.TLSHandshakeOperation || op == netxlite.HTTPRoundTripOperation ||
-			op == "websocket_upgrade"
+			op == websocketUpgradeOperation
 		tlsFailed := always || op == netxlite.TLSHandshakeOperation
 		host := target.Hostname
 		list := cr.opts.static[host]

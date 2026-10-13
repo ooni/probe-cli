@@ -4,6 +4,10 @@ package signalclient
 // Signal's WebSocket protocol: RFC 6455 framing carrying WebSocketMessage protobufs
 // (libsignal rust/net/src/proto/chat_websocket.proto, chat_provisioning.proto).
 //
+// Hand-written rather than gorilla/websocket's: the WebSocket must also run over an RFC 8441
+// HTTP/2 stream, and the HTTP/1.1 upgrade must send OkHttp's headers in OkHttp's order (both
+// are visible to a censor that terminates TLS, and the order to anyone comparing with the app).
+//
 
 import (
 	"bufio"

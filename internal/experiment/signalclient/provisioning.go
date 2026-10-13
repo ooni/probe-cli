@@ -20,8 +20,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"errors"
-	"io"
 	"strings"
 	"time"
 
@@ -59,48 +57,10 @@ var (
 	keepaliveTimeout = 10 * time.Second
 )
 
-// errTimeout is reported when a step does not complete in time (classified as generic_timeout_error).
-var errTimeout = context.DeadlineExceeded
-
-// errUnexpectedMessage means the server sent something the flow does not allow.
-var errUnexpectedMessage = newFailure(FailureUnexpectedMessage, netxlite.ReadOperation, errors.New("signal_client: unexpected message"))
-
-// malformed records an invalid message or frame with its failure string.
-func malformed(err error) error {
-	return newFailure(FailureMalformedMessage, netxlite.ReadOperation, err)
-}
-
 type frame struct {
 	op      byte
 	payload []byte
 	err     error
-}
-
-// withCause replaces an error that only says our side is closed by the network error that caused
-// the close, when ws knows it.
-func withCause(ws *wsConn, err error) error {
-	if ws.cause != nil && isLocalCloseError(err) {
-		if cause := ws.cause(); cause != nil && !isLocalCloseError(cause) {
-			return cause
-		}
-	}
-	return err
-}
-
-// readFailure wraps an error from reading the WebSocket with its failure string.
-func readFailure(err error) error {
-	if errors.Is(err, errFrameTooLarge) || errors.Is(err, errInflate) || errors.Is(err, errProtocolViolation) {
-		return malformed(err)
-	}
-	if h2err := classifyHTTP2(err, netxlite.ReadOperation); h2err != nil {
-		return h2err
-	}
-	return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, err)
-}
-
-// eofFailure is a WebSocket close from the server.
-func eofFailure() error {
-	return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ReadOperation, io.EOF)
 }
 
 // pendingReadErrorWait is how long a failed write waits for the read error that explains it.
@@ -157,7 +117,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 				}
 				return f, nil
 			case <-timer.C:
-				return frame{}, errTimeout
+				return frame{}, context.DeadlineExceeded
 			case <-ctx.Done():
 				return frame{}, ctx.Err()
 			}
@@ -329,7 +289,7 @@ func runProvisioning(ctx context.Context, ws *wsConn, zero time.Time, paddings [
 			}
 		case <-timer.C:
 			if !sawOtherPong {
-				return fail("ping", errTimeout)
+				return fail("ping", context.DeadlineExceeded)
 			}
 			echoed := false
 			res.PingEchoed = &echoed
