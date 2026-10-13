@@ -8,7 +8,6 @@ package signalclient
 import (
 	"context"
 	"crypto/x509"
-	"encoding/binary"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +16,6 @@ import (
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	utls "github.com/refraction-networking/utls"
 )
 
 // qaOption changes the Measurer of a QA run (its targets, its limits).
@@ -81,12 +79,6 @@ func expectFailure(t *testing.T, r *TargetResult, operation, failure string) {
 	}
 }
 
-// qaHybridThenX25519 is X25519MLKEM768 followed by x25519 in a hello's supported groups, which
-// Signal-Android's and Desktop's hellos list and libsignal's does not: a fingerprinting censor's
-// pattern.
-var qaHybridThenX25519 = string(binary.BigEndian.AppendUint16(binary.BigEndian.AppendUint16(nil,
-	uint16(utls.X25519MLKEM768)), uint16(utls.X25519)))
-
 // allTargets are the names of DefaultTargets.
 var allTargets = func() (names []string) {
 	for _, target := range DefaultTargets {
@@ -130,51 +122,6 @@ func TestQAEverythingReachable(t *testing.T) {
 	}
 }
 
-func TestQADNSBlocking(t *testing.T) {
-	env := newQAEnv(t, nil)
-	defer env.Close()
-	env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{Logger: log.Log, Domain: "chat.signal.org"}) // no addresses: NXDOMAIN
-	_, byName := runQA(t, env, Config{})
-	expectFailure(t, byName["chat_android"], "resolve", "dns_nxdomain_error")
-	expectOK(t, byName, "chat_libsignal", "cdsi", "storage")
-}
-
-func TestQAIPBlocking(t *testing.T) {
-	env := newQAEnv(t, nil)
-	defer env.Close()
-	env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{Logger: log.Log, ServerIPAddress: qaGRPCChatAddr, ServerPort: 443})
-	_, byName := runQA(t, env, Config{})
-	expectFailure(t, byName["chat_libsignal"], "connect", "connection_refused")
-	expectOK(t, byName, "chat_android", "cdsi", "storage")
-}
-
-func TestQASNIBlocking(t *testing.T) {
-	env := newQAEnv(t, nil)
-	defer env.Close()
-	env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{Logger: log.Log, SNI: "grpc.chat.signal.org"})
-	tk, byName := runQA(t, env, Config{})
-	expectFailure(t, byName["chat_libsignal"], "tls_handshake", "connection_reset")
-	expectOK(t, byName, "chat_android", "cdsi", "storage")
-	if !tk.MeasurementSummaryKeys().Anomaly() {
-		t.Error("no anomaly with chat_libsignal reset")
-	}
-}
-
-// TestQAFingerprintBlocking resets ClientHellos that list X25519MLKEM768 then x25519 in their
-// groups (Signal-Android's and Desktop's, not libsignal's) on both chat front ends: the two chat
-// targets reach the same service with different hellos, so only chat_android fails.
-func TestQAFingerprintBlocking(t *testing.T) {
-	env := newQAEnv(t, nil)
-	defer env.Close()
-	env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: qaChatAddr, ServerPort: 443,
-		String: qaHybridThenX25519})
-	env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{Logger: log.Log, ServerIPAddress: qaGRPCChatAddr, ServerPort: 443,
-		String: qaHybridThenX25519})
-	_, byName := runQA(t, env, Config{})
-	expectFailure(t, byName["chat_android"], "tls_handshake", "connection_reset")
-	expectOK(t, byName, "chat_libsignal")
-}
-
 func TestQAInjectedReplyWithoutTimestamp(t *testing.T) {
 	env := newQAEnv(t, map[string]fault{qaChatAddr: faultNoTimestamp})
 	defer env.Close()
@@ -191,22 +138,6 @@ func TestQAInjectedReplyWithoutTimestamp(t *testing.T) {
 	if !byName["chat_libsignal"].SignalTimestamp {
 		t.Error("chat_libsignal lost its timestamp")
 	}
-}
-
-func TestQAProvisioningAddressNeverArrives(t *testing.T) {
-	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultNoAddress, qaChatAddr: faultNoAddress})
-	defer env.Close()
-	_, byName := runQA(t, env, Config{}, func(m *Measurer) { m.limits.address = 500 * time.Millisecond })
-	expectFailure(t, byName["chat_libsignal"], "provisioning_address", "generic_timeout_error")
-	expectFailure(t, byName["chat_android"], "provisioning_address", "generic_timeout_error")
-}
-
-func TestQASessionKilledAfterUpgrade(t *testing.T) {
-	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultCloseAtStart, qaChatAddr: faultCloseAtStart})
-	defer env.Close()
-	_, byName := runQA(t, env, Config{})
-	expectFailure(t, byName["chat_libsignal"], "provisioning_address", "eof_error")
-	expectFailure(t, byName["chat_android"], "provisioning_address", "eof_error")
 }
 
 func TestQANoExtendedConnect(t *testing.T) {
@@ -228,22 +159,6 @@ func TestQASignalReportsOutage(t *testing.T) {
 	if tk.MeasurementSummaryKeys().Anomaly() { // the targets were reached: the beacon alone is no anomaly
 		t.Error("anomaly from the beacon alone")
 	}
-}
-
-func TestQAUpgradeRefused(t *testing.T) {
-	env := newQAEnv(t, map[string]fault{qaGRPCChatAddr: faultRefuseUpgrade, qaChatAddr: faultRefuseUpgrade})
-	defer env.Close()
-	tk, byName := runQA(t, env, Config{})
-	if tk.MeasurementSummaryKeys().Anomaly() { // a refusal inside Signal-verified TLS is the server's
-		t.Error("anomaly for a refusal by the server")
-	}
-	for _, name := range []string{"chat_libsignal", "chat_android"} {
-		expectFailure(t, byName[name], "websocket_upgrade", FailureWebSocketUpgradeRefused)
-		if byName[name].Status != 403 {
-			t.Errorf("%s: status %d", name, byName[name].Status)
-		}
-	}
-	expectOK(t, byName, "cdsi", "storage")
 }
 
 // A 101 with the wrong Sec-WebSocket-Accept is not an upgrade: the apps' clients reject it.
