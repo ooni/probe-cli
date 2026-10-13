@@ -48,7 +48,7 @@ func provisionAgainstSignalServer(t *testing.T, hello Hello, sni string, h2 bool
 	defer cancel()
 	zero := time.Now()
 	trace := measurexlite.NewTrace(0, zero)
-	tr, err := dialTLS(ctx, trace, model.DiscardLogger, zero, addr, sni, hello, roots, "signal_server")
+	tr, err := dialTLS(ctx, trace, model.DiscardLogger, addr, sni, hello, roots)
 	if err != nil {
 		t.Fatalf("TLS with %s: %v", hello.Name, err)
 	}

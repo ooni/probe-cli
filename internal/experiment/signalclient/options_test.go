@@ -254,7 +254,7 @@ func handshakeVersion(t *testing.T, h Hello) uint16 {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	tr, err := handshakeTLS(ctx, measurexlite.NewTrace(0, time.Now()), time.Now(), client, "pipe", "example.com", h, nil)
+	tr, err := handshakeTLS(ctx, measurexlite.NewTrace(0, time.Now()), client, "pipe", "example.com", h, nil)
 	if err != nil {
 		t.Fatalf("%s: %v", h.Name, err)
 	}

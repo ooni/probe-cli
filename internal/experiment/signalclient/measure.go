@@ -490,19 +490,12 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 	*res.Address = address
 
 	dialCtx, cancelDial := context.WithTimeout(ctx, opTimeout)
-	tr, err := dialTLS(dialCtx, trace, logger, zero, address, target.Hostname, target.Hello, roots, target.Name)
+	tr, err := dialTLS(dialCtx, trace, logger, address, target.Hostname, target.Hello, roots)
 	cancelDial()
-	tk.TCPConnect = append(tk.TCPConnect, trace.TCPConnects()...)
+	tk.recordTLS(trace, tr)
 	defer func() { tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) }()
-	if tr != nil && tr.handshake != nil {
-		tk.TLSHandshakes = append(tk.TLSHandshakes, tr.handshake)
-	}
 	if err != nil {
-		op := netxlite.TLSHandshakeOperation
-		if tr == nil {
-			op = netxlite.ConnectOperation
-		}
-		fail(op, err)
+		fail(failedOperation(err), err)
 		return
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
@@ -512,18 +505,29 @@ func (m *Measurer) measureTarget(ctx context.Context, logger model.Logger, zero 
 		connected()
 		tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...) // the buffer holds 64
 	}
-	upgradeCtx, cancelUpgrade := context.WithTimeout(ctx, opTimeout)
-	defer cancelUpgrade()
-	m.exerciseInto(ctx, upgradeCtx, tr, target, target.Hostname, target.Path, res, zero, drain)
+	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
+	defer cancelOp()
+	m.exercise(ctx, opCtx, tr, target.request(), zero, res, drain)
 }
 
-// exerciseInto runs target's method on an established TLS connection and records the outcome
-// in res, closing the connection when done. hostHeader and path are what the request names
-// (they differ from the target's own through a front). With a nil checkpoint, provisioning
-// methods stop after the upgrade (the static_address control); otherwise the provisioning flow
-// runs, calling checkpoint after each step.
-func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, target Target, hostHeader, path string,
-	res *TargetResult, zero time.Time, checkpoint func()) {
+// request is what exercise sends on a target's TLS connection.
+type request struct {
+	method     Method
+	hostHeader string // the target's hostname, or a front's Host header
+	path       string
+	provision  bool // run the provisioning flow after an accepted upgrade (else stop there)
+}
+
+// request is the target's own request, with the provisioning flow.
+func (t Target) request() request {
+	return request{method: t.Method, hostHeader: t.Hostname, path: t.Path, provision: true}
+}
+
+// exercise runs req on an established TLS connection and records the outcome in res, closing
+// the connection when done. opCtx bounds the upgrade or GET; ctx, the stream and the provisioning
+// flow, which calls checkpoint after each step.
+func (m *Measurer) exercise(ctx, opCtx context.Context, tr *tlsResult, req request, zero time.Time,
+	res *TargetResult, checkpoint func()) {
 	defer func() { _ = tr.conn.Close() }()
 	// when ctx ends, close the conn: this unblocks any read or write, including HTTP/2 writes
 	// waiting for flow control, which do not watch ctx themselves
@@ -533,9 +537,9 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 		res.FailedOperation, res.Failure = op, measurexlite.NewFailure(err)
 	}
 	ua := res.UserAgent
-	switch target.Method {
+	switch req.method {
 	case MethodHTTPSGet:
-		status, ts, sample, err := httpsGet(connectCtx, tr.conn, tr.alpn, hostHeader, path, ua)
+		status, ts, sample, err := httpsGet(opCtx, tr.conn, tr.alpn, req.hostHeader, req.path, ua)
 		res.Status, res.SignalTimestamp, res.Response = int64(status), ts, sample
 		if err != nil {
 			fail(netxlite.HTTPRoundTripOperation, err)
@@ -545,16 +549,16 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 			up  *upgradeResult
 			err error
 		)
-		if target.Method == MethodProvisioningH2 {
-			up, err = websocketH2(ctx, connectCtx, tr.conn, hostHeader, path, ua)
+		if req.method == MethodProvisioningH2 {
+			up, err = websocketH2(ctx, opCtx, tr.conn, req.hostHeader, req.path, ua)
 		} else {
-			up, err = websocketH1(connectCtx, tr.conn, hostHeader, path, ua)
+			up, err = websocketH1(opCtx, tr.conn, req.hostHeader, req.path, ua)
 		}
 		if up != nil {
 			res.Status, res.SignalTimestamp, res.WSExtensions = int64(up.status), up.signalTimestamp, up.extensions
 			res.Response = up.response
 		}
-		if target.Method == MethodEnclaveH1 {
+		if req.method == MethodEnclaveH1 {
 			// no credentials: 401 or 404 from the enclave front end is the expected answer
 			if errors.Is(err, errUpgradeRefused) && (res.Status == 401 || res.Status == 404) {
 				return
@@ -571,7 +575,7 @@ func (m *Measurer) exerciseInto(ctx, connectCtx context.Context, tr *tlsResult, 
 			return
 		}
 		defer up.closer.Close()
-		if checkpoint == nil {
+		if !req.provision {
 			return
 		}
 		checkpoint()

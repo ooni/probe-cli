@@ -41,6 +41,15 @@ const (
 	FailureHTTP2StreamReset = "http2_stream_reset"
 )
 
+// failedOperation is the operation that err, from netxlite or this package, says failed.
+func failedOperation(err error) string {
+	var wrapper *netxlite.ErrWrapper
+	if errors.As(err, &wrapper) {
+		return wrapper.Operation
+	}
+	return netxlite.TopLevelOperation
+}
+
 // newFailure wraps err so that it is recorded with the given failure string.
 func newFailure(failure, operation string, err error) error {
 	return &netxlite.ErrWrapper{Failure: failure, Operation: operation, WrappedErr: err}

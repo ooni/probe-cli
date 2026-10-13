@@ -94,11 +94,7 @@ type controlJob struct {
 	done   chan struct{} // closed when finished or skipped
 	result *ControlResult
 
-	// evidence, merged into the test keys after all controls
-	queries    []*model.ArchivalDNSLookupResult
-	tcpConnect []*model.ArchivalTCPConnectResult
-	handshakes []*model.ArchivalTLSOrQUICHandshakeResult
-	events     []*model.ArchivalNetworkEvent
+	evidence TestKeys // merged into the measurement's after all controls
 }
 
 func (j *controlJob) addTarget(r *TargetResult) {
@@ -118,9 +114,9 @@ func (j *controlJob) newTrace(zero time.Time) *measurexlite.Trace {
 
 // collect keeps a trace's evidence.
 func (j *controlJob) collect(trace *measurexlite.Trace) {
-	j.queries = append(j.queries, trace.DNSLookupsFromRoundTrip()...)
-	j.tcpConnect = append(j.tcpConnect, trace.TCPConnects()...)
-	j.events = append(j.events, trace.NetworkEvents()...)
+	j.evidence.Queries = append(j.evidence.Queries, trace.DNSLookupsFromRoundTrip()...)
+	j.evidence.TCPConnect = append(j.evidence.TCPConnect, trace.TCPConnects()...)
+	j.evidence.NetworkEvents = append(j.evidence.NetworkEvents, trace.NetworkEvents()...)
 }
 
 // controlRunner plans and runs the controls of one measurement.
@@ -308,10 +304,7 @@ func (cr *controlRunner) run(ctx context.Context, tk *TestKeys) (truncated bool)
 	// recorded in plan order (target, then kind), whatever order they started in
 	sort.SliceStable(cr.jobs, func(i, j int) bool { return cr.jobs[i].index < cr.jobs[j].index })
 	for _, job := range cr.jobs {
-		tk.Queries = append(tk.Queries, job.queries...)
-		tk.TCPConnect = append(tk.TCPConnect, job.tcpConnect...)
-		tk.TLSHandshakes = append(tk.TLSHandshakes, job.handshakes...)
-		tk.NetworkEvents = append(tk.NetworkEvents, job.events...)
+		tk.mergeRecords(&job.evidence)
 		if job.result == nil {
 			continue
 		}
@@ -370,7 +363,7 @@ func (cr *controlRunner) udp(ctx context.Context, job *controlJob, host string) 
 	}
 	answers := append([]string{}, addrs...)
 	res.Addresses = &answers
-	job.queries = append(job.queries, measurexlite.NewArchivalDNSLookupResultFromRoundTrip(trace.Index(), started,
+	job.evidence.Queries = append(job.evidence.Queries, measurexlite.NewArchivalDNSLookupResultFromRoundTrip(trace.Index(), started,
 		txp, query, resp, addrs, err, time.Since(cr.zero), trace.Tags()...))
 	res.T = time.Since(cr.zero).Seconds()
 	return res
@@ -397,15 +390,10 @@ func (cr *controlRunner) handshake(ctx context.Context, job *controlJob, kind st
 	if verify {
 		roots = cr.roots
 	}
-	tr, err := dialTLS(ctx, trace, cr.logger, cr.zero, address, sni, hello, roots, trace.Tags()...)
-	if tr != nil && tr.handshake != nil {
-		job.handshakes = append(job.handshakes, tr.handshake)
-	}
+	tr, err := dialTLS(ctx, trace, cr.logger, address, sni, hello, roots)
+	job.evidence.recordTLS(trace, tr)
 	if err != nil {
-		res.Failure, res.FailedOperation = measurexlite.NewFailure(err), netxlite.TLSHandshakeOperation
-		if tr == nil {
-			res.FailedOperation = netxlite.ConnectOperation
-		}
+		res.Failure, res.FailedOperation = measurexlite.NewFailure(err), failedOperation(err)
 		return res
 	}
 	res.LeafKeyType = tr.leafKey
@@ -414,7 +402,9 @@ func (cr *controlRunner) handshake(ctx context.Context, job *controlJob, kind st
 		return res
 	}
 	tres := &TargetResult{UserAgent: cr.m.config.userAgent(target.Hello)}
-	cr.m.exerciseInto(ctx, ctx, tr, target, target.Hostname, target.Path, tres, cr.zero, nil)
+	req := target.request()
+	req.provision = false // up to the upgrade or GET response
+	cr.m.exercise(ctx, ctx, tr, req, cr.zero, tres, nil)
 	*res.Status, *res.SignalTimestamp = tres.Status, tres.SignalTimestamp
 	res.Failure, res.FailedOperation = tres.Failure, tres.FailedOperation
 	return res

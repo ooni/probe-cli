@@ -62,10 +62,20 @@ type routeInner struct {
 	path    string // Android routes: the path before the service prefix
 }
 
+// defaultTarget is the DefaultTargets entry with the given name.
+func defaultTarget(name string) Target {
+	for _, t := range DefaultTargets {
+		if t.Name == name {
+			return t
+		}
+	}
+	panic("signal_client: no default target " + name)
+}
+
 // routeInners returns what a route measures.
 func routeInners(route string) []routeInner {
-	chatLibsignal, cdsi := DefaultTargets[0], DefaultTargets[2]
-	chatAndroid, storage := DefaultTargets[1], DefaultTargets[5]
+	chatLibsignal, cdsi := defaultTarget("chat_libsignal"), defaultTarget("cdsi")
+	chatAndroid, storage := defaultTarget("chat_android"), defaultTarget("storage")
 	switch route {
 	case RouteReflectorF, RouteReflectorG:
 		return []routeInner{{target: chatLibsignal}, {target: cdsi}}
@@ -208,17 +218,11 @@ func (in *routeInnerRun) start(ctx context.Context, target Target, hello Hello, 
 	trace = measurexlite.NewTrace(in.index, in.zero, in.tags...)
 	dialCtx, cancel := context.WithTimeout(ctx, opTimeout)
 	defer cancel()
-	tr, err := dialTLS(dialCtx, trace, in.logger, in.zero, in.frontAddress, front, hello, in.frontRoots, in.tags...)
-	in.tk.TCPConnect = append(in.tk.TCPConnect, trace.TCPConnects()...)
-	if tr != nil && tr.handshake != nil {
-		in.tk.TLSHandshakes = append(in.tk.TLSHandshakes, tr.handshake)
-	}
+	tr, err := dialTLS(dialCtx, trace, in.logger, in.frontAddress, front, hello, in.frontRoots)
+	in.tk.recordTLS(trace, tr)
 	if err != nil {
 		in.frontFailed = true
-		res.FailedOperation, res.Failure = netxlite.TLSHandshakeOperation, measurexlite.NewFailure(err)
-		if tr == nil {
-			res.FailedOperation = netxlite.ConnectOperation
-		}
+		res.FailedOperation, res.Failure = failedOperation(err), measurexlite.NewFailure(err)
 		return res, trace, nil
 	}
 	return res, trace, tr
@@ -262,18 +266,16 @@ func (in *routeInnerRun) reflector(ctx context.Context, inner routeInner, front,
 	tunnel := newTunnelConn(up, tr.conn)
 	innerCtx, cancelInner := context.WithTimeout(ctx, opTimeout)
 	defer cancelInner()
-	itr, err := handshakeTLS(innerCtx, trace, in.zero, tunnel, "", target.Hostname, target.Hello, in.signalRoots, in.tags...)
-	if itr != nil && itr.handshake != nil {
-		in.tk.TLSHandshakes = append(in.tk.TLSHandshakes, itr.handshake)
-	}
+	itr, err := handshakeTLS(innerCtx, trace, tunnel, "", target.Hostname, target.Hello, in.signalRoots)
+	in.tk.recordTLS(trace, itr)
 	if err != nil {
-		res.FailedOperation, res.Failure = netxlite.TLSHandshakeOperation, measurexlite.NewFailure(err)
+		res.FailedOperation, res.Failure = failedOperation(err), measurexlite.NewFailure(err)
 		return res, status
 	}
 	res.ALPN, res.LeafKeyType = itr.alpn, itr.leafKey
-	exerciseCtx, cancelExercise := context.WithTimeout(ctx, opTimeout)
-	defer cancelExercise()
-	in.m.exerciseInto(ctx, exerciseCtx, itr, target, target.Hostname, target.Path, res, in.zero, in.drainer(trace))
+	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
+	defer cancelOp()
+	in.m.exercise(ctx, opCtx, itr, target.request(), in.zero, res, in.drainer(trace))
 	return res, status
 }
 
@@ -292,8 +294,9 @@ func (in *routeInnerRun) android(ctx context.Context, inner routeInner, front st
 		return res
 	}
 	res.ALPN, res.LeafKeyType = tr.alpn, tr.leafKey
-	exerciseCtx, cancelExercise := context.WithTimeout(ctx, opTimeout)
-	defer cancelExercise()
-	in.m.exerciseInto(ctx, exerciseCtx, tr, target, fc.hostHeader, fc.pathPrefix+inner.path, res, in.zero, in.drainer(trace))
+	opCtx, cancelOp := context.WithTimeout(ctx, opTimeout)
+	defer cancelOp()
+	req := request{method: target.Method, hostHeader: fc.hostHeader, path: fc.pathPrefix + inner.path, provision: true}
+	in.m.exercise(ctx, opCtx, tr, req, in.zero, res, in.drainer(trace))
 	return res
 }

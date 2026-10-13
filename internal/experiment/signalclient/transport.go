@@ -48,24 +48,33 @@ type tlsResult struct {
 }
 
 // dialTLS connects to address and handshakes with the given hello, verifying the chain against
-// roots for sni (nil roots: the chain is recorded but not verified). Events go to trace. It
-// returns a nil *tlsResult only when the TCP connect failed.
-func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger, zero time.Time,
-	address, sni string, hello Hello, roots *x509.CertPool, tags ...string) (*tlsResult, error) {
-	dialer := trace.NewDialerWithoutResolver(logger)
-	conn, err := dialer.DialContext(ctx, "tcp", address)
+// roots for sni (nil roots: the chain is recorded but not verified). Events go to trace, and
+// recordTLS keeps them. On failure, failedOperation(err) says which step failed; the result,
+// when not nil, holds the failed handshake's record.
+func dialTLS(ctx context.Context, trace *measurexlite.Trace, logger model.Logger, address, sni string, hello Hello,
+	roots *x509.CertPool) (*tlsResult, error) {
+	conn, err := trace.NewDialerWithoutResolver(logger).DialContext(ctx, "tcp", address)
 	if err != nil {
-		return nil, err // already wrapped by netxlite (operation "connect")
+		return nil, err // wrapped by netxlite with the connect operation
 	}
-	return handshakeTLS(ctx, trace, zero, conn, address, sni, hello, roots, tags...)
+	return handshakeTLS(ctx, trace, conn, address, sni, hello, roots)
+}
+
+// recordTLS moves the trace's TCP connects, and the handshake when there was one, to tk.
+func (tk *TestKeys) recordTLS(trace *measurexlite.Trace, tr *tlsResult) {
+	tk.TCPConnect = append(tk.TCPConnect, trace.TCPConnects()...)
+	if tr != nil && tr.handshake != nil {
+		tk.TLSHandshakes = append(tk.TLSHandshakes, tr.handshake)
+	}
 }
 
 // handshakeTLS runs the TLS handshake of hello on conn (a TCP connection, or a tunnel whose
 // address is recorded as given). It closes conn on failure. It does not use measurexlite's
 // handshaker: netxlite's uTLS takes a ClientHelloID, not the ClientHelloSpec a captured hello
 // needs (echcheck makes the same choice), so the handshake is recorded here.
-func handshakeTLS(ctx context.Context, trace *measurexlite.Trace, zero time.Time, conn net.Conn,
-	address, sni string, hello Hello, roots *x509.CertPool, tags ...string) (*tlsResult, error) {
+func handshakeTLS(ctx context.Context, trace *measurexlite.Trace, conn net.Conn, address, sni string, hello Hello,
+	roots *x509.CertPool) (*tlsResult, error) {
+	zero := trace.ZeroTime()
 	tlsFailure := func(err error) (*tlsResult, error) {
 		_ = conn.Close()
 		return &tlsResult{}, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation,
@@ -99,7 +108,7 @@ func handshakeTLS(ctx context.Context, trace *measurexlite.Trace, zero time.Time
 	state := connState()
 	hs := measurexlite.NewArchivalTLSOrQUICHandshakeResult(trace.Index(), started, "tcp", address,
 		&tls.Config{ServerName: sni, NextProtos: hello.ALPN(), InsecureSkipVerify: roots == nil}, // #nosec G402 -- archival only
-		state, err, finished, tags...)
+		state, err, finished, trace.Tags()...)
 	if err != nil {
 		_ = conn.Close()
 		return &tlsResult{handshake: hs}, err
