@@ -581,8 +581,8 @@ func TestQASignalReportsOutage(t *testing.T) {
 	if tk.SignalServiceStatus != "outage" {
 		t.Fatalf("service status %q", tk.SignalServiceStatus)
 	}
-	if tk.MeasurementSummaryKeys().Anomaly() {
-		t.Error("anomaly while Signal reports an outage")
+	if tk.MeasurementSummaryKeys().Anomaly() { // the targets were reached: the beacon alone is no anomaly
+		t.Error("anomaly from the beacon alone")
 	}
 }
 

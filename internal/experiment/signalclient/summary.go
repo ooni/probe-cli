@@ -28,13 +28,12 @@ type SummaryKeys struct {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider: an anomaly is a direct
-// target that failed at the network level (DNS, TCP, TLS, or a reset, EOF or timeout later on),
-// unless Signal's own beacon reports an outage. Controls and circumvention routes do not count.
+// target that failed at the network level (DNS, TCP, TLS, or a reset, EOF or timeout later on).
+// Controls and circumvention routes do not count. Nor does signal_service_status: the beacon is
+// resolved through the network being measured, so a censor could forge an outage to hide the
+// blocking; outages are judged by the backend across networks (ts-029 ignores it too).
 func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
 	sk := &SummaryKeys{}
-	if tk.SignalServiceStatus == "outage" {
-		return sk
-	}
 	for _, r := range tk.Targets {
 		if r != nil && r.Failure != nil && !answeredFailures[*r.Failure] {
 			sk.IsAnomaly = true

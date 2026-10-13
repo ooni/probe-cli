@@ -17,7 +17,8 @@ func TestMeasurementSummaryKeys(t *testing.T) {
 		{"stalled after the handshake", "ok", []*TargetResult{{Failure: failure("generic_timeout_error")}}, true},
 		{"refused by the server", "ok", []*TargetResult{ok, {Failure: failure(FailureWebSocketUpgradeRefused)}}, false},
 		{"malformed message from the server", "ok", []*TargetResult{{Failure: failure(FailureMalformedMessage)}}, false},
-		{"Signal reports an outage", "outage", []*TargetResult{{Failure: failure("connection_reset")}}, false},
+		{"the beacon reports an outage (it may be forged)", "outage", []*TargetResult{{Failure: failure("connection_reset")}}, true},
+		{"the beacon reports an outage, targets reached", "outage", []*TargetResult{ok}, false},
 		{"beacon lookup failed too", "dns_nxdomain_error", []*TargetResult{{Failure: failure("dns_nxdomain_error")}}, true},
 		{"no targets", "ok", nil, false},
 	} {
