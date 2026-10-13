@@ -145,16 +145,6 @@ type upgradeResult struct {
 	closer          io.Closer
 }
 
-// ResponseSample is a bounded record of an HTTP answer (a refused upgrade, or an https_get's
-// response): enough to tell Signal's own answer from the CDN's, such as a geoblock or rate-limit
-// page. Header values and the body are scrubbed of IP addresses when serialized.
-type ResponseSample struct {
-	Status          int64                                              `json:"status"`
-	Headers         map[string]model.ArchivalScrubbedMaybeBinaryString `json:"headers"`
-	Body            model.ArchivalScrubbedMaybeBinaryString            `json:"body"`
-	BodyIsTruncated bool                                               `json:"body_is_truncated"`
-}
-
 // sampledHeaders are the response headers recorded: who answered (Signal, or which CDN) and why.
 var sampledHeaders = []string{"Server", "Via", "Content-Type", "Content-Length", "Content-Encoding",
 	"Retry-After", "X-Signal-Timestamp", "CF-Ray", "X-Cache", "X-Served-By", "X-Amz-Cf-Pop"}

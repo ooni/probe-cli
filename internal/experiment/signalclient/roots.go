@@ -109,3 +109,19 @@ func googleRoots() (*x509.CertPool, error) {
 func mozillaRoots() (*x509.CertPool, error) {
 	return (&netxlite.Netx{}).MaybeCustomUnderlyingNetwork().Get().DefaultCertPool(), nil
 }
+
+// signalAnchors returns Signal's roots, or SignalCA's certificates when set.
+func (m *Measurer) signalAnchors() (*trustAnchors, error) {
+	if m.config.SignalCA != "" {
+		certs, err := parsePEMBundle(m.config.SignalCA)
+		if err != nil {
+			return nil, err
+		}
+		return newTrustAnchors(certs), nil
+	}
+	certs, err := m.roots()
+	if err != nil {
+		return nil, err
+	}
+	return newTrustAnchors(certs), nil
+}
