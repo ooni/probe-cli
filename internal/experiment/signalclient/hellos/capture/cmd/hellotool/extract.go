@@ -5,10 +5,10 @@ package main
 //
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -55,7 +55,7 @@ func extract(capturePath, sni, out string) error {
 	if err := os.WriteFile(out, hs, 0o644); err != nil {
 		return err
 	}
-	alpn := strings.Join(fields.alpn, ",")
+	alpn := printable(strings.Join(fields.alpn, ","))
 	if alpn == "" {
 		alpn = "(none)"
 	}
@@ -91,16 +91,11 @@ type helloShape struct {
 }
 
 func shapeOf(hs []byte) (*helloShape, error) {
-	if len(hs) < 4 || hs[0] != 1 {
-		return nil, errors.New("not a ClientHello handshake message")
-	}
 	f, err := parseHello(hs)
 	if err != nil {
 		return nil, err
 	}
-	extensionsStart := 4 + 2 + 32 + 1 + f.sessionIDLen + 2 + 2*len(f.ciphers)
-	extensionsStart += 1 + int(hs[extensionsStart]) // compression methods
-	s := &helloShape{beforeExtensions: string(hs[4:extensionsStart]), extensions: f.extensions,
+	s := &helloShape{beforeExtensions: string(hs[4:f.extensionsStart]), extensions: f.extensions,
 		extensionData: map[uint16]string{}}
 	for typ, data := range f.extensionData {
 		if typ != extServerName && typ != extPadding {
@@ -115,7 +110,7 @@ func shapeOf(hs []byte) (*helloShape, error) {
 
 func (s *helloShape) equal(o *helloShape) bool {
 	if s.beforeExtensions != o.beforeExtensions || s.paddedLength != o.paddedLength ||
-		!bytes.Equal(u16bytes(s.extensions), u16bytes(o.extensions)) || len(s.extensionData) != len(o.extensionData) {
+		!slices.Equal(s.extensions, o.extensions) || len(s.extensionData) != len(o.extensionData) {
 		return false
 	}
 	for typ, data := range s.extensionData {
@@ -124,14 +119,6 @@ func (s *helloShape) equal(o *helloShape) bool {
 		}
 	}
 	return true
-}
-
-func u16bytes(values []uint16) []byte {
-	out := make([]byte, 0, 2*len(values))
-	for _, v := range values {
-		out = append(out, byte(v>>8), byte(v))
-	}
-	return out
 }
 
 // sameHello checks that ClientHello files are one hello: identical but for the SNI and the

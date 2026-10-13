@@ -7,7 +7,6 @@
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
-CTR=${CONTAINER:-podman}
 BIN=${GOTOOL_BIN:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-tools}
 
 print_path=false
@@ -21,12 +20,12 @@ name=$1; shift
 mkdir -p "$BIN"
 
 if command -v go >/dev/null; then
-  (cd "$REPO" && CGO_ENABLED=0 go build -o "$BIN/$name" "$pkg")
+  (cd "$REPO" && CGO_ENABLED=0 go build -buildvcs=false -o "$BIN/$name" "$pkg")
 else  # the Go version go.mod asks for; module and build caches persist in volumes
-  "$CTR" run --rm -v "$REPO:/src:ro,Z" -v "$BIN:/out:Z" -v ooni-signal-gomod:/go/pkg/mod \
+  podman run --rm -v "$REPO:/src:ro,Z" -v "$BIN:/out:Z" -v ooni-signal-gomod:/go/pkg/mod \
     -v ooni-signal-gobuild:/root/.cache/go-build -w /src -e CGO_ENABLED=0 \
     "docker.io/library/golang:$(sed -n 's/^go \([0-9]*\.[0-9]*\).*/\1/p' "$REPO/go.mod")" \
-    go build -o "/out/$name" "$pkg"
+    go build -buildvcs=false -o "/out/$name" "$pkg"  # no VCS stamp: git may refuse a checkout owned by another user
 fi
 
 if $print_path; then echo "$BIN/$name"; else exec "$BIN/$name" "$@"; fi

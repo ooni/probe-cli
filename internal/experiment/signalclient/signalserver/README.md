@@ -15,7 +15,8 @@ probe-cli never needs any of this: the Go test is behind the `signalserver` buil
 ## What runs
 
 - **Signal-Server**, from a checkout (`SIGNAL_SERVER_DIR`, or a clone of `SIGNAL_SERVER_REF`),
-  built with the Maven version and SHA-256 its wrapper pins, on the JDK it pins.
+  built with the Maven version and SHA-256 its wrapper pins, on the JDK its `.java-version` names
+  (Temurin 26; `JDK` in run.sh, updated by hand).
 - **Its dependencies**, started by Signal-Server's own test code through Testcontainers: a
   three-node Redis cluster (Docker Compose), DynamoDB Local and FoundationDB. They run in a Docker
   engine inside the server container (`Containerfile`), which runs `--privileged`; with rootless

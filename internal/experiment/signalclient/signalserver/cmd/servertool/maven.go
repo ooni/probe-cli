@@ -24,14 +24,17 @@ func unpackMaven(zipPath, dir string) error {
 		return fmt.Errorf("%s is empty", zipPath)
 	}
 	top, _, _ := strings.Cut(z.File[0].Name, "/")
+	if _, err := os.Stat(dir); err == nil {
+		return fmt.Errorf("%s exists already", dir)
+	}
 	tmp := dir + ".tmp"
 	if err := os.RemoveAll(tmp); err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmp) // left only by a failure
 	for _, f := range z.File {
-		if !filepath.IsLocal(f.Name) {
-			return fmt.Errorf("%s: unsafe path %q", zipPath, f.Name)
+		if !filepath.IsLocal(f.Name) || !strings.HasPrefix(f.Name, top+"/") {
+			return fmt.Errorf("%s: %q is not under %s/", zipPath, f.Name, top)
 		}
 		if err := unpackFile(f, filepath.Join(tmp, f.Name)); err != nil {
 			return err

@@ -14,10 +14,9 @@
 #
 # Usage: run.sh        (then ./test.sh, then ./stop.sh)
 # Env: SIGNAL_SERVER_REF (branch or commit, default main), SIGNAL_SERVER_DIR (existing checkout, used as is),
-#      WORK_DIR (default ~/.cache/ooni-signal-server), CONTAINER (default podman)
+#      WORK_DIR (default ~/.cache/ooni-signal-server)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-CTR=${CONTAINER:-podman}
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-server}; mkdir -p "$WORK/certs"
 SRC=${SIGNAL_SERVER_DIR:-$WORK/Signal-Server}
 JDK=docker.io/library/eclipse-temurin:26-jdk   # Signal-Server's .java-version: temurin-26
@@ -30,12 +29,13 @@ if [ -z "${SIGNAL_SERVER_DIR:-}" ]; then
   git -C "$SRC" -c advice.detachedHead=false checkout -q --force FETCH_HEAD
 fi
 echo "Signal-Server $(git -C "$SRC" log -1 --format='%h %cs' HEAD) ($SRC)"
-"$CTR" volume exists signal-server-m2 || "$CTR" volume create signal-server-m2 >/dev/null
+podman volume exists signal-server-m2 || podman volume create signal-server-m2 >/dev/null
 
 # 0. Maven at the version and SHA-256 Signal-Server pins (.mvn/wrapper/maven-wrapper.properties).
 # We fetch and verify it ourselves: the wrapper script's own download check fails in the slim JDK image.
 props="$SRC/.mvn/wrapper/maven-wrapper.properties"
 murl=$(sed -n 's/^distributionUrl=//p' "$props"); msha=$(sed -n 's/^distributionSha256Sum=//p' "$props")
+[ -n "$murl" ] && [ -n "$msha" ] || { echo "no distributionUrl or distributionSha256Sum in $props: update signalserver/run.sh" >&2; exit 1; }
 MVN_DIR="$WORK/maven-$msha"
 if [ ! -x "$MVN_DIR/bin/mvn" ]; then
   curl -fsSL -o "$WORK/maven.zip" "$murl"
@@ -68,7 +68,7 @@ if [ ! -f "$C/chat.p12" ] || [ ! -f "$C/grpc.p12" ] || [ ! -f "$C/ca.pem" ] ||
    [ "$(cat "$C/password" 2>/dev/null)" != "$KSPASS" ] || [ -n "$(find "$C/chat.p12" -mtime +25)" ]; then
   rm -f "$C"/*
   "$SERVERTOOL" certs "$C"
-  "$CTR" run --rm -e KSPASS="$KSPASS" -v "$HERE:/h:ro,Z" -v "$C:/certs:Z" "$JDK" \
+  podman run --rm -e KSPASS="$KSPASS" -v "$HERE:/h:ro,Z" -v "$C:/certs:Z" "$JDK" \
     sh -ec 'java /h/MakeKeyStores.java /certs "$KSPASS"; rm -f /certs/*.key'
   printf '%s' "$KSPASS" > "$C/password"
 fi
@@ -78,25 +78,25 @@ fi
 
 # 3. the image (JDK + Docker engine) and the nested image store
 IMG=localhost/signal-server-run
-"$CTR" build -q -t "$IMG" "$HERE" >/dev/null
-"$CTR" volume exists signal-server-docker || "$CTR" volume create signal-server-docker >/dev/null
+podman build -q -t "$IMG" "$HERE" >/dev/null
+podman volume exists signal-server-docker || podman volume create signal-server-docker >/dev/null
 
 # 4. build (once) and run
-"$CTR" rm -f signal-server-local >/dev/null 2>&1 || true
-"$CTR" run -d --name signal-server-local --privileged --memory 8g --memory-swap 8g -p 127.0.0.1:8443:8443 -p 127.0.0.1:8444:8444 \
+podman rm -f signal-server-local >/dev/null 2>&1 || true
+podman run -d --name signal-server-local --privileged --memory 8g --memory-swap 8g -p 127.0.0.1:8443:8443 -p 127.0.0.1:8444:8444 \
   -v "$SRC:/src:Z" -v "$C:/certs:ro,Z" -v "$WORK/test-tls.yml:/test-tls.yml:ro,Z" \
   -v "$MVN_DIR:/maven:ro,Z" -v signal-server-m2:/root/.m2 -v signal-server-docker:/var/lib/docker \
   -v "$FDB_DIR:/opt/fdb:ro,Z" -e LD_LIBRARY_PATH=/opt/fdb \
   -e SIGNAL_SERVER_CONFIG=/test-tls.yml -w /src "$IMG" \
   /maven/bin/mvn -B -q -DskipTests=true -Ptest-server integration-test >/dev/null
-echo "starting (first run builds and pulls images; follow with: $CTR logs -f signal-server-local)"
+echo "starting (first run builds and pulls images; follow with: podman logs -f signal-server-local)"
 for _ in $(seq 1 180); do
-  if [ "$("$CTR" inspect -f '{{.State.Running}}' signal-server-local 2>/dev/null)" != true ]; then
-    echo "signal-server-local exited:" >&2; "$CTR" logs --tail 40 signal-server-local >&2; exit 1
+  if [ "$(podman inspect -f '{{.State.Running}}' signal-server-local 2>/dev/null)" != true ]; then
+    echo "signal-server-local exited:" >&2; podman logs --tail 40 signal-server-local >&2; exit 1
   fi
-  if "$CTR" exec signal-server-local bash -c 'exec 3<>/dev/tcp/127.0.0.1/8443 && exec 4<>/dev/tcp/127.0.0.1/8444' 2>/dev/null; then
+  if podman exec signal-server-local bash -c 'exec 3<>/dev/tcp/127.0.0.1/8443 && exec 4<>/dev/tcp/127.0.0.1/8444' 2>/dev/null; then
     echo "Signal-Server test mode listening: chat.signal.org profile on 127.0.0.1:8443, grpc.chat.signal.org profile on 127.0.0.1:8444. Now: $HERE/test.sh"; exit 0
   fi
   sleep 5
 done
-echo "not listening after 15 min; see: $CTR logs signal-server-local" >&2; exit 1
+echo "not listening after 15 min; see: podman logs signal-server-local" >&2; exit 1

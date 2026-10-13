@@ -53,20 +53,24 @@ type tlsProfile struct {
 	Target  string `json:"target"`
 	SNI     string `json:"sni"`
 	Address string `json:"address"`
-	Error   string `json:"error,omitempty"` // the profile stops at the first probe that could not run
+	Error   string `json:"error,omitempty"` // set instead of the measurements when a probe could not run
+	*measurements
+}
 
+// measurements are what a target's probes found.
+type measurements struct {
 	Versions              map[string]bool        `json:"versions"`
 	TLS13Suites           map[string]bool        `json:"tls13_suites"`
 	TLS13ChoiceFromAll    string                 `json:"tls13_choice_from_all"`
 	TLS12Suites           []string               `json:"tls12_suites"`
-	TLS12ChoiceFromAll    []string               `json:"tls12_choice_from_all,omitempty"` // offered in two opposite orders
+	TLS12ChoiceFromAll    []string               `json:"tls12_choice_from_all,omitempty"` // offered in both orders
 	TLS12ServerPreference *bool                  `json:"tls12_server_preference,omitempty"`
 	TLS13Groups           map[string]groupResult `json:"tls13_groups"`
 	X25519ShareFirst      groupResult            `json:"tls13_x25519_share_first"` // also offering P-256, X25519MLKEM768
 	ALPN                  map[string]string      `json:"alpn"`                     // offered: chosen
 	OCSPStapled           bool                   `json:"ocsp_stapled"`
 	PeerSignature         string                 `json:"peer_signature"`
-	ServerTempKey         string                 `json:"server_temp_key"`
+	ServerTempKey         string                 `json:"server_temp_key"` // the key exchange, as group() reads it
 	Chain                 []certInfo             `json:"chain"`
 	TLS13SessionTickets   int                    `json:"tls13_session_tickets"`
 	H2                    *h2Result              `json:"h2,omitempty"`
@@ -100,15 +104,26 @@ func tlsProfiles(w io.Writer, targets []string) error {
 	}
 	fmt.Fprintf(os.Stderr, "servertool: %s", version)
 	var profiles []*tlsProfile
+	failed := 0
 	for _, t := range targets {
-		profiles = append(profiles, profile(t))
+		p := profile(t)
+		if p.Error != "" {
+			fmt.Fprintf(os.Stderr, "servertool: %s: %s\n", t, p.Error)
+			failed++
+		}
+		profiles = append(profiles, p)
 	}
 	out, err := json.MarshalIndent(profiles, "", " ")
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(append(out, '\n'))
-	return err
+	if _, err = w.Write(append(out, '\n')); err != nil {
+		return err
+	}
+	if failed > 0 {
+		return fmt.Errorf("%d of %d targets could not be profiled", failed, len(targets))
+	}
+	return nil
 }
 
 // sessionResult is what one s_client run showed.
@@ -172,26 +187,45 @@ func (p *prober) runWithStdin(hold time.Duration, args ...string) sessionResult 
 	time.AfterFunc(hold, func() { w.Close() })
 	var out bytes.Buffer
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, &out, &out
-	_ = cmd.Run() // a failed handshake is a result
-	if ctx.Err() != nil {
+	_ = cmd.Run() // a failed handshake is a result, but not a failed connection
+	switch {
+	case ctx.Err() != nil:
 		p.err = fmt.Errorf("openssl %s: %w", strings.Join(args, " "), ctx.Err())
+	case !strings.Contains(out.String(), "CONNECTED("):
+		p.err = fmt.Errorf("could not connect to %s", p.addr)
 	}
 	return sessionResult{out.String()}
 }
 
-func splitTarget(t string) (sni, addr string) {
+// splitTarget reads "sni" or "sni@host:port".
+func splitTarget(t string) (sni, addr string, err error) {
 	sni, addr, _ = strings.Cut(t, "@")
 	if addr == "" {
 		addr = net.JoinHostPort(sni, "443")
 	}
-	return sni, addr
+	if _, _, err := net.SplitHostPort(addr); err != nil || sni == "" {
+		return "", "", fmt.Errorf("want sni or sni@host:port, not %q", t)
+	}
+	return sni, addr, nil
 }
 
+// profile measures one target, or says why it could not.
 func profile(target string) *tlsProfile {
-	sni, addr := splitTarget(target)
+	p := &tlsProfile{Target: target}
+	var err error
+	if p.SNI, p.Address, err = splitTarget(target); err == nil {
+		p.measurements, err = measure(p.SNI, p.Address)
+	}
+	if err != nil {
+		p.Error = err.Error()
+	}
+	return p
+}
+
+func measure(sni, addr string) (*measurements, error) {
 	pr := &prober{sni: sni, addr: addr}
-	p := &tlsProfile{Target: target, SNI: sni, Address: addr, Versions: map[string]bool{}, TLS13Suites: map[string]bool{},
-		TLS12Suites: []string{}, TLS13Groups: map[string]groupResult{}, ALPN: map[string]string{}}
+	p := &measurements{Versions: map[string]bool{}, TLS13Suites: map[string]bool{}, TLS12Suites: []string{},
+		TLS13Groups: map[string]groupResult{}, ALPN: map[string]string{}}
 
 	for _, v := range []string{"tls1_3", "tls1_2", "tls1_1", "tls1"} {
 		p.Versions[v] = pr.run("-"+v, "-cipher", anyCipher).ok()
@@ -205,20 +239,21 @@ func profile(target string) *tlsProfile {
 
 	suites, err := tls12Suites()
 	if err != nil {
-		p.Error = err.Error()
-		return p
+		return nil, err
 	}
 	var accepted []string // OpenSSL names
+	stdName := map[string]string{}
 	for _, s := range suites {
+		stdName[s.openssl] = s.std
 		if pr.run("-tls1_2", "-cipher", s.openssl+":@SECLEVEL=0").ok() {
 			p.TLS12Suites = append(p.TLS12Suites, s.std)
 			accepted = append(accepted, s.openssl)
 		}
 	}
 	if len(accepted) > 1 { // the server prefers its own order if it picks the same from both
-		a := pr.run("-tls1_2", "-cipher", strings.Join(accepted, ":")+":@SECLEVEL=0").cipher()
+		a := stdName[pr.run("-tls1_2", "-cipher", strings.Join(accepted, ":")+":@SECLEVEL=0").cipher()]
 		slices.Reverse(accepted)
-		b := pr.run("-tls1_2", "-cipher", strings.Join(accepted, ":")+":@SECLEVEL=0").cipher()
+		b := stdName[pr.run("-tls1_2", "-cipher", strings.Join(accepted, ":")+":@SECLEVEL=0").cipher()]
 		p.TLS12ChoiceFromAll = []string{a, b}
 		if a != "" && b != "" {
 			preference := a == b
@@ -244,13 +279,12 @@ func profile(target string) *tlsProfile {
 	p.TLS13SessionTickets = strings.Count(pr.runWithStdin(time.Second, "-tls1_3", "-sess_out", os.DevNull).out,
 		"Post-Handshake New Session Ticket arrived")
 	if pr.err != nil {
-		p.Error = pr.err.Error()
-		return p
+		return nil, pr.err
 	}
 	if p.H2, err = h2Settings(sni, addr); err != nil {
-		p.Error = err.Error()
+		return nil, err
 	}
-	return p
+	return p, nil
 }
 
 // cipherSuite is a TLS 1.2 suite's standard and OpenSSL names.

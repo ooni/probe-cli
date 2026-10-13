@@ -66,19 +66,20 @@ func handshakeLength(hs []byte) int {
 
 // helloFields are the ClientHello fields the fingerprints use.
 type helloFields struct {
-	legacyVersion  uint16
-	ciphers        []uint16
-	extensions     []uint16 // types, in order
-	sni            string
-	alpn           []string
-	groups         []uint16
-	sigAlgs        []uint16
-	pointFormats   []uint8
-	versions       []uint16
-	extensionData  map[uint16][]byte
-	sessionIDStart int // offsets in the handshake message, for normalize
-	sessionIDLen   int
-	keyShares      [][2]int // [start, end) of each non-GREASE key_exchange
+	legacyVersion   uint16
+	ciphers         []uint16
+	extensions      []uint16 // types, in order
+	sni             string
+	alpn            []string
+	groups          []uint16
+	sigAlgs         []uint16
+	pointFormats    []uint8
+	versions        []uint16
+	extensionData   map[uint16][]byte
+	sessionIDStart  int // offsets in the handshake message, for normalize and same
+	sessionIDLen    int
+	extensionsStart int      // where the extensions' length is
+	keyShares       [][2]int // [start, end) of each non-GREASE key_exchange
 }
 
 var errMalformed = errors.New("malformed ClientHello")
@@ -100,6 +101,7 @@ func parseHello(hs []byte) (*helloFields, error) {
 		return nil, errMalformed
 	}
 	f.sessionIDLen = len(sessionID)
+	f.extensionsStart = len(hs) - 2 - len(extensions)
 	for !ciphers.Empty() {
 		var c uint16
 		if !ciphers.ReadUint16(&c) {
@@ -269,6 +271,9 @@ func (f *helloFields) ja4() string {
 	alpn := "00"
 	if len(f.alpn) > 0 && f.alpn[0] != "" {
 		first := f.alpn[0]
+		if !isAlphanumeric(first[0]) || !isAlphanumeric(first[len(first)-1]) {
+			first = hex.EncodeToString([]byte(first))
+		}
 		alpn = first[:1] + first[len(first)-1:]
 	}
 	sortedCiphers := slices.Sorted(slices.Values(ciphers))
@@ -282,8 +287,12 @@ func (f *helloFields) ja4() string {
 	if sigs := join(withoutGREASE(f.sigAlgs), "%04x", ","); sigs != "" {
 		tail += "_" + sigs
 	}
-	return fmt.Sprintf("t%s%s%02d%02d%s_%s_%s", version, destination, len(ciphers), len(extensions), alpn,
+	return fmt.Sprintf("t%s%s%02d%02d%s_%s_%s", version, destination, min(len(ciphers), 99), min(len(extensions), 99), alpn,
 		hash12(join(sortedCiphers, "%04x", ",")), hash12(tail))
+}
+
+func isAlphanumeric(b byte) bool {
+	return '0' <= b && b <= '9' || 'a' <= b && b <= 'z' || 'A' <= b && b <= 'Z'
 }
 
 // hash12 is the first 12 hex digits of s's SHA-256, or zeros for an empty s.

@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -149,25 +150,35 @@ func flow(stream []byte, sport uint16, isn uint32, o flowOptions) []tcpPacket {
 	return out
 }
 
+// transport is a TCP or UDP layer.
+type transport interface {
+	gopacket.SerializableLayer
+	SetNetworkLayerForChecksum(gopacket.NetworkLayer) error
+}
+
 // ethernetFrame serializes a packet as pasta captures it: Ethernet (padded to its 60-byte
-// minimum, as on a wire), IPv4 or IPv6, TCP.
-func ethernetFrame(t *testing.T, p tcpPacket) []byte {
+// minimum, as on a wire), IPv4 or IPv6, then TCP or UDP.
+func ethernetFrame(t *testing.T, src, dst net.IP, l4 transport, payload []byte) []byte {
 	t.Helper()
 	eth := &layers.Ethernet{SrcMAC: net.HardwareAddr{2, 2, 2, 2, 2, 2}, DstMAC: net.HardwareAddr{4, 4, 4, 4, 4, 4},
 		EthernetType: layers.EthernetTypeIPv4}
 	var ip gopacket.SerializableLayer
-	if p.src.To4() == nil {
-		eth.EthernetType = layers.EthernetTypeIPv6
-		ip = &layers.IPv6{Version: 6, HopLimit: 64, NextHeader: layers.IPProtocolTCP, SrcIP: p.src, DstIP: p.dst}
-	} else {
-		ip = &layers.IPv4{Version: 4, IHL: 5, TTL: 64, Protocol: layers.IPProtocolTCP, SrcIP: p.src, DstIP: p.dst}
+	proto := layers.IPProtocolTCP
+	if _, ok := l4.(*layers.UDP); ok {
+		proto = layers.IPProtocolUDP
 	}
-	if err := p.tcp.SetNetworkLayerForChecksum(ip.(gopacket.NetworkLayer)); err != nil {
+	if src.To4() == nil {
+		eth.EthernetType = layers.EthernetTypeIPv6
+		ip = &layers.IPv6{Version: 6, HopLimit: 64, NextHeader: proto, SrcIP: src, DstIP: dst}
+	} else {
+		ip = &layers.IPv4{Version: 4, IHL: 5, TTL: 64, Protocol: proto, SrcIP: src, DstIP: dst}
+	}
+	if err := l4.SetNetworkLayerForChecksum(ip.(gopacket.NetworkLayer)); err != nil {
 		t.Fatal(err)
 	}
 	buf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
-	if err := gopacket.SerializeLayers(buf, opts, eth, ip, p.tcp, gopacket.Payload(p.payload)); err != nil {
+	if err := gopacket.SerializeLayers(buf, opts, eth, ip, l4, gopacket.Payload(payload)); err != nil {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
@@ -178,9 +189,17 @@ type captureWriter interface {
 	WritePacket(gopacket.CaptureInfo, []byte) error
 }
 
-// writeCapture writes packets as Ethernet frames, one microsecond apart: as pcap, nanosecond pcap
-// or pcapng.
-func writeCapture(t *testing.T, path, format string, packets []tcpPacket) {
+// frames are a connection's packets as Ethernet frames.
+func frames(t *testing.T, packets []tcpPacket) [][]byte {
+	var out [][]byte
+	for _, p := range packets {
+		out = append(out, ethernetFrame(t, p.src, p.dst, p.tcp, p.payload))
+	}
+	return out
+}
+
+// writeCapture writes Ethernet frames one microsecond apart: as pcap, nanosecond pcap or pcapng.
+func writeCapture(t *testing.T, path, format string, frames [][]byte) {
 	t.Helper()
 	f, err := os.Create(path)
 	if err != nil {
@@ -205,8 +224,7 @@ func writeCapture(t *testing.T, path, format string, packets []tcpPacket) {
 		}
 		w = pw
 	}
-	for n, p := range packets {
-		frame := ethernetFrame(t, p)
+	for n, frame := range frames {
 		ci := gopacket.CaptureInfo{Timestamp: time.Unix(1700000000, int64(n)*1000), CaptureLength: len(frame), Length: len(frame)}
 		if err := w.WritePacket(ci, frame); err != nil {
 			t.Fatal(err)
@@ -246,7 +264,7 @@ func (f *fixture) extractFrom(packets []tcpPacket, sni string, write func(path s
 // that chat.signal.org's hello comes back.
 func (f *fixture) roundtrip(name string, packets []tcpPacket) {
 	f.t.Helper()
-	got := f.extractFrom(packets, "chat.signal.org", func(path string) { writeCapture(f.t, path, "pcap", packets) })
+	got := f.extractFrom(packets, "chat.signal.org", func(path string) { writeCapture(f.t, path, "pcap", frames(f.t, packets)) })
 	if !bytes.Equal(got, f.hello) {
 		f.t.Errorf("%s: extracted %d bytes, not the %d-byte hello", name, len(got), len(f.hello))
 	}
@@ -262,7 +280,7 @@ func TestEveryCommittedHelloWhole(t *testing.T) {
 			t.Fatal(err)
 		}
 		packets := flow(records(withFreshRandoms(t, hs, f.rng)), 40000, 1000, flowOptions{})
-		got := f.extractFrom(packets, fields.sni, func(path string) { writeCapture(t, path, "pcap", packets) })
+		got := f.extractFrom(packets, fields.sni, func(path string) { writeCapture(t, path, "pcap", frames(t, packets)) })
 		if !bytes.Equal(got, hs) {
 			t.Errorf("%s: not extracted byte for byte", name)
 		}
@@ -295,7 +313,7 @@ func TestCaptureFormats(t *testing.T) {
 	f := newFixture(t)
 	packets := flow(records(f.sent), 40000, 1000, flowOptions{cuts: []int{700}})
 	for _, format := range []string{"pcap-nanoseconds", "pcapng"} {
-		got := f.extractFrom(packets, "chat.signal.org", func(path string) { writeCapture(t, path, format, packets) })
+		got := f.extractFrom(packets, "chat.signal.org", func(path string) { writeCapture(t, path, format, frames(t, packets)) })
 		if !bytes.Equal(got, f.hello) {
 			t.Errorf("%s: not extracted byte for byte", format)
 		}
@@ -329,7 +347,7 @@ func TestPicksTheFirstConnectionWithTheSNI(t *testing.T) {
 func TestFailsWhenTheSNIIsAbsent(t *testing.T) {
 	f := newFixture(t)
 	path, out := filepath.Join(f.dir, "c.pcap"), filepath.Join(f.dir, "out.bin")
-	writeCapture(t, path, "pcap", flow(records(f.sent), 40000, 1000, flowOptions{}))
+	writeCapture(t, path, "pcap", frames(t, flow(records(f.sent), 40000, 1000, flowOptions{})))
 	if err := run([]string{"extract", path, "example.org", out}); err == nil {
 		t.Error("extract succeeded without a hello for the SNI")
 	}
@@ -366,13 +384,90 @@ func TestParseHelloRejectsOtherMessages(t *testing.T) {
 	}
 }
 
-func TestFlagsAfterArguments(t *testing.T) {
+func TestSubcommandFlags(t *testing.T) {
 	f := newFixture(t)
 	path := filepath.Join(f.dir, "c.pcap")
-	writeCapture(t, path, "pcap", flow(records(f.sent), 40000, 1000, flowOptions{}))
-	for _, args := range [][]string{{"analyze", path, "-records"}, {"analyze", "-records", path}} {
-		if err := run(args); err != nil {
-			t.Errorf("%v: %v", args, err)
+	writeCapture(t, path, "pcap", frames(t, flow(records(f.sent), 40000, 1000, flowOptions{})))
+	if err := run([]string{"analyze", "-records", path}); err != nil {
+		t.Error(err)
+	}
+	for _, args := range [][]string{{"extract", "-write", path, "chat.signal.org", "out.bin"}, {"analyze", "-keep", "x", path}} {
+		if err := run(args); err == nil {
+			t.Errorf("%v: accepted another subcommand's flag", args)
+		}
+	}
+}
+
+// analyzeCapture writes frames as a capture and returns analyze's output.
+func analyzeCapture(t *testing.T, frames [][]byte) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "c.pcap")
+	writeCapture(t, path, "pcap", frames)
+	var out bytes.Buffer
+	if err := analyze(&out, path, true); err != nil {
+		t.Fatal(err)
+	}
+	return out.String()
+}
+
+func dnsQuery(t *testing.T, payload []byte) []byte {
+	udp := &layers.UDP{SrcPort: 40000, DstPort: 53}
+	return ethernetFrame(t, client4, server4, udp, payload)
+}
+
+func TestAnalyzeDNS(t *testing.T) {
+	query := []byte{0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 4, 'c', 'h', 'a', 't', 6, 's', 'i', 'g', 'n', 'a', 'l', 3, 'o', 'r', 'g', 0, 0, 1, 0, 1}
+	// a question cut short in its type: gopacket v1.1.19 reads past it, and panics when the frame
+	// has no Ethernet padding to read into (18 bytes make a 60-byte frame)
+	truncated := []byte{0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 3, 'a', 'b', 'c', 0, 0}
+	out := analyzeCapture(t, [][]byte{dnsQuery(t, truncated), dnsQuery(t, query)})
+	if !strings.Contains(out, "chat.signal.org A\n") {
+		t.Errorf("no query for chat.signal.org in\n%s", out)
+	}
+}
+
+func TestAnalyzeQuotesCaptureText(t *testing.T) {
+	f := newFixture(t)
+	evil := "\x1b]0;x\x07" + strings.Repeat("a", len("chat.signal.org")-6) // as long as the SNI it replaces
+	out := analyzeCapture(t, frames(t, flow(records(withSNI(t, f.sent, evil)), 40000, 1000, flowOptions{})))
+	if strings.ContainsRune(out, 0x1b) || !strings.Contains(out, strconv.QuoteToASCII(evil)) {
+		t.Errorf("SNI not quoted in\n%q", out)
+	}
+}
+
+func TestTruncatedCapture(t *testing.T) {
+	f := newFixture(t)
+	path := filepath.Join(f.dir, "c.pcap")
+	writeCapture(t, path, "pcap", frames(t, flow(records(f.sent), 40000, 1000, flowOptions{})))
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data[:len(data)-10], 0o600); err != nil { // the last frame cut short
+		t.Fatal(err)
+	}
+	got, _, err := findHello(path, "chat.signal.org")
+	if err != nil || !bytes.Equal(got, f.hello) {
+		t.Errorf("err %v; extracted %d bytes", err, len(got))
+	}
+}
+
+func TestJA4CountsAndALPN(t *testing.T) {
+	many := make([]uint16, 120)
+	for i := range many {
+		many[i] = uint16(0x1000 + i)
+	}
+	for _, c := range []struct {
+		alpn string
+		want string // the JA4's first part
+	}{
+		{"h2", "t13i9999h2"},
+		{"h2-", "t13i99996d"}, // not alphanumeric at an end: the first and last hex digits ("68322d")
+		{"\xab\xcd", "t13i9999ad"},
+	} {
+		f := &helloFields{versions: []uint16{0x0304}, ciphers: many, extensions: many, alpn: []string{c.alpn}}
+		if got, _, _ := strings.Cut(f.ja4(), "_"); got != c.want {
+			t.Errorf("ALPN %q: %s, want %s", c.alpn, got, c.want)
 		}
 	}
 }

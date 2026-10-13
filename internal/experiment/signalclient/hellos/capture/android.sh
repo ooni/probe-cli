@@ -14,7 +14,6 @@
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}
-CTR=${CONTAINER:-podman}
 HELLOTOOL=$("$HELLOS/../gotool.sh" --path hellotool)  # built from this checkout
 : "${OKHTTP_VERSION:?run: eval \"\$(./versions.sh)\"}" "${OKIO_VERSION:?}" "${KOTLIN_VERSION:?}" "${CONSCRYPT_VERSION:?}"
 # One lib directory per version set: with a shared one, a version bump would leave the old jars on
@@ -22,10 +21,12 @@ HELLOTOOL=$("$HELLOS/../gotool.sh" --path hellotool)  # built from this checkout
 LIB="lib-okhttp$OKHTTP_VERSION-okio$OKIO_VERSION-kotlin$KOTLIN_VERSION-conscrypt$CONSCRYPT_VERSION"
 mkdir -p "$WORK/android/$LIB"
 
-fetch() {  # group/path artifact version: download from Maven Central and check its sha1
+fetch() {  # group/path artifact version: download from Maven Central, kept once its sha1 matches
   local url="https://repo1.maven.org/maven2/$1/$3/$2-$3.jar" f="$WORK/android/$LIB/$2-$3.jar"
-  [ -f "$f" ] || curl -fsSL -o "$f" "$url"
-  echo "$(curl -fsSL "$url.sha1" | cut -c1-40)  $f" | sha1sum -c --quiet
+  [ -f "$f" ] && return
+  curl -fsSL -o "$f.tmp" "$url"
+  echo "$(curl -fsSL "$url.sha1" | cut -c1-40)  $f.tmp" | sha1sum -c --quiet
+  mv "$f.tmp" "$f"
 }
 fetch com/squareup/okhttp3/okhttp-jvm okhttp-jvm "$OKHTTP_VERSION"
 fetch com/squareup/okio/okio-jvm okio-jvm "$OKIO_VERSION"
@@ -36,7 +37,7 @@ CAPTURE_DIR=$HERE "$HELLOTOOL" check-okhttp "$OKHTTP_VERSION" "$WORK/android"
 run() {  # name args...: run the client once under a pasta capture
   local pcap="$WORK/android/$1.pcap" log="$WORK/android/$1.log" rc=0; shift; rm -f "$pcap"
   # The client exits non-zero if the OkHttp or Conscrypt it loaded is not the version asked for.
-  "$CTR" run --rm --network "pasta:--pcap,$pcap" -v "$HERE:/src:ro,Z" -v "$WORK/android:/w:Z" \
+  podman run --rm --network "pasta:--pcap,$pcap" -v "$HERE:/src:ro,Z" -v "$WORK/android:/w:Z" \
     -v "$HELLOS/signal.cer:/w/signal.cer:ro,Z" -w /w \
     -e EXPECT_OKHTTP="$OKHTTP_VERSION" -e EXPECT_CONSCRYPT="$CONSCRYPT_VERSION" -e CONSCRYPT_FIRST=1 \
     docker.io/library/eclipse-temurin:21-jdk \

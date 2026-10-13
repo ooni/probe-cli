@@ -99,16 +99,6 @@ func newLeaf(dns string, key crypto.Signer, ca *certKey) (*certKey, error) {
 }
 
 func writeCerts(out string) error {
-	write := func(name string, data ...[]byte) error {
-		return os.WriteFile(filepath.Join(out, name), slices.Concat(data...), 0o600)
-	}
-	writeKey := func(name string, key crypto.Signer) error {
-		der, err := x509.MarshalPKCS8PrivateKey(key)
-		if err != nil {
-			return err
-		}
-		return write(name, pemBlock("PRIVATE KEY", der))
-	}
 	certPEM := func(c *certKey) []byte { return pemBlock("CERTIFICATE", c.cert.Raw) }
 	if err := os.MkdirAll(out, 0o750); err != nil {
 		return err
@@ -156,26 +146,32 @@ func writeCerts(out string) error {
 		return err
 	}
 
-	for _, err := range []error{
-		write("ca.pem", certPEM(rsaCA), certPEM(edCA)), // trust anchors for the tests
-		writeKey("chat-ed25519.key", chatEdKey),
-		write("chat-ed25519.pem", certPEM(chatEd)),
-		writeKey("chat-rsa.key", chatRSAKey),
-		write("chat-rsa.pem", certPEM(chatRSA)),
-		writeKey("grpc-ed25519.key", grpcEdKey),
-		write("grpc-ed25519.pem", certPEM(grpcEd)),
-	} {
+	type file struct {
+		name string
+		data []byte
+	}
+	files := []file{
+		{"ca.pem", slices.Concat(certPEM(rsaCA), certPEM(edCA))}, // trust anchors for the tests
+		{"chat-ed25519.pem", certPEM(chatEd)},
+		{"chat-rsa.pem", certPEM(chatRSA)},
+		{"grpc-ed25519.pem", certPEM(grpcEd)},
+	}
+	for _, k := range []struct {
+		name string
+		key  crypto.Signer
+	}{{"chat-ed25519.key", chatEdKey}, {"chat-rsa.key", chatRSAKey}, {"grpc-ed25519.key", grpcEdKey}} {
+		der, err := x509.MarshalPKCS8PrivateKey(k.key)
 		if err != nil {
 			return err
 		}
-	}
-	entries, err := os.ReadDir(out)
-	if err != nil {
-		return err
+		files = append(files, file{k.name, pemBlock("PRIVATE KEY", der)})
 	}
 	var names []string
-	for _, e := range entries {
-		names = append(names, e.Name())
+	for _, f := range files {
+		if err := os.WriteFile(filepath.Join(out, f.name), f.data, 0o600); err != nil {
+			return err
+		}
+		names = append(names, f.name)
 	}
 	fmt.Println("wrote", strings.Join(names, ", "))
 	return nil

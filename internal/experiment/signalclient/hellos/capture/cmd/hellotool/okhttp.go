@@ -80,8 +80,6 @@ func checkOkHTTP(version, cache, reference string, write bool) error {
 	return nil
 }
 
-// sourcesJar returns the sources jar of an OkHttp artifact, downloaded into cache once and checked
-// against Maven Central's SHA-1 every time.
 // sourcesJar returns an OkHttp sources jar from the cache, or downloads it from Maven Central,
 // checks it against Maven's SHA-1, and caches it.
 func sourcesJar(artifact, version, cache string) ([]byte, error) {

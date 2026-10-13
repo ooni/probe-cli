@@ -5,9 +5,9 @@
 //	hellotool extract PCAP SNI OUT.bin      the first ClientHello sent to SNI, normalized, with its JA4 and JA3
 //	hellotool normalize FILE.bin...         zero the random values of existing ClientHello files
 //	hellotool same A.bin B.bin...           check that ClientHello files differ only in SNI and padding
-//	hellotool analyze PCAP [-records]       a capture's DNS queries, TCP connections and TLS records
-//	hellotool check-okhttp VERSION CACHE [-write]   OkHttp still sets up Conscrypt sockets as verified
-//	hellotool check-extract [-fingerprint PATH] [-keep DIR]   extract against real OpenSSL hellos
+//	hellotool analyze [-records] PCAP       a capture's DNS queries, TCP connections and TLS records
+//	hellotool check-okhttp [-write] VERSION CACHE   OkHttp still sets up Conscrypt sockets as verified
+//	hellotool check-extract [-keep DIR]     extract against real OpenSSL hellos
 //
 // Captures are Ethernet frames over IPv4 or IPv6, in pcap or pcapng files, as pasta --pcap writes
 // them. The per-connection random values of a ClientHello (client random, legacy session id, key
@@ -34,42 +34,33 @@ func run(args []string) error {
 		return usage()
 	}
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
-	records := flags.Bool("records", false, "analyze: also list each connection's TLS records")
-	write := flags.Bool("write", false, "check-okhttp: record the current sources as verified")
-	fingerprint := flags.String("fingerprint", "", "check-extract: also check this fingerprint.py (TCP and QUIC)")
-	keep := flags.String("keep", "", "check-extract: keep each case's capture and -msg output under this directory")
-	var rest []string // flags may come before, between or after the arguments
-	for remaining := args[1:]; ; remaining = remaining[1:] {
-		if err := flags.Parse(remaining); err != nil {
-			return err
-		}
-		if remaining = flags.Args(); len(remaining) == 0 {
-			break
-		}
-		rest = append(rest, remaining[0])
-	}
-	switch args[0] {
-	case "extract":
-		if len(rest) != 3 {
-			return usage()
-		}
-		return extract(rest[0], rest[1], rest[2])
-	case "normalize":
-		return normalizeFiles(rest)
-	case "same":
-		return sameHello(rest)
+	var records, write *bool
+	var keep *string
+	switch args[0] { // each subcommand's flags, before its arguments
 	case "analyze":
-		if len(rest) != 1 {
-			return usage()
-		}
-		return analyze(rest[0], *records)
+		records = flags.Bool("records", false, "also list each connection's TLS records")
 	case "check-okhttp":
-		if len(rest) != 2 {
-			return usage()
-		}
-		return checkOkHTTP(rest[0], rest[1], filepath.Join(captureDir(), "okhttp-conscrypt-tls.txt"), *write)
+		write = flags.Bool("write", false, "record the current sources as verified")
 	case "check-extract":
-		return checkExtract(*fingerprint, *keep)
+		keep = flags.String("keep", "", "keep each case's capture and -msg output under this directory")
+	}
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	rest := flags.Args()
+	switch {
+	case args[0] == "extract" && len(rest) == 3:
+		return extract(rest[0], rest[1], rest[2])
+	case args[0] == "normalize":
+		return normalizeFiles(rest)
+	case args[0] == "same":
+		return sameHello(rest)
+	case args[0] == "analyze" && len(rest) == 1:
+		return analyze(os.Stdout, rest[0], *records)
+	case args[0] == "check-okhttp" && len(rest) == 2:
+		return checkOkHTTP(rest[0], rest[1], filepath.Join(captureDir(), "okhttp-conscrypt-tls.txt"), *write)
+	case args[0] == "check-extract" && len(rest) == 0:
+		return checkExtract(*keep)
 	}
 	return usage()
 }

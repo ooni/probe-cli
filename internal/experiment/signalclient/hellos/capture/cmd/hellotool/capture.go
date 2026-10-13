@@ -75,6 +75,10 @@ func readCapture(path string) (*capture, error) {
 		if err == io.EOF {
 			return c, nil
 		}
+		if err == io.ErrUnexpectedEOF { // pasta stopped mid-write
+			fmt.Fprintf(os.Stderr, "hellotool: %s ends in a partial frame; read the %d frames before it\n", path, c.frames)
+			return c, nil
+		}
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}

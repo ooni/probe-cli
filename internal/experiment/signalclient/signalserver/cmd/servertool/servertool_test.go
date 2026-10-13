@@ -1,13 +1,18 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // testdata/sclient-*.txt is s_client's output against local s_server instances, recorded with
@@ -101,11 +106,13 @@ func TestConfig(t *testing.T) {
 			t.Errorf("no %q in\n%s", want, out)
 		}
 	}
-	if err := os.WriteFile(src, []byte("server: {}\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeTestConfig(src, dst, "x"); err == nil {
-		t.Error("a changed test.yml was accepted")
+	for _, changed := range []string{"server: {}\n", original + original} { // an excerpt missing, or twice
+		if err := os.WriteFile(src, []byte(changed), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := writeTestConfig(src, dst, "x"); err == nil {
+			t.Errorf("accepted %q", changed)
+		}
 	}
 }
 
@@ -132,5 +139,66 @@ func TestParseCipherList(t *testing.T) {
 		{"TLS_RSA_WITH_AES_128_CBC_SHA", "AES128-SHA"}}
 	if got := parseCipherList(out); !slices.Equal(got, want) {
 		t.Errorf("%q", got)
+	}
+}
+
+func TestTargets(t *testing.T) {
+	for target, want := range map[string]string{"chat.signal.org": "chat.signal.org:443",
+		"chat.signal.org@127.0.0.1:8443": "127.0.0.1:8443", "chat.signal.org@[::1]:8443": "[::1]:8443",
+		"x@127.0.0.1": "", "[::1]": "", "@127.0.0.1:1": ""} {
+		_, addr, err := splitTarget(target)
+		if addr != want || (err == nil) != (want != "") {
+			t.Errorf("%q: %q, %v", target, addr, err)
+		}
+	}
+}
+
+func TestUnreachableTargetFailsFast(t *testing.T) {
+	if _, err := exec.LookPath("openssl"); err != nil {
+		t.Skip("no openssl")
+	}
+	start := time.Now()
+	var out bytes.Buffer
+	err := tlsProfiles(&out, []string{"x@127.0.0.1:1"})
+	if err == nil || !strings.Contains(out.String(), `"error": "could not connect to 127.0.0.1:1"`) ||
+		strings.Contains(out.String(), "versions") || time.Since(start) > 5*time.Second {
+		t.Errorf("err %v after %v:\n%s", err, time.Since(start), out.String())
+	}
+}
+
+func TestUnpackMaven(t *testing.T) {
+	dir := t.TempDir()
+	zipWith := func(names ...string) string {
+		path := filepath.Join(dir, fmt.Sprintf("m%d.zip", len(names)))
+		f, err := os.Create(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := zip.NewWriter(f)
+		for _, name := range names {
+			if _, err := w.Create(name); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	good := zipWith("apache-maven/", "apache-maven/bin/mvn", "apache-maven/lib/x.jar")
+	if err := unpackMaven(good, filepath.Join(dir, "maven")); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Stat(filepath.Join(dir, "maven", "bin", "mvn")); err != nil || info.Mode().Perm()&0o100 == 0 {
+		t.Errorf("bin/mvn: %v, %v", info, err)
+	}
+	if err := unpackMaven(good, filepath.Join(dir, "maven")); err == nil {
+		t.Error("unpacked over an existing directory")
+	}
+	if err := unpackMaven(zipWith("apache-maven/bin/mvn", "other/x"), filepath.Join(dir, "m2")); err == nil {
+		t.Error("accepted an entry outside the top directory")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "m2.tmp")); err == nil {
+		t.Error("left m2.tmp behind")
 	}
 }

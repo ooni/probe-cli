@@ -12,43 +12,42 @@ import (
 	"strings"
 )
 
-const configChanged = "test.yml changed: update signalserver/run.sh"
+// replaceOnce replaces old, which must occur exactly once in s.
+func replaceOnce(s, old, new string) (string, error) {
+	if strings.Count(s, old) != 1 {
+		return "", fmt.Errorf("test.yml changed (%q): update servertool's config", strings.TrimSpace(old))
+	}
+	return strings.Replace(s, old, new, 1), nil
+}
 
 func writeTestConfig(src, dst, keyStorePassword string) error {
 	data, err := os.ReadFile(src) // #nosec G304 -- a path the harness passes
 	if err != nil {
 		return err
 	}
-	s := string(data)
-
-	old := "  applicationConnectors:\n    - type: h2c\n      port: 8080\n"
-	if !strings.Contains(s, old) {
-		return fmt.Errorf("%s", configChanged)
-	}
 	quoted := "'" + strings.ReplaceAll(keyStorePassword, "'", "''") + "'" // a YAML single-quoted string
-	tls := "      keyStoreType: PKCS12\n      keyStorePassword: " + quoted + "\n"
 	// Settings measured on production with tlsprofile.sh (2026-10). Dropwizard's h2 connector
 	// requires TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 in its list.
-	chat := "    - type: h2\n      port: 8443\n      keyStorePath: /certs/chat.p12\n" + tls +
+	chat := "    - type: h2\n      port: 8443\n      keyStorePath: /certs/chat.p12\n" +
+		"      keyStoreType: PKCS12\n      keyStorePassword: " + quoted + "\n" +
 		"      supportedProtocols: [TLSv1.3, TLSv1.2]\n" +
 		"      supportedCipherSuites: [TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256, TLS_AES_128_GCM_SHA256," +
 		" TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256," +
 		" TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
 		" TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384," +
 		" TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256]\n"
-	s = strings.ReplaceAll(s, old, old+chat) // the h2c connector stays: the gRPC front end proxies websockets to it
-
-	// The gRPC front end takes its certificates from tlsKeyStore, picking them by SNI from their SANs.
-	old = "tlsKeyStore:\n"
-	if strings.Count(s, old) != 1 {
-		return fmt.Errorf("%s", configChanged)
+	h2c := "  applicationConnectors:\n    - type: h2c\n      port: 8080\n"
+	s := string(data)
+	for _, edit := range [][2]string{
+		{h2c, h2c + chat}, // the h2c connector stays: the gRPC front end proxies websockets to it
+		// the gRPC front end takes its certificates from tlsKeyStore, picking them by SNI from their SANs
+		{"tlsKeyStore:\n", "tlsKeyStore:\n  path: /certs/grpc.p12\n"},
+		{"grpc:\n  port: 50051\n  websocketPort: 8080\n  h2c: true\n",
+			"grpc:\n  bindAddress: 0.0.0.0\n  port: 8444\n  websocketPort: 8080\n  h2c: false\n"},
+	} {
+		if s, err = replaceOnce(s, edit[0], edit[1]); err != nil {
+			return err
+		}
 	}
-	s = strings.Replace(s, old, old+"  path: /certs/grpc.p12\n", 1)
-
-	old = "grpc:\n  port: 50051\n  websocketPort: 8080\n  h2c: true\n"
-	if !strings.Contains(s, old) {
-		return fmt.Errorf("%s", configChanged)
-	}
-	s = strings.ReplaceAll(s, old, "grpc:\n  bindAddress: 0.0.0.0\n  port: 8444\n  websocketPort: 8080\n  h2c: false\n")
 	return os.WriteFile(dst, []byte(s), 0o600)
 }

@@ -17,7 +17,6 @@
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); HELLOS=$(dirname "$HERE")
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}; mkdir -p "$WORK/libsignal/cargo"
-CTR=${CONTAINER:-podman}
 HELLOTOOL=$("$HELLOS/../gotool.sh" --path hellotool)  # built from this checkout
 : "${LIBSIGNAL_TAG:?run: eval \"\$(./versions.sh)\"}"
 
@@ -25,7 +24,7 @@ build() {  # tag: clone and build chat_smoke_test at tag (network allowed: cargo
   local src="$WORK/libsignal/src-$1"
   [ -d "$src" ] || git -c advice.detachedHead=false clone -q --depth 1 --branch "$1" https://github.com/signalapp/libsignal.git "$src"
   # bounded memory, cached registry and target dir
-  "$CTR" run --rm --memory "${BUILD_MEMORY:-8g}" -v "$src:/src:Z" -v "$WORK/libsignal/cargo:/usr/local/cargo/registry:Z" \
+  podman run --rm --memory "${BUILD_MEMORY:-8g}" -v "$src:/src:Z" -v "$WORK/libsignal/cargo:/usr/local/cargo/registry:Z" \
     -w /src docker.io/library/rust:1-bookworm bash -c '
       set -e
       apt-get update -qq && apt-get install -y -qq cmake clang libclang-dev protobuf-compiler >/dev/null
@@ -34,7 +33,7 @@ build() {  # tag: clone and build chat_smoke_test at tag (network allowed: cargo
 
 smoke() {  # tag pcap args...: run chat_smoke_test at tag once against production, captured
   local src="$WORK/libsignal/src-$1" pcap=$2; shift 2; rm -f "$pcap"
-  "$CTR" run --rm --network "pasta:--pcap,$pcap" -v "$src:/src:ro,Z" docker.io/library/rust:1-bookworm \
+  podman run --rm --network "pasta:--pcap,$pcap" -v "$src:/src:ro,Z" docker.io/library/rust:1-bookworm \
     /src/target/debug/examples/chat_smoke_test production "$@" 2>&1 | tail -2 || true
   chmod 644 "$pcap"
 }

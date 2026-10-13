@@ -12,17 +12,16 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-hellos}
 B=$WORK/desktop-profile
-CTR=${CONTAINER:-podman}
 WARMUP=${WARMUP:-30}
 DURATION=${DURATION:-240}
 RUN=$B/runs/$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$RUN/home"
 [ -e "$B/dl/signal-desktop.deb" ] || { echo "profile.sh: run fetch.sh first" >&2; exit 1; }
-"$CTR" build -q -t signal-desktop-profile -f "$HERE/Containerfile" "$B" >/dev/null
+podman build -q -t signal-desktop-profile -f "$HERE/Containerfile" "$B" >/dev/null
 
 # launch SECONDS NETWORK: run the app for SECONDS; screenshots at 20 and 60 s when it runs that long
 launch() {
-  "$CTR" run --rm --memory=3g --shm-size=1g --network "$2" \
+  podman run --rm --memory=3g --shm-size=1g --network "$2" \
     -v "$RUN:/out:Z" -e HOME=/out/home -e SSLKEYLOGFILE=/out/keys.log -e SECONDS_TO_RUN="$1" \
     signal-desktop-profile bash -c '
       Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &

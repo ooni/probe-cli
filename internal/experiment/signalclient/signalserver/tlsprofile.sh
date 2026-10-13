@@ -4,12 +4,11 @@
 # Usage: tlsprofile.sh [prod|local|both]   (default both). Writes $WORK/tlsprofile-{prod,local}.json
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-CTR=${CONTAINER:-podman}
 WORK=${WORK_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/ooni-signal-server}; mkdir -p "$WORK"
 SERVERTOOL=$("$HERE/../gotool.sh" --path servertool)
 run() {  # run NETWORK OUT TARGETS...
   local net=$1 out=$2; shift 2
-  "$CTR" run --rm --network "$net" -v "$SERVERTOOL:/servertool:ro,Z" docker.io/library/python:3.12-slim \
+  podman run --rm --network "$net" -v "$SERVERTOOL:/servertool:ro,Z" docker.io/library/python:3.12-slim \
     /servertool tlsprofile "$@" > "$out.tmp"
   mv "$out.tmp" "$out"
   echo "wrote $out"
