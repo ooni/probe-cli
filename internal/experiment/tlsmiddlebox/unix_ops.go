@@ -4,7 +4,7 @@ package tlsmiddlebox
 
 import "golang.org/x/sys/unix"
 
-// mockUnixOpsImpl is an implementation of an interface consisting of unix functions
+// unixOpsImpl is an implementation of an interface consisting of unix functions
 type unixOps interface {
 	Socket(domain, typ, proto int) (int, error)
 	Close(fd int) error
