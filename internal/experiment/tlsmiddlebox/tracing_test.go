@@ -75,6 +75,25 @@ func TestStartIterativeTrace(t *testing.T) {
 	})
 }
 
+func TestRunTraceroute(t *testing.T) {
+	wg := new(sync.WaitGroup)
+	index := int64(1)
+	m := NewExperimentMeasurer()
+
+	t.Run("failure case, no port in address", func(t *testing.T) {
+		wg.Add(1)
+		address := "8.8.8.8"
+		zeroTime := time.Now()
+		trace := m.runTraceroute(index, zeroTime, model.DiscardLogger, address, "example.com", &Config{})
+		if trace.SNI != "example.com" {
+			t.Fatal("unexpected servername")
+		}
+		if len(trace.Iterations) != 0 {
+			t.Fatal("unexpected number of iterations")
+		}
+	})
+}
+
 func TestHandshakeWithTTL(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

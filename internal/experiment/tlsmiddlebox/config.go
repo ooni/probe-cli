@@ -93,5 +93,5 @@ func (c Config) privacymode() string {
 		return c.PrivacyMode
 	}
 
-	return "safe"
+	return "default"
 }

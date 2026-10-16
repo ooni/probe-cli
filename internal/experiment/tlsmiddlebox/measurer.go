@@ -17,7 +17,7 @@ import (
 
 const (
 	testName    = "tlsmiddlebox"
-	testVersion = "0.1.3"
+	testVersion = "0.1.4"
 )
 
 // Measurer performs the measurement.
@@ -43,7 +43,7 @@ var (
 	ErrInputIsNotAnURL = errors.New("input is not an URL")
 
 	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
-	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be tlstrace")
+	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be https")
 
 	// errInvalidTestHelper indicates that the testhelper is invalid
 	errInvalidTestHelper = errors.New("invalid testhelper")
@@ -86,7 +86,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if err != nil {
 		return ErrInputIsNotAnURL
 	}
-	if URL.Scheme != "tlstrace" {
+	if URL.Scheme != "https" {
 		return ErrUnsupportedInput
 	}
 	th, err := target.Config.testhelper(URL.Host)
