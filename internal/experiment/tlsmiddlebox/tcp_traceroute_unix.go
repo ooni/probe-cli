@@ -246,7 +246,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 					}
 
 					if ts[0].Sec != 0 {
-						t := time.Unix(ts[0].Sec, ts[0].Nsec)
+						t := time.Unix(ts[0].Unix())
 						rxTime = &t
 					}
 
