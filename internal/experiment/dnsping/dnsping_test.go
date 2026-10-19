@@ -16,6 +16,33 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestConfig_domains(t *testing.T) {
 	c := Config{}
 	if c.domains() != "edge-chat.instagram.com example.com" {
@@ -43,21 +70,15 @@ func TestMeasurer_run(t *testing.T) {
 
 	// runHelper is an helper function to run this set of tests.
 	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		m := NewExperimentMeasurer(Config{
-			Domains:     "example.com",
-			Delay:       1, // millisecond
-			Repetitions: expectedPings,
-		})
+		m := NewExperimentMeasurer()
 		if m.ExperimentName() != "dnsping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.4.0" {
+		if m.ExperimentVersion() != "0.4.1" {
 			t.Fatal("invalid experiment version")
 		}
 		ctx := context.Background()
-		meas := &model.Measurement{
-			Input: model.MeasurementInput(input),
-		}
+		meas := &model.Measurement{}
 		sess := &mocks.Session{
 			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
@@ -66,6 +87,14 @@ func TestMeasurer_run(t *testing.T) {
 			Callbacks:   callbacks,
 			Measurement: meas,
 			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					Domains:     "example.com",
+					Delay:       1,
+					Repetitions: expectedPings,
+				},
+				URL: input,
+			},
 		}
 		err := m.Run(ctx, args)
 		return meas, m, err

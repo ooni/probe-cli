@@ -172,6 +172,45 @@ func (value *ArchivalScrubbedMaybeBinaryString) UnmarshalJSON(rawData []byte) er
 }
 
 //
+// ICMP
+//
+
+// ArchivalICMPErrorMessage is the result of any ICMP error message.
+//
+// See https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md. //update this, will also add timestamp info
+type ArchivalICMPErrorMessage struct {
+	Timeout          bool                  `json:"timeout"`
+	Connected        bool                  `json:"connected"`
+	Error            string                `json:"error"`
+	SrcIP            string                `json:"source_ip"`
+	SrcIPCountryCode string                `json:"source_ip_country_code"`
+	SrcIPASN         uint                  `json:"source_ip_asn"`
+	SrcIPASNOrg      string                `json:"source_ip_asn_org"`
+	Type             int                   `json:"type"`
+	Code             int                   `json:"code"`
+	Quote            ArchivalICMPQuotation `json:"quote"`
+	T0               float64               `json:"t0,omitempty"`
+	T                float64               `json:"t"`
+}
+
+// ArchivalICMPQuotation is the quotation of an ICMP error message.
+type ArchivalICMPQuotation struct {
+	Protocol         int    `json:"protocol"`
+	SrcPort          int    `json:"source_port"`
+	DstPort          int    `json:"destination_port"`
+	TCPSeqNum        uint32 `json:"tcp_sequence_number"`
+	UDPLength        int    `json:"udp_length"`
+	UDPChecksum      int    `json:"udp_checksum"`
+	RemainingPayload []byte `json:"remaining_payload"`
+}
+
+// FailureChainData is the entire traceback of the failure, used for the tlsmiddlebox probe.
+type FailureChainData struct {
+	Type  string `json:"type"`
+	Error string `json:"error"`
+}
+
+//
 // DNS lookup
 //
 
@@ -198,13 +237,22 @@ type ArchivalDNSLookupResult struct {
 
 // ArchivalDNSAnswer is a DNS answer.
 type ArchivalDNSAnswer struct {
-	ASN        int64   `json:"asn,omitempty"`
-	ASOrgName  string  `json:"as_org_name,omitempty"`
-	AnswerType string  `json:"answer_type"`
-	Hostname   string  `json:"hostname,omitempty"`
-	IPv4       string  `json:"ipv4,omitempty"`
-	IPv6       string  `json:"ipv6,omitempty"`
-	TTL        *uint32 `json:"ttl"`
+	ASN        int64     `json:"asn,omitempty"`
+	ASOrgName  string    `json:"as_org_name,omitempty"`
+	AnswerType string    `json:"answer_type"`
+	Hostname   string    `json:"hostname,omitempty"`
+	IPv4       string    `json:"ipv4,omitempty"`
+	IPv6       string    `json:"ipv6,omitempty"`
+	TTL        *uint32   `json:"ttl"`
+	SVCB       *SVCBData `json:"svcb,omitempty"` // SVCB-specific data (nil for non-SVCB answers)
+}
+
+// SVCBData represents details of an SVCB record.
+type SVCBData struct {
+	Priority   uint16             `json:"priority"`
+	TargetName string             `json:"target_name"`
+	Params     map[string]string  `json:"params,omitempty"` // SvcParams key-value pairs
+	Raw        ArchivalBinaryData `json:"raw,omitempty"`    // raw wire bytes of the SVCB RR
 }
 
 //
@@ -243,6 +291,7 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	Address            string               `json:"address"`
 	CipherSuite        string               `json:"cipher_suite"`
 	Failure            *string              `json:"failure"`
+	FailureChain       []FailureChainData   `json:"failure_chain,omitempty"`
 	SoError            *string              `json:"so_error,omitempty"`
 	NegotiatedProtocol string               `json:"negotiated_protocol"`
 	NoTLSVerify        bool                 `json:"no_tls_verify"`

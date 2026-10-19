@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "http_invalid_request_line"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return hirl.NewExperimentMeasurer(
@@ -23,5 +23,5 @@ func init() {
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
 		}
-	}
+	})
 }

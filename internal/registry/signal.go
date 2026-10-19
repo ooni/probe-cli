@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "signal"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return signal.NewExperimentMeasurer(
-					*config.(*signal.Config),
-				)
+				return signal.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &signal.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
+			newLoader:        signal.NewLoader,
 		}
-	}
+	})
 }

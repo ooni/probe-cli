@@ -2,6 +2,7 @@ package sniblocking
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -11,6 +12,33 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
+
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
 
 func TestTestKeysClassify(t *testing.T) {
 	asStringPtr := func(s string) *string {
@@ -115,11 +143,11 @@ func TestTestKeysClassify(t *testing.T) {
 }
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "sni_blocking" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.3.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -209,11 +237,12 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{})
+			measurer := NewExperimentMeasurer()
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: &model.Measurement{},
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+				Target:      &Target{Config: &Config{}, URL: ""},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err.Error() != "experiment requires measurement.Input" {
@@ -234,16 +263,13 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 		env.Do(func() {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately cancel the context
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurement := &model.Measurement{
-				Input: "\t",
-			}
+			measurer := NewExperimentMeasurer()
+			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+				Target:      &Target{Config: &Config{ControlSNI: "example.org"}, URL: "\t"},
 			}
 			err := measurer.Run(ctx, args)
 			if err == nil {
@@ -272,16 +298,13 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurement := &model.Measurement{
-				Input: "kernel.org",
-			}
+			measurer := NewExperimentMeasurer()
+			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+				Target:      &Target{Config: &Config{ControlSNI: "example.org"}, URL: "kernel.org"},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -347,16 +370,13 @@ func TestMeasurerRun(t *testing.T) {
 	t.Run("with cancelled context: expect interrupted failure and nil keys", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // immediately cancel the context
-		measurer := NewExperimentMeasurer(Config{
-			ControlSNI: "example.com",
-		})
-		measurement := &model.Measurement{
-			Input: "kernel.org",
-		}
+		measurer := NewExperimentMeasurer()
+		measurement := &model.Measurement{}
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 			Measurement: measurement,
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+			Target:      &Target{Config: &Config{ControlSNI: "example.com"}, URL: "kernel.org"},
 		}
 		err := measurer.Run(ctx, args)
 		if err != nil {
@@ -440,17 +460,14 @@ func TestMeasurerRun(t *testing.T) {
 			}
 			subresult.Failure = &s
 			cache[testsni+thaddr] = subresult
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
+			measurer := NewExperimentMeasurer()
 			measurer.(*Measurer).cache = cache
-			measurement := &model.Measurement{
-				Input: model.MeasurementInput(testsni),
-			}
+			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+				Target:      &Target{Config: &Config{ControlSNI: "example.org"}, URL: testsni},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -500,16 +517,13 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurement := &model.Measurement{
-				Input: "kernel.org",
-			}
+			measurer := NewExperimentMeasurer()
+			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+				Target:      &Target{Config: &Config{ControlSNI: "example.org"}, URL: "kernel.org"},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {

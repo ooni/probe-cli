@@ -2,6 +2,7 @@ package telegram_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,13 +20,40 @@ import (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+	measurer := telegram.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "telegram" {
 		t.Fatal("unexpected name")
 	}
 	if measurer.ExperimentVersion() != "0.3.1" {
 		t.Fatal("unexpected version")
 	}
+}
+
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := telegram.NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, telegram.ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, telegram.ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
 }
 
 func TestUpdateWithNoAccessPointsBlocking(t *testing.T) {
@@ -315,12 +343,13 @@ func TestMeasurerRun(t *testing.T) {
 		defer env.Close()
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -375,12 +404,13 @@ func TestMeasurerRun(t *testing.T) {
 		env.ISPResolverConfig().AddRecord("web.telegram.org", "web.telegram.org", "10.10.34.35")
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -435,12 +465,13 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -472,12 +503,13 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurer := telegram.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+				Target:      &telegram.Target{Config: &telegram.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {

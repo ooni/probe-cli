@@ -2,6 +2,7 @@ package fbmessenger_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/url"
 	"testing"
@@ -41,8 +42,35 @@ var (
 	falseValue = false
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := fbmessenger.NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, fbmessenger.ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, fbmessenger.ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+	measurer := fbmessenger.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "facebook_messenger" {
 		t.Fatal("unexpected name")
 	}
@@ -96,7 +124,7 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
@@ -105,6 +133,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
@@ -161,7 +190,7 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // so we fail immediately
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
@@ -171,6 +200,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
@@ -237,7 +267,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
@@ -246,6 +276,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {
@@ -304,7 +335,7 @@ func TestMeasurerRun(t *testing.T) {
 		configureDNSWithAddr(env.ISPResolverConfig(), "10.10.34.35")
 
 		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+			measurer := fbmessenger.NewExperimentMeasurer()
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
@@ -313,6 +344,7 @@ func TestMeasurerRun(t *testing.T) {
 				Callbacks:   callbacks,
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &fbmessenger.Target{Config: &fbmessenger.Config{}},
 			}
 			err := measurer.Run(ctx, args)
 			if err != nil {

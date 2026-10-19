@@ -41,7 +41,10 @@ func TestConfigureCustomCheckers(t *testing.T) {
 			return nil
 		},
 	}
-	err := webconnectivityqa.RunTestCase(measurer, tc)
+	newTarget := func(input string) model.ExperimentTarget {
+		return model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input)
+	}
+	err := webconnectivityqa.RunTestCase(measurer, newTarget, tc)
 	if !errors.Is(err, webconnectivityqa.ErrCheckerNoReadWriteEvents) {
 		t.Fatal("unexpected error", err)
 	}

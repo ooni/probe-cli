@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity/internal"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
@@ -74,13 +75,11 @@ type TestKeys struct {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	Config Config
-}
+type Measurer struct{}
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return Measurer{Config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return Measurer{}
 }
 
 // ExperimentName implements ExperimentMeasurer.ExperExperimentName.
@@ -102,6 +101,12 @@ var (
 
 	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
 	ErrUnsupportedInput = errors.New("unsupported input scheme")
+
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Tags describing the section of this experiment in which
@@ -123,16 +128,26 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	input := target.URL
+
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	tk.Agent = "redirect"
 	tk.ClientResolver = sess.ResolverIP()
-	if measurement.Input == "" {
+	if input == "" {
 		return ErrNoInput
 	}
-	URL, err := url.Parse(string(measurement.Input))
+	URL, err := url.Parse(input)
 	if err != nil {
 		return ErrInputIsNotAnURL
 	}

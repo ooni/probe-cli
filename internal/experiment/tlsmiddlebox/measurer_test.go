@@ -14,21 +14,18 @@ import (
 )
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
-	measurer := NewExperimentMeasurer(Config{})
+	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "tlsmiddlebox" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.1.2" {
+	if measurer.ExperimentVersion() != "0.1.4" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
 
 func TestMeasurer_input_failure(t *testing.T) {
 	runHelper := func(ctx context.Context, input string, th string, sniControl string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		m := NewExperimentMeasurer(Config{
-			TestHelper: th,
-			SNIControl: sniControl,
-		})
+		m := NewExperimentMeasurer()
 		meas := &model.Measurement{
 			Input: model.MeasurementInput(input),
 		}
@@ -42,6 +39,13 @@ func TestMeasurer_input_failure(t *testing.T) {
 			Callbacks:   callbacks,
 			Measurement: meas,
 			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					TestHelper: th,
+					SNIControl: sniControl,
+				},
+				URL: input,
+			},
 		}
 		err := m.Run(ctx, args)
 		return meas, m, err
@@ -49,35 +53,62 @@ func TestMeasurer_input_failure(t *testing.T) {
 
 	t.Run("with empty input", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "", "", "")
-		if !errors.Is(err, errNoInputProvided) {
+		if !errors.Is(err, ErrNoInput) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "\t", "", "")
-		if !errors.Is(err, errInputIsNotAnURL) {
+		if !errors.Is(err, ErrInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
 		_, _, err := runHelper(context.Background(), "http://8.8.8.8:443/", "", "")
-		if !errors.Is(err, errInvalidInputScheme) {
+		if !errors.Is(err, ErrUnsupportedInput) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid testhelper", func(t *testing.T) {
-		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "\t", "")
+		_, _, err := runHelper(context.Background(), "https://example.com", "\t", "")
 		if !errors.Is(err, errInvalidTestHelper) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid TH scheme", func(t *testing.T) {
-		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "http://google.com", "")
+		_, _, err := runHelper(context.Background(), "https://example.com", "http://google.com", "")
 		if !errors.Is(err, errInvalidTHScheme) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid ClientId", func(t *testing.T) {
+		m := NewExperimentMeasurer()
+		meas := &model.Measurement{
+			Input: model.MeasurementInput("https://example.com"),
+		}
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: meas,
+			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					ClientId: 5, // we only know fingerprints between 1 and 4
+				},
+				URL: "https://example.com",
+			},
+		}
+		err := m.Run(context.Background(), args)
+		if !errors.Is(err, errInvalidClientId) {
 			t.Fatal("unexpected error", err)
 		}
 	})
@@ -95,7 +126,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,7 +173,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -189,7 +220,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}

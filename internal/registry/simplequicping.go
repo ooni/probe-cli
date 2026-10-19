@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "simplequicping"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return simplequicping.NewExperimentMeasurer(
-					*config.(*simplequicping.Config),
-				)
+				return simplequicping.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &simplequicping.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputStrictlyRequired,
+			newLoader:        simplequicping.NewLoader,
 		}
-	}
+	})
 }

@@ -11,6 +11,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
+// newFakeTarget is a target factory for tests using a mock measurer that does
+// not care about the concrete richer-input target type.
+func newFakeTarget(input string) model.ExperimentTarget {
+	return model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input)
+}
+
 func TestRunTestCase(t *testing.T) {
 	t.Run("we detect an unexpected error", func(t *testing.T) {
 		tc := &TestCase{
@@ -31,7 +37,7 @@ func TestRunTestCase(t *testing.T) {
 				return errors.New("mocked error")
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "expected to see no error but got") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -56,7 +62,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || err.Error() != "expected to see an error but got <nil>" {
 			t.Fatal("unexpected error:", err)
 		}
@@ -85,7 +91,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "test keys mismatch:") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -116,7 +122,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "test keys mismatch:") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -150,7 +156,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "test keys mismatch:") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -184,7 +190,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -219,7 +225,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "test keys mismatch:") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -256,7 +262,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "test keys mismatch:") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -295,7 +301,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || !strings.HasPrefix(err.Error(), "test keys mismatch:") {
 			t.Fatal("unexpected error:", err)
 		}
@@ -333,7 +339,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -365,7 +371,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err == nil || err.Error() != "unknown experiment version: 0.2.11" {
 			t.Fatal("unexpected error:", err)
 		}
@@ -400,7 +406,7 @@ func TestRunTestCase(t *testing.T) {
 				return nil
 			},
 		}
-		err := RunTestCase(measurer, tc)
+		err := RunTestCase(measurer, newFakeTarget, tc)
 		if err != nil {
 			t.Fatal(err)
 		}

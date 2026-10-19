@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "tcpping"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return tcpping.NewExperimentMeasurer(
-					*config.(*tcpping.Config),
-				)
+				return tcpping.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &tcpping.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputStrictlyRequired,
+			newLoader:        tcpping.NewLoader,
 		}
-	}
+	})
 }

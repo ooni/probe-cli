@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "http_host_header"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return httphostheader.NewExperimentMeasurer(
-					*config.(*httphostheader.Config),
-				)
+				return httphostheader.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &httphostheader.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrQueryBackend,
+			newLoader:        httphostheader.NewLoader,
 		}
-	}
+	})
 }

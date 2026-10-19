@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "dnscheck"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		// TODO(bassosimone,DecFox): for now, we MUST keep the InputOrStaticDefault
 		// policy because otherwise ./pkg/oonimkall should break.
 		return &Factory{
@@ -24,5 +24,5 @@ func init() {
 			inputPolicy:      model.InputOrStaticDefault,
 			newLoader:        dnscheck.NewLoader,
 		}
-	}
+	})
 }

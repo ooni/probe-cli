@@ -16,23 +16,24 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "dnsping"
-	testVersion = "0.4.0"
+	testVersion = "0.4.1"
 )
 
 // Config contains the experiment configuration.
 type Config struct {
 	// Delay is the delay between each repetition (in milliseconds).
-	Delay int64 `ooni:"number of milliseconds to wait before sending each ping"`
+	Delay int64 `json:"delay,omitempty" ooni:"number of milliseconds to wait before sending each ping"`
 
 	// Domains is the space-separated list of domains to measure.
-	Domains string `ooni:"space-separated list of domains to measure"`
+	Domains string `json:"domains,omitempty" ooni:"space-separated list of domains to measure"`
 
 	// Repetitions is the number of repetitions for each ping.
-	Repetitions int64 `ooni:"number of times to repeat the measurement"`
+	Repetitions int64 `json:"repetitions,omitempty" ooni:"number of times to repeat the measurement"`
 }
 
 func (c *Config) delay() time.Duration {
@@ -57,9 +58,7 @@ func (c Config) domains() string {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config Config
-}
+type Measurer struct{}
 
 // ExperimentName implements ExperimentMeasurer.ExperiExperimentName.
 func (m *Measurer) ExperimentName() string {
@@ -72,6 +71,12 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+
 	// errNoInputProvided indicates you didn't provide any input
 	errNoInputProvided = errors.New("not input provided")
 
@@ -91,12 +96,23 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	_ = args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
-	if measurement.Input == "" {
+
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config, input := target.Config, target.URL
+
+	if input == "" {
 		return errNoInputProvided
 	}
 
 	// parse experiment input
-	parsed, err := url.Parse(string(measurement.Input))
+	parsed, err := url.Parse(input)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
 	}
@@ -112,13 +128,13 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement.TestKeys = tk
 
 	// parse the domains to measure
-	domains := strings.Split(m.config.domains(), " ")
+	domains := strings.Split(config.domains(), " ")
 
 	// spawn a pinger for each domain to measure
 	wg := new(sync.WaitGroup)
 	wg.Add(len(domains))
 	for _, domain := range domains {
-		go m.dnsPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, domain, wg, tk)
+		go m.dnsPingLoop(ctx, config, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, domain, wg, tk)
 	}
 
 	// block until all pingers are done
@@ -131,17 +147,17 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 }
 
 // dnsPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) dnsPingLoop(ctx context.Context, zeroTime time.Time, logger model.Logger,
+func (m *Measurer) dnsPingLoop(ctx context.Context, config *Config, zeroTime time.Time, logger model.Logger,
 	address string, domain string, wg *sync.WaitGroup, tk *TestKeys) {
 	// make sure the parent knows when we're done
 	defer wg.Done()
 
 	// create ticker so we know when to send the next DNS ping
-	ticker := time.NewTicker(m.config.delay())
+	ticker := time.NewTicker(config.delay())
 	defer ticker.Stop()
 
 	// start a goroutine for each ping repetition
-	for i := int64(0); i < m.config.repetitions(); i++ {
+	for i := int64(0); i < config.repetitions(); i++ {
 		wg.Add(1)
 		go m.dnsRoundTrip(ctx, i, zeroTime, logger, address, domain, wg, tk)
 
@@ -223,6 +239,6 @@ func stopOperationLogger(ol stoppableOperationLogger, addrs []string, err error)
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }

@@ -2,6 +2,7 @@ package whatsapp_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -18,8 +19,35 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
+func TestMeasurerRunWithInvalidTarget(t *testing.T) {
+	measurer := whatsapp.NewExperimentMeasurer()
+
+	t.Run("with nil target we get ErrInputRequired", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+		})
+		if !errors.Is(err, whatsapp.ErrInputRequired) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with the wrong target type we get ErrInvalidInputType", func(t *testing.T) {
+		err := measurer.Run(context.Background(), &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{},
+			Target:      &model.OOAPIURLInfo{},
+		})
+		if !errors.Is(err, whatsapp.ErrInvalidInputType) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+	measurer := whatsapp.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "whatsapp" {
 		t.Fatal("unexpected name")
 	}
@@ -102,13 +130,14 @@ func TestMeasurerRun(t *testing.T) {
 		defer env.Close()
 
 		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+			measurer := whatsapp.NewExperimentMeasurer()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return log.Log }}
 			measurement := new(model.Measurement)
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &whatsapp.Target{Config: &whatsapp.Config{}},
 			}
 
 			err := measurer.Run(context.Background(), args)
@@ -149,13 +178,14 @@ func TestMeasurerRun(t *testing.T) {
 		env.ISPResolverConfig().AddRecord("web.whatsapp.com", "web.whatsapp.com", "10.10.34.35")
 
 		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+			measurer := whatsapp.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &whatsapp.Target{Config: &whatsapp.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -199,13 +229,14 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+			measurer := whatsapp.NewExperimentMeasurer()
 			measurement := &model.Measurement{}
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     sess,
+				Target:      &whatsapp.Target{Config: &whatsapp.Config{}},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -243,7 +274,7 @@ func TestFailureAllEndpoints(t *testing.T) {
 	defer env.Close()
 
 	env.Do(func() {
-		measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+		measurer := whatsapp.NewExperimentMeasurer()
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // fail immediately
 		sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
@@ -253,6 +284,7 @@ func TestFailureAllEndpoints(t *testing.T) {
 			Callbacks:   callbacks,
 			Measurement: measurement,
 			Session:     sess,
+			Target:      &whatsapp.Target{Config: &whatsapp.Config{}},
 		}
 		err := measurer.Run(ctx, args)
 		if err != nil {
@@ -513,7 +545,6 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	called := &atomic.Int64{}
 	emptyConfig := urlgetter.Config{}
 	measurer := whatsapp.Measurer{
-		Config: whatsapp.Config{},
 		Getter: func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
 			switch g.Target {
 			case whatsapp.WebHTTPSURL:
@@ -544,6 +575,7 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &whatsapp.Target{Config: &whatsapp.Config{}},
 	}
 	if err := measurer.Run(ctx, args); err != nil {
 		t.Fatal(err)

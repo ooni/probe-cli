@@ -17,7 +17,7 @@ import (
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	if measurer.ExperimentName() != "web_connectivity" {
 		t.Fatal("unexpected name")
 	}
@@ -30,7 +30,7 @@ func TestSuccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	ctx := context.Background()
 	// we need a real session because we need the web-connectivity helper
 	// as well as the ASN database
@@ -41,6 +41,7 @@ func TestSuccess(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &webconnectivity.Target{URL: string(measurement.Input), Config: &webconnectivity.Config{}},
 	}
 	err := measurer.Run(ctx, args)
 	if err != nil {
@@ -63,7 +64,7 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
 	// we need a real session because we need the web-connectivity helper
@@ -74,6 +75,7 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &webconnectivity.Target{URL: string(measurement.Input), Config: &webconnectivity.Config{}},
 	}
 	if err := measurer.Run(ctx, args); err != nil {
 		t.Fatal(err)
@@ -94,7 +96,7 @@ func TestMeasureWithNoInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// we need a real session because we need the web-connectivity helper
@@ -105,6 +107,7 @@ func TestMeasureWithNoInput(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &webconnectivity.Target{URL: string(measurement.Input), Config: &webconnectivity.Config{}},
 	}
 	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrNoInput) {
@@ -127,7 +130,7 @@ func TestMeasureWithInputNotBeingAnURL(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// we need a real session because we need the web-connectivity helper
@@ -138,6 +141,7 @@ func TestMeasureWithInputNotBeingAnURL(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &webconnectivity.Target{URL: string(measurement.Input), Config: &webconnectivity.Config{}},
 	}
 	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrInputIsNotAnURL) {
@@ -160,7 +164,7 @@ func TestMeasureWithUnsupportedInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// we need a real session because we need the web-connectivity helper
@@ -171,6 +175,7 @@ func TestMeasureWithUnsupportedInput(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &webconnectivity.Target{URL: string(measurement.Input), Config: &webconnectivity.Config{}},
 	}
 	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrUnsupportedInput) {
@@ -193,7 +198,7 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	measurer := webconnectivity.NewExperimentMeasurer(webconnectivity.Config{})
+	measurer := webconnectivity.NewExperimentMeasurer()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// we need a real session because we need the web-connectivity helper
@@ -204,6 +209,7 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 		Callbacks:   callbacks,
 		Measurement: measurement,
 		Session:     sess,
+		Target:      &webconnectivity.Target{URL: string(measurement.Input), Config: &webconnectivity.Config{}},
 	}
 	err := measurer.Run(ctx, args)
 	if !errors.Is(err, model.ErrNoAvailableTestHelpers) {

@@ -105,3 +105,8 @@ func (tp *DefaultTProxy) GetaddrinfoLookupANY(ctx context.Context, domain string
 func (tp *DefaultTProxy) GetaddrinfoResolverNetwork() string {
 	return getaddrinfoResolverNetwork()
 }
+
+// GetSystemResolverAddress implements UnderlyingNetwork.
+func (tp *DefaultTProxy) GetSystemResolverAddress() (string, bool) {
+	return getSystemResolverAddress()
+}

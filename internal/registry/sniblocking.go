@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "sni_blocking"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return sniblocking.NewExperimentMeasurer(
-					*config.(*sniblocking.Config),
-				)
+				return sniblocking.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &sniblocking.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrQueryBackend,
+			newLoader:        sniblocking.NewLoader,
 		}
-	}
+	})
 }

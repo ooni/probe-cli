@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "stunreachability"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return stunreachability.NewExperimentMeasurer(
-					*config.(*stunreachability.Config),
-				)
+				return stunreachability.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &stunreachability.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrStaticDefault,
+			newLoader:        stunreachability.NewLoader,
 		}
-	}
+	})
 }

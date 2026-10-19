@@ -10,17 +10,26 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "http_host_header"
-	testVersion = "0.3.0"
+	testVersion = "0.3.1"
+)
+
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Config contains the experiment config.
 type Config struct {
 	// TestHelperURL is the address of the test helper.
-	TestHelperURL string
+	TestHelperURL string `json:"test_helper_url,omitempty"`
 }
 
 // TestKeys contains httphost test keys.
@@ -30,9 +39,7 @@ type TestKeys struct {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config Config
-}
+type Measurer struct{}
 
 // ExperimentName implements ExperimentMeasurer.ExperiExperimentName.
 func (m *Measurer) ExperimentName() string {
@@ -49,30 +56,41 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	_ = args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
-	if measurement.Input == "" {
+
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	config, input := target.Config, target.URL
+
+	if input == "" {
 		return errors.New("experiment requires input")
 	}
-	if m.config.TestHelperURL == "" {
-		m.config.TestHelperURL = "http://www.example.org"
+	if config.TestHelperURL == "" {
+		config.TestHelperURL = "http://www.example.org"
 	}
 	urlgetter.RegisterExtensions(measurement)
 	g := urlgetter.Getter{
 		Begin: measurement.MeasurementStartTimeSaved,
 		Config: urlgetter.Config{
-			HTTPHost: string(measurement.Input),
+			HTTPHost: input,
 		},
 		Session: sess,
-		Target:  m.config.TestHelperURL,
+		Target:  config.TestHelperURL,
 	}
 	tk, _ := g.Get(ctx)
 	measurement.TestKeys = &TestKeys{
 		TestKeys:  tk,
-		THAddress: m.config.TestHelperURL,
+		THAddress: config.TestHelperURL,
 	}
 	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }

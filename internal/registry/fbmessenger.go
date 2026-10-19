@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "facebook_messenger"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return fbmessenger.NewExperimentMeasurer(
-					*config.(*fbmessenger.Config),
-				)
+				return fbmessenger.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &fbmessenger.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
+			newLoader:        fbmessenger.NewLoader,
 		}
-	}
+	})
 }

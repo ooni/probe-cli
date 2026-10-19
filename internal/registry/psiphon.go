@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "psiphon"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return psiphon.NewExperimentMeasurer(
-					*config.(*psiphon.Config),
-				)
+				return psiphon.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &psiphon.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOptional,
+			newLoader:        psiphon.NewLoader,
 		}
-	}
+	})
 }

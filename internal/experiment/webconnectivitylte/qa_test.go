@@ -3,6 +3,7 @@ package webconnectivitylte
 import (
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/webconnectivityqa"
 )
 
@@ -15,8 +16,11 @@ func TestQA(t *testing.T) {
 			if testing.Short() && tc.LongTest {
 				t.Skip("skip test in short mode")
 			}
-			measurer := NewExperimentMeasurer(&Config{})
-			if err := webconnectivityqa.RunTestCase(measurer, tc); err != nil {
+			measurer := NewExperimentMeasurer()
+			newTarget := func(input string) model.ExperimentTarget {
+				return &Target{URL: input, Config: &Config{}}
+			}
+			if err := webconnectivityqa.RunTestCase(measurer, newTarget, tc); err != nil {
 				t.Fatal(err)
 			}
 		})

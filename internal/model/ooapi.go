@@ -90,6 +90,9 @@ type OOAPICheckInResultConfig struct {
 
 	// TestHelpers contains test-helpers information.
 	TestHelpers map[string][]OOAPIService `json:"test_helpers"`
+
+	// Versions contains experiment versions to run.
+	Versions map[string]string `json:"versions,omitempty"`
 }
 
 // OOAPICheckReportIDResponse is the check-report-id API response.

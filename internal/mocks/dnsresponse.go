@@ -16,6 +16,7 @@ type DNSResponse struct {
 	MockBytes            func() []byte
 	MockRcode            func() int
 	MockDecodeHTTPS      func() (*model.HTTPSSvc, error)
+	MockDecodeSVCB       func() ([]*model.SVCB, error)
 	MockDecodeLookupHost func() ([]string, error)
 	MockDecodeNS         func() ([]*net.NS, error)
 	MockDecodeCNAME      func() (string, error)
@@ -37,6 +38,10 @@ func (r *DNSResponse) Rcode() int {
 
 func (r *DNSResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 	return r.MockDecodeHTTPS()
+}
+
+func (r *DNSResponse) DecodeSVCB() ([]*model.SVCB, error) {
+	return r.MockDecodeSVCB()
 }
 
 func (r *DNSResponse) DecodeLookupHost() ([]string, error) {

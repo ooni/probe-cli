@@ -13,7 +13,11 @@ import (
 )
 
 // MeasureTestCase returns the JSON measurement produced by a [TestCase].
-func MeasureTestCase(measurer model.ExperimentMeasurer, tc *TestCase) (*model.Measurement, error) {
+func MeasureTestCase(
+	measurer model.ExperimentMeasurer,
+	newTarget func(input string) model.ExperimentTarget,
+	tc *TestCase,
+) (*model.Measurement, error) {
 	// configure the netemx scenario
 	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
@@ -41,6 +45,7 @@ func MeasureTestCase(measurer model.ExperimentMeasurer, tc *TestCase) (*model.Me
 			Callbacks:   model.NewPrinterCallbacks(prefixLogger),
 			Measurement: measurement,
 			Session:     newSession(httpClient, prefixLogger),
+			Target:      newTarget(tc.Input),
 		}
 
 		// run the experiment
@@ -64,9 +69,13 @@ func MeasureTestCase(measurer model.ExperimentMeasurer, tc *TestCase) (*model.Me
 }
 
 // RunTestCase runs a [testCase].
-func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
+func RunTestCase(
+	measurer model.ExperimentMeasurer,
+	newTarget func(input string) model.ExperimentTarget,
+	tc *TestCase,
+) error {
 	// run the test case proper to get a full OONI measurement
-	measurement, err := MeasureTestCase(measurer, tc)
+	measurement, err := MeasureTestCase(measurer, newTarget, tc)
 	if err != nil {
 		return err
 	}

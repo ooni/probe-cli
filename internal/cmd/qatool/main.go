@@ -62,10 +62,15 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 
 	if !*disableMeasureFlag {
 		// construct the proper measurer
-		measurer := webconnectivitylte.NewExperimentMeasurer(&webconnectivitylte.Config{})
+		measurer := webconnectivitylte.NewExperimentMeasurer()
+
+		// construct the richer-input target factory
+		newTarget := func(input string) model.ExperimentTarget {
+			return &webconnectivitylte.Target{URL: input, Config: &webconnectivitylte.Config{}}
+		}
 
 		// run the test case
-		measurement := runtimex.Try1(webconnectivityqa.MeasureTestCase(measurer, tc))
+		measurement := runtimex.Try1(webconnectivityqa.MeasureTestCase(measurer, newTarget, tc))
 
 		// obtain the test keys
 		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)

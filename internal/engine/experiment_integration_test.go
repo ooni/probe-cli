@@ -65,7 +65,7 @@ func TestRunDASH(t *testing.T) {
 	if !builder.Interruptible() {
 		t.Fatal("dash not marked as interruptible")
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
 func TestRunExample(t *testing.T) {
@@ -78,7 +78,7 @@ func TestRunExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
 func TestRunNdt7(t *testing.T) {
@@ -94,7 +94,7 @@ func TestRunNdt7(t *testing.T) {
 	if !builder.Interruptible() {
 		t.Fatal("ndt7 not marked as interruptible")
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
 func TestRunPsiphon(t *testing.T) {
@@ -107,7 +107,7 @@ func TestRunPsiphon(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
 func TestRunSNIBlocking(t *testing.T) {
@@ -120,7 +120,7 @@ func TestRunSNIBlocking(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runexperimentflow(t, builder.NewExperiment(), "kernel.org")
+	runexperimentflow(t, sess, builder, "kernel.org")
 }
 
 func TestRunTelegram(t *testing.T) {
@@ -133,7 +133,7 @@ func TestRunTelegram(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
 func TestRunTor(t *testing.T) {
@@ -146,7 +146,7 @@ func TestRunTor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
 func TestNeedsInput(t *testing.T) {
@@ -247,11 +247,12 @@ func TestRunHHFM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runexperimentflow(t, builder.NewExperiment(), "")
+	runexperimentflow(t, sess, builder, "")
 }
 
-func runexperimentflow(t *testing.T, experiment model.Experiment, input string) {
+func runexperimentflow(t *testing.T, sess *Session, builder model.ExperimentBuilder, input string) {
 	ctx := context.Background()
+	experiment := builder.NewExperiment()
 	err := experiment.OpenReportContext(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -259,8 +260,22 @@ func runexperimentflow(t *testing.T, experiment model.Experiment, input string) 
 	if experiment.ReportID() == "" {
 		t.Fatal("reportID should not be empty here")
 	}
-	target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input)
-	measurement, err := experiment.MeasureWithContext(ctx, target)
+	var staticInputs []string
+	if input != "" {
+		staticInputs = []string{input}
+	}
+	loader := builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
+		Session:      sess,
+		StaticInputs: staticInputs,
+	})
+	targets, err := loader.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(targets) < 1 {
+		t.Fatal("expected at least one target")
+	}
+	measurement, err := experiment.MeasureWithContext(ctx, targets[0])
 	if err != nil {
 		t.Fatal(err)
 	}

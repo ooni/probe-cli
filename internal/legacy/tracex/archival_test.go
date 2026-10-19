@@ -2,6 +2,7 @@ package tracex
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"io"
 	"net/http"
@@ -50,6 +51,38 @@ func TestDNSQueryType(t *testing.T) {
 			if exp.qtype.ipOfType(exp.ip) != exp.output {
 				t.Fatalf("failure for %+v", exp)
 			}
+		}
+	})
+
+	t.Run("dnsQueryTypesForEvent", func(t *testing.T) {
+		tests := []struct {
+			name         string
+			dnsQueryType string
+			want         []dnsQueryType
+		}{{
+			name:         "empty query type (host lookup) yields A and AAAA",
+			dnsQueryType: "",
+			want:         []dnsQueryType{"A", "AAAA"},
+		}, {
+			name:         "ANY (system resolver host lookup) yields A and AAAA",
+			dnsQueryType: "ANY",
+			want:         []dnsQueryType{"A", "AAAA"},
+		}, {
+			name:         "SVCB is recorded under its own name",
+			dnsQueryType: "SVCB",
+			want:         []dnsQueryType{"SVCB"},
+		}, {
+			name:         "any other explicit query type is recorded verbatim",
+			dnsQueryType: "HTTPS",
+			want:         []dnsQueryType{"HTTPS"},
+		}}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				got := dnsQueryTypesForEvent(&EventValue{DNSQueryType: tt.dnsQueryType})
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Fatal(diff)
+				}
+			})
 		}
 	})
 }
@@ -381,6 +414,105 @@ func TestNewDNSQueriesList(t *testing.T) {
 				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
 			Hostname:  "dns.google.com",
 			QueryType: "AAAA",
+			T:         0.2,
+		}},
+	}, {
+		name: "successful SVCB run yields only an SVCB entry (no A/AAAA)",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveDone{&EventValue{
+				DNSQueryType:     "SVCB",
+				DNSSVCBResponses: []*model.SVCB{{TargetName: ".", ALPN: []string{"h2", "h3"}}},
+				Hostname:         "_dns.dns.google",
+				Time:             begin.Add(200 * time.Millisecond),
+			}}},
+		},
+		want: []DNSQueryEntry{{
+			Answers: []DNSAnswerEntry{{
+				AnswerType: "SVCB",
+				SVCB: &model.SVCBData{
+					TargetName: ".",
+					Params: map[string]string{
+						"alpn":     "h2,h3",
+						"ipv4hint": "",
+						"ipv6hint": "",
+					},
+				},
+			}},
+			Hostname:  "_dns.dns.google",
+			QueryType: "SVCB",
+			T:         0.2,
+		}},
+	}, {
+		name: "failed SVCB run records the query with a failure and no answers",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveDone{&EventValue{
+				DNSQueryType: "SVCB",
+				Err:          netxlite.FailureDNSNXDOMAINError,
+				Hostname:     "_dns.dns.google",
+				Time:         begin.Add(200 * time.Millisecond),
+			}}},
+		},
+		want: []DNSQueryEntry{{
+			Answers: nil,
+			Failure: NewFailure(
+				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
+			Hostname:  "_dns.dns.google",
+			QueryType: "SVCB",
+			T:         0.2,
+		}},
+	}, {
+		name: "SVCB run emits one answer entry per record and encodes ECH",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveDone{&EventValue{
+				DNSQueryType: "SVCB",
+				DNSSVCBResponses: []*model.SVCB{{
+					TargetName: ".",
+					ALPN:       []string{"h2", "h3"},
+					Ech:        []byte("echconfig"),
+				}, {
+					TargetName:    "doh.example",
+					Mandatory:     []string{"alpn", "port"},
+					ALPN:          []string{"h2"},
+					NoDefaultALPN: true,
+					Port:          8443,
+					Raw:           []byte("rawrr"),
+				}},
+				Hostname: "_dns.dns.google",
+				Time:     begin.Add(200 * time.Millisecond),
+			}}},
+		},
+		want: []DNSQueryEntry{{
+			Answers: []DNSAnswerEntry{{
+				AnswerType: "SVCB",
+				SVCB: &model.SVCBData{
+					TargetName: ".",
+					Params: map[string]string{
+						"alpn":     "h2,h3",
+						"ipv4hint": "",
+						"ipv6hint": "",
+						"ech":      base64.StdEncoding.EncodeToString([]byte("echconfig")),
+					},
+				},
+			}, {
+				AnswerType: "SVCB",
+				SVCB: &model.SVCBData{
+					TargetName: "doh.example",
+					Params: map[string]string{
+						"mandatory":       "alpn,port",
+						"alpn":            "h2",
+						"no-default-alpn": "true",
+						"ipv4hint":        "",
+						"ipv6hint":        "",
+						"port":            "8443",
+					},
+					Raw: model.ArchivalBinaryData("rawrr"),
+				},
+			}},
+			Hostname:  "_dns.dns.google",
+			QueryType: "SVCB",
 			T:         0.2,
 		}},
 	}}

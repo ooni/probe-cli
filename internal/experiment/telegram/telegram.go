@@ -10,11 +10,20 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "telegram"
 	testVersion = "0.3.1"
+)
+
+var (
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Config contains the telegram experiment config.
@@ -68,10 +77,6 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 
 // Measurer performs the measurement
 type Measurer struct {
-	// Config contains the experiment settings. If empty we
-	// will be using default settings.
-	Config Config
-
 	// Getter is an optional getter to be used for testing.
 	Getter urlgetter.MultiGetter
 }
@@ -102,6 +107,14 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
+	// validate the richer-input target (this experiment takes no input)
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	if _, ok := args.Target.(*Target); !ok {
+		return ErrInvalidInputType
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
@@ -131,8 +144,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return Measurer{Config: config}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return Measurer{}
 }
 
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}

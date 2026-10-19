@@ -23,6 +23,10 @@ type checkInFlagsWrapper struct {
 
 	// Flags contains the actual flags.
 	Flags map[string]bool
+
+	// Versions maps an experiment's base name to the default version the probe
+	// should run, as selected by the check-in API.
+	Versions map[string]string
 }
 
 // Store stores the result of the latest check-in in the given key-value store.
@@ -32,16 +36,16 @@ type checkInFlagsWrapper struct {
 func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	// store the check-in flags in the key-value store
 	wrapper := &checkInFlagsWrapper{
-		Expire: time.Now().Add(24 * time.Hour),
-		Flags:  resp.Conf.Features,
+		Expire:   time.Now().Add(24 * time.Hour),
+		Flags:    resp.Conf.Features,
+		Versions: resp.Conf.Versions,
 	}
 	data, err := json.Marshal(wrapper)
 	runtimex.PanicOnError(err, "json.Marshal unexpectedly failed")
 	return kvStore.Set(CheckInFlagsState, data)
 }
 
-// GetFeatureFlag returns the value of a check-in feature flag. In case of any
-// error this function will always return a false value.
+// GetFeatureFlag returns the value of a check-in feature flag.
 func GetFeatureFlag(kvStore model.KeyValueStore, name string, defaultFlag bool) bool {
 	data, err := kvStore.Get(CheckInFlagsState)
 	if err != nil {
@@ -59,6 +63,27 @@ func GetFeatureFlag(kvStore model.KeyValueStore, name string, defaultFlag bool) 
 		return flag
 	}
 	return defaultFlag // default to true if the flag is not present
+}
+
+// ExperimentVersion returns the default version the check-in API selected for
+// the experiment with the given base name.
+func GetExperimentVersion(kvStore model.KeyValueStore, name string, defaultVersion string) string {
+	data, err := kvStore.Get(CheckInFlagsState)
+	if err != nil {
+		return defaultVersion
+	}
+	var wrapper checkInFlagsWrapper
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return defaultVersion
+	}
+	if time.Now().After(wrapper.Expire) {
+		return defaultVersion
+	}
+	version, ok := wrapper.Versions[name]
+	if ok {
+		return version
+	}
+	return defaultVersion
 }
 
 // ExperimentEnabledKey returns the [model.KeyValueStore] key to use to
