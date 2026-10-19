@@ -33,6 +33,12 @@ const (
 
 	// userauthVersion is the ooniprobe-rs release we use for BOTH the from-source
 	// build and the prebuilt bundle download.
+	//
+	// NOTE: this must be updated together with userauthVersion - it is
+	// easy to bump the version for the prebuilt-bundle download path
+	// (which pins nothing) and forget that the from-source path also
+	// needs its hash updated to match, since the mismatch only surfaces
+	// when someone actually builds with USERAUTH_FROM_SOURCE=1.
 	userauthVersion = "0.1.8"
 
 	// userauthSourceSHA256 pins the source tarball for userauthVersion.
