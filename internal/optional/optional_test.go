@@ -2,6 +2,7 @@ package optional
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -91,8 +92,9 @@ func TestValue(t *testing.T) {
 
 				input := []byte(`{"UID":[]}`)
 				var state config
+				var typeErr *json.UnmarshalTypeError
 				err := json.Unmarshal(input, &state)
-				if err == nil || err.Error() != "json: cannot unmarshal array into Go struct field config.UID of type int64" {
+				if !errors.As(err, &typeErr) || typeErr.Value != "array" {
 					t.Fatal("unexpected err", err)
 				}
 
@@ -150,8 +152,9 @@ func TestValue(t *testing.T) {
 
 				input := []byte(`{"UID":[]}`)
 				var state config
+				var typeErr *json.UnmarshalTypeError
 				err := json.Unmarshal(input, &state)
-				if err == nil || err.Error() != "json: cannot unmarshal array into Go struct field config.UID of type int64" {
+				if !errors.As(err, &typeErr) || typeErr.Value != "array" {
 					t.Fatal("unexpected err", err)
 				}
 
