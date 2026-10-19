@@ -1,4 +1,4 @@
-//go:build go1.27 || ooni_feature_disable_psiphon
+//go:build go1.28 || ooni_feature_disable_psiphon
 
 package psiphonfeat
 
