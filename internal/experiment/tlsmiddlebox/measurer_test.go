@@ -89,7 +89,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 	t.Run("with invalid ClientId", func(t *testing.T) {
 		m := NewExperimentMeasurer()
 		meas := &model.Measurement{
-			Input: model.MeasurementInput("tlstrace://example.com"),
+			Input: model.MeasurementInput("https://example.com"),
 		}
 		sess := &mocks.Session{
 			MockLogger: func() model.Logger {
@@ -104,7 +104,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 				Config: &Config{
 					ClientId: 5, // we only know fingerprints between 1 and 4
 				},
-				URL: "tlstrace://example.com",
+				URL: "https://example.com",
 			},
 		}
 		err := m.Run(context.Background(), args)
