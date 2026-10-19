@@ -181,7 +181,7 @@ func TestArchivalBinaryData(t *testing.T) {
 		}, {
 			name:       "with correct data model and format but invalid base64 string",
 			input:      []byte(`{"data":"x","format":"base64"}`),
-			expectErr:  errors.New("illegal base64 data at input byte 0"),
+			expectErr:  errors.New("json: cannot unmarshal string into Go struct field archivalBinaryDataRepr.data of type []uint8: illegal base64 data at input byte 0"),
 			expectData: nil,
 		}, {
 			name:       "with correct data model and format but empty base64 string",
@@ -442,7 +442,7 @@ func TestArchivalScrubbedMaybeBinaryString(t *testing.T) {
 		}, {
 			name:       "with correct data model and format but invalid base64 string",
 			input:      []byte(`{"data":"x","format":"base64"}`),
-			expectErr:  errors.New("illegal base64 data at input byte 0"),
+			expectErr:  errors.New("json: cannot unmarshal string into Go struct field archivalBinaryDataRepr.data of type []uint8: illegal base64 data at input byte 0"),
 			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with correct data model and format but empty base64 string",
@@ -682,7 +682,7 @@ func TestArchivalHTTPHeader(t *testing.T) {
 				model.ArchivalScrubbedMaybeBinaryString(""),
 				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
-			wantErr: errors.New("illegal base64 data at input byte 0"),
+			wantErr: errors.New("json: cannot unmarshal string into Go struct field archivalBinaryDataRepr.data of type []uint8: illegal base64 data at input byte 0"),
 		}, {
 			name:  "with correctly encoded base64 data",
 			input: []byte(`["x",` + string(archivalEncodedBinaryInput) + `]`),
