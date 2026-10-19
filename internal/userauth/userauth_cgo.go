@@ -87,7 +87,7 @@ func Register(url, publicParams, manifestVersion, proxy, userAgent string, timeo
 		defer C.free(unsafe.Pointer(cUserAgent))
 	}
 
-	resp := C.userauth_register(cURL, cPublicParams, cManifestVersion, cProxy, C.float(timeout), cUserAgent)
+	resp := C.userauth_register(cURL, cPublicParams, cManifestVersion, nil, cProxy, C.float(timeout), cUserAgent)
 	defer C.client_response_free(resp)
 
 	jsonStr, err := parseResponse(resp)
@@ -142,7 +142,7 @@ func Submit(url, content, probeCC, probeASN, proxy, userAgent string, timeout fl
 		defer C.free(unsafe.Pointer(cConfig))
 	}
 
-	resp := C.userauth_submit(cURL, cContent, cProbeCC, cProbeASN, cProxy, C.float(timeout), cUserAgent, cConfig)
+	resp := C.userauth_submit(cURL, cContent, cProbeCC, cProbeASN, nil, cProxy, C.float(timeout), cUserAgent, cConfig)
 	defer C.client_response_free(resp)
 
 	jsonStr, err := parseResponse(resp)
