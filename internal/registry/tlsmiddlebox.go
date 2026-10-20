@@ -19,7 +19,7 @@ func init() {
 			canonicalName:    canonicalName,
 			config:           &tlsmiddlebox.Config{},
 			enabledByDefault: true,
-			inputPolicy:      model.InputOrQueryBackend,
+			inputPolicy:      model.InputOrStaticDefault,
 			newLoader:        tlsmiddlebox.NewLoader,
 		}
 	})
