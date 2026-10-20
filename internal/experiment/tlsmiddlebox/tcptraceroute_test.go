@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/unix"
 )
 
@@ -101,6 +102,16 @@ func defineMockUnixOpsImpl() *mockUnixOpsImpl {
 			return 0, nil
 		},
 	}
+}
+
+func TestLookupASN(t *testing.T) {
+	t.Run("invalid db path", func(t *testing.T) {
+		ip := "1.2.3.4"
+		dbPath := "abcd"
+		require.Panics(t, func() {
+			_, _, _ = LookupASN(ip, dbPath)
+		})
+	})
 }
 
 func TestParseQuotedPacket(t *testing.T) {
