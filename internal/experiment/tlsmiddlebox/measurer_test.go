@@ -6,12 +6,49 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
+
+func TestChooseIPv4(t *testing.T) {
+	t.Run("returns IPv4", func(t *testing.T) {
+		var addrs = []string{"1.2.3.4", "5.6.7.8", "2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31", "2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64"}
+		result := chooseIPv4(addrs)
+
+		if len(result) != 2 {
+			t.Fatalf("expected 2 IPv4 addresses, got %d: %v", len(result), result)
+		}
+
+		if !slices.Contains(result, "1.2.3.4") {
+			t.Errorf("missing IPv4 address 1.2.3.4: %v", result)
+		}
+
+		if !slices.Contains(result, "5.6.7.8") {
+			t.Errorf("missing IPv4 address 5.6.7.8: %v", result)
+		}
+	})
+
+	t.Run("returns IPv6", func(t *testing.T) {
+		var addrs = []string{"2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31", "2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64"}
+		result := chooseIPv4(addrs)
+
+		if len(result) != 2 {
+			t.Fatalf("expected 2 IPv6 addresses, got %d: %v", len(result), result)
+		}
+
+		if !slices.Contains(result, "2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31") {
+			t.Errorf("missing IPv6 address 2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31: %v", result)
+		}
+
+		if !slices.Contains(result, "2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64") {
+			t.Errorf("missing IPv6 address 2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64: %v", result)
+		}
+	})
+}
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
 	measurer := NewExperimentMeasurer()
