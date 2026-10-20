@@ -677,7 +677,7 @@ func TestNewFactory(t *testing.T) {
 		},
 		"tlsmiddlebox": {
 			enabledByDefault: true,
-			inputPolicy:      model.InputOrQueryBackend,
+			inputPolicy:      model.InputOrStaticDefault,
 		},
 		"telegram": {
 			enabledByDefault: true,
