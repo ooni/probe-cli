@@ -133,7 +133,7 @@ var defaultInput = []model.ExperimentTarget{
 		country:  model.DefaultCountryCode,
 	},
 	&Target{
-		URL:      "https://cdninstagram.com",
+		URL:      "https://xvideos.com",
 		Config:   &Config{},
 		category: model.DefaultCategoryCode,
 		country:  model.DefaultCountryCode,
