@@ -3,6 +3,7 @@ package tlsmiddlebox
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -64,7 +65,7 @@ func TestTargetLoaderLoad(t *testing.T) {
 			options: &Config{},
 			loader: &targetloading.Loader{
 				ExperimentName: "tlsmiddlebox",
-				InputPolicy:    model.InputOrQueryBackend,
+				InputPolicy:    model.InputOrStaticDefault,
 				Logger:         model.DiscardLogger,
 				Session:        &mocks.Session{},
 				StaticInputs:   []string{"https://www.example.com/"},
@@ -86,6 +87,9 @@ func TestTargetLoaderLoad(t *testing.T) {
 		}
 		// CLI/file inputs carry the default category and country codes.
 		if got.Category() != model.DefaultCategoryCode {
+			fmt.Printf("%s", got.Category())
+			fmt.Printf("%s", got.Input())
+			fmt.Printf("%s", got.Country())
 			t.Fatal("unexpected category")
 		}
 		if got.Country() != model.DefaultCountryCode {
