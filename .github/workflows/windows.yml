@@ -44,7 +44,7 @@ jobs:
           export PATH="$PATH:/mingw32/bin"
           make CLI/windows
         env:
-          EXPECTED_MINGW_W64_VERSION: "16.1.0"
+          EXPECTED_MINGW_W64_VERSION: "16.2.0"
           USERAUTH_FROM_SOURCE: "1"
 
       - uses: actions/upload-artifact@v4
