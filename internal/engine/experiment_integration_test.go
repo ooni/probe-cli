@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/feature/psiphonfeat"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/registry"
@@ -100,6 +101,9 @@ func TestRunNdt7(t *testing.T) {
 func TestRunPsiphon(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
+	}
+	if !psiphonfeat.Enabled {
+		t.Skip("psiphon is not enabled in this build")
 	}
 	sess := newSessionForTesting(t)
 	defer sess.Close()
