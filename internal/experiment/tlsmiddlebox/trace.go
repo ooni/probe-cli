@@ -55,6 +55,7 @@ var ipRegex = regexp.MustCompile(
 	`\[[0-9a-fA-F:.]+\](?::\d+)?|\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?|[0-9a-fA-F]*:[0-9a-fA-F:]+`,
 )
 
+// scrubs IPv4 and IPv6 addresses from error messages
 func scrubIPsFromError(s string) string {
 	return ipRegex.ReplaceAllStringFunc(s, func(candidate string) string {
 		ip := strings.Trim(candidate, "[]")
