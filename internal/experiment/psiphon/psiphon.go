@@ -6,10 +6,12 @@ package psiphon
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/feature/psiphonfeat"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
@@ -108,9 +110,15 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if m.BeforeGetHook != nil {
 		m.BeforeGetHook(g)
 	}
-	tk, _ := g.Get(ctx) // ignore error since we have the testkeys and want to submit them
+	tk, err := g.Get(ctx)
 	cancel()
 	wg.Wait()
+	// When the psiphon feature is not compiled into this build, the tunnel can
+	// never start, so the resulting measurement is not meaningful.
+	if errors.Is(err, psiphonfeat.ErrFeatureNotEnabled) {
+		sess.Logger().Warnf("psiphon: this build was compiled without psiphon support (%s)", psiphonfeat.ErrFeatureNotEnabled)
+		return err
+	}
 	measurement.TestKeys = &TestKeys{
 		TestKeys:   tk,
 		MaxRuntime: maxruntime,
