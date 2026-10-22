@@ -3,6 +3,8 @@ package tlsmiddlebox
 import (
 	"errors"
 	"fmt"
+	"net"
+	"regexp"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
@@ -47,6 +49,20 @@ type ICMPIteration struct {
 	ICMPError *model.ArchivalICMPErrorMessage `json:"icmp_error"`
 }
 
+var ipPortRegex = regexp.MustCompile(
+	`\[[0-9a-fA-F:.]+\]:\d+|\b(?:\d{1,3}\.){3}\d{1,3}:\d+`,
+)
+
+func scrubIPsFromError(s string) string {
+	return ipPortRegex.ReplaceAllStringFunc(s, func(candidate string) string {
+		host, _, err := net.SplitHostPort(candidate)
+		if err == nil && net.ParseIP(host) != nil {
+			return "[scrubbed]"
+		}
+		return candidate
+	})
+}
+
 // errorChain unwraps and iterates through the error list and records
 // the type and error at each step
 func errorChain(err error) []model.FailureChainData {
@@ -59,7 +75,7 @@ func errorChain(err error) []model.FailureChainData {
 	for err != nil {
 		chain = append(chain, model.FailureChainData{
 			Type:  fmt.Sprintf("%T", err),
-			Error: err.Error(),
+			Error: scrubIPsFromError(err.Error()),
 		})
 
 		err = errors.Unwrap(err)
