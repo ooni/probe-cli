@@ -11,6 +11,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/feature/psiphonfeat"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -128,6 +129,27 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 	}
 	if observer.progress.Load() < 2 {
 		t.Fatal("not enough progress emitted?!")
+	}
+}
+
+func TestRunDoesNotSubmitWhenFeatureDisabled(t *testing.T) {
+	if psiphonfeat.Enabled {
+		t.Skip("psiphon is enabled in this build; cannot exercise the disabled path")
+	}
+	measurement := new(model.Measurement)
+	measurer := psiphon.NewExperimentMeasurer()
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+		Measurement: measurement,
+		Session:     newfakesession(),
+		Target:      &psiphon.Target{Config: &psiphon.Config{}, URL: ""},
+	}
+	err := measurer.Run(context.Background(), args)
+	if !errors.Is(err, psiphonfeat.ErrFeatureNotEnabled) {
+		t.Fatal("expected ErrFeatureNotEnabled, got", err)
+	}
+	if measurement.TestKeys != nil {
+		t.Fatal("expected no test keys when the feature is disabled")
 	}
 }
 
