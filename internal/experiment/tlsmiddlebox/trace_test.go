@@ -101,4 +101,28 @@ func TestScrubIPsFromError(t *testing.T) {
 			t.Fatalf("unexpected ipv4StringScrubbed, expected %s, got %s", ipv4StringResult, ipv4StringScrubbed)
 		}
 	})
+
+	t.Run("scrub IPv6 address link local without trailing colon and brackets", func(t *testing.T) {
+		ipv4String := "I like to play fe80::1 with maracas"
+
+		ipv4StringScrubbed := scrubIPsFromError(ipv4String)
+
+		ipv4StringResult := "I like to play [scrubbed] with maracas"
+
+		if strings.Compare(ipv4StringScrubbed, ipv4StringResult) != 0 {
+			t.Fatalf("unexpected ipv4StringScrubbed, expected %s, got %s", ipv4StringResult, ipv4StringScrubbed)
+		}
+	})
+
+	t.Run("scrub IPv6 address without trailing colon and brackets", func(t *testing.T) {
+		ipv4String := "I like to play 2001:db8::1 with maracas"
+
+		ipv4StringScrubbed := scrubIPsFromError(ipv4String)
+
+		ipv4StringResult := "I like to play [scrubbed] with maracas"
+
+		if strings.Compare(ipv4StringScrubbed, ipv4StringResult) != 0 {
+			t.Fatalf("unexpected ipv4StringScrubbed, expected %s, got %s", ipv4StringResult, ipv4StringScrubbed)
+		}
+	})
 }

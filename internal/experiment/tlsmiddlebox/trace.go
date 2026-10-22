@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
@@ -49,16 +50,24 @@ type ICMPIteration struct {
 	ICMPError *model.ArchivalICMPErrorMessage `json:"icmp_error"`
 }
 
-var ipPortRegex = regexp.MustCompile(
-	`\[[0-9a-fA-F:.]+\]:\d+|\b(?:\d{1,3}\.){3}\d{1,3}:\d+`,
+// matches a bracketed IPv6 address (with an optional port) OR an IPv4 address (with an optional port) OR an unbracketed IPv6 address with NO port
+var ipRegex = regexp.MustCompile(
+	`\[[0-9a-fA-F:.]+\](?::\d+)?|\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?|[0-9a-fA-F]*:[0-9a-fA-F:]+`,
 )
 
 func scrubIPsFromError(s string) string {
-	return ipPortRegex.ReplaceAllStringFunc(s, func(candidate string) string {
+	return ipRegex.ReplaceAllStringFunc(s, func(candidate string) string {
+		ip := strings.Trim(candidate, "[]")
+
 		host, _, err := net.SplitHostPort(candidate)
-		if err == nil && net.ParseIP(host) != nil {
+		if err == nil {
+			ip = host
+		}
+
+		if net.ParseIP(ip) != nil {
 			return "[scrubbed]"
 		}
+
 		return candidate
 	})
 }
