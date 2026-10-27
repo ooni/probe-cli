@@ -33,7 +33,6 @@ package quicfp
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"net"
 	"net/url"
 	"sort"
@@ -188,7 +187,8 @@ func (m *Measurer) resolveTarget(input string) (addr *net.UDPAddr, sni string, e
 }
 
 // sendAndAwait sends every datagram in reqs (back-to-back, on the same
-// 4-tuple) and waits up to the configured vector timeout for a response
+// 4-tuple) from pconn, a socket of this ping's own, and waits up to the
+// configured vector timeout for a response
 // whose Version-Negotiation Destination Connection ID matches srcID (i.e.
 // the source connection ID we sent), classifying whatever arrives.
 func (m *Measurer) sendAndAwait(
@@ -199,22 +199,19 @@ func (m *Measurer) sendAndAwait(
 	startedAt time.Time,
 	timeout time.Duration,
 ) (sendErr error, responses []*SinglePingResponse) {
+	_ = pconn.SetDeadline(time.Now().Add(timeout))
 	for _, req := range reqs {
 		if _, err := pconn.WriteTo(req, destAddr); err != nil {
 			return err, nil
 		}
 	}
-	_ = pconn.SetDeadline(time.Now().Add(timeout))
 	buf := make([]byte, 2048)
 	for {
 		n, _, err := pconn.ReadFrom(buf)
 		respT := time.Since(startedAt).Seconds()
 		if err != nil {
-			// Deadline exceeded (or the socket was closed): stop
-			// waiting for this vector. Both are reported as "no
-			// response", i.e. Blocked=true upstream, since the
-			// experiment holds one shared socket across the whole
-			// run and does not distinguish the two here.
+			// Deadline exceeded: stop waiting for this vector,
+			// reported as "no response", i.e. Blocked=true upstream.
 			return nil, responses
 		}
 		raw := append([]byte{}, buf[:n]...)
@@ -276,12 +273,6 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 	measurement.TestKeys = tk
 
-	pconn, err := m.config.doListenUDP("udp", &net.UDPAddr{})
-	if err != nil {
-		return err
-	}
-	defer pconn.Close()
-
 	timeout := m.config.vectorTimeout()
 
 	for _, v := range vectors {
@@ -320,7 +311,17 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			}
 
 			sess.Logger().Infof("quicfp: %s -> %s", v.Name, destAddr)
+			// A fresh socket, so a fresh source port, for every ping: a late
+			// reply to one vector can't be counted for the next, and a censor
+			// that blocks a 4-tuple after a trigger (residual censorship, which
+			// the paper's Section 6.4 avoids by rotating client ports) can't
+			// make every later vector look blocked.
+			pconn, err := m.config.doListenUDP("udp", &net.UDPAddr{})
+			if err != nil {
+				return err
+			}
 			senderr, responses := m.sendAndAwait(pconn, destAddr, reqs, src, measurement.MeasurementStartTimeSaved, timeout)
+			pconn.Close()
 
 			sp := &SinglePing{
 				ConnIDDst: hex.EncodeToString(dst),
@@ -332,10 +333,6 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 				Blocked:   senderr == nil && len(responses) == 0,
 			}
 			vr.Pings = append(vr.Pings, sp)
-
-			if senderr != nil && errors.Is(senderr, net.ErrClosed) {
-				break
-			}
 		}
 		tk.Vectors = append(tk.Vectors, vr)
 	}

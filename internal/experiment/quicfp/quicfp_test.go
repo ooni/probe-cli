@@ -2,8 +2,14 @@ package quicfp
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"net"
 	"testing"
+	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // parseFrames reconstructs the CRYPTO stream from a decrypted plaintext
@@ -380,6 +386,45 @@ func TestResolveTarget(t *testing.T) {
 		}
 		if addr.String() != c.wantAddr || sni != c.wantSNI {
 			t.Errorf("%s: got %s %s, want %s %s", c.input, addr, sni, c.wantAddr, c.wantSNI)
+		}
+	}
+}
+
+func TestRunUsesAFreshSocketPerPing(t *testing.T) {
+	var opened, closed int
+	config := &Config{
+		Repetitions:   2,
+		VectorTimeout: 1,
+		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+			opened++
+			return &mocks.UDPLikeConn{
+				MockSetDeadline: func(t time.Time) error { return nil },
+				MockWriteTo:     func(p []byte, addr net.Addr) (int, error) { return len(p), nil },
+				MockReadFrom: func(p []byte) (int, net.Addr, error) {
+					return 0, nil, errors.New("i/o timeout")
+				},
+				MockClose: func() error { closed++; return nil },
+			}, nil
+		},
+	}
+	meas := &model.Measurement{}
+	args := &model.ExperimentArgs{
+		Measurement: meas,
+		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		Target:      &Target{Config: config, URL: "127.0.0.1:443"},
+	}
+	if err := NewExperimentMeasurer().Run(context.Background(), args); err != nil {
+		t.Fatal(err)
+	}
+	vectors, _ := buildVectors("127.0.0.1")
+	if want := 2 * len(vectors); opened != want || closed != want {
+		t.Fatalf("opened %d sockets and closed %d, want %d each", opened, closed, want)
+	}
+	for _, vr := range meas.TestKeys.(*TestKeys).Vectors {
+		for _, p := range vr.Pings {
+			if !p.Blocked || p.Failure != nil {
+				t.Fatalf("%s: want a ping without response or failure, got %+v", vr.Name, p)
+			}
 		}
 	}
 }
