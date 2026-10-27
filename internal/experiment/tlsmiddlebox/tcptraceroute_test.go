@@ -494,6 +494,50 @@ func TestTracerouteTCP(t *testing.T) {
 
 	})
 
+	t.Run("quote kept when the router address lookups fail", func(t *testing.T) {
+		wg.Add(1)
+		address := "142.250.200.4:443"
+		zeroTime := time.Date(2026, 9, 15, 11, 55, 54, 0, time.UTC)
+		unixOpsImpl := defineMockUnixOpsImpl()
+		unixOpsImpl.PollFunc = func(fds []unix.PollFd, timeout int) (int, error) {
+			fds[0].Revents = unix.POLLERR
+			return 1, nil
+		}
+		// same ICMP error as above, but the offender address family is not AF_INET,
+		// so there is no router address and the ASN and country lookups fail
+		bufHex := "8c2201bbd45f1b4b00000000a002faf04ed90000020405b40402080a89f6b44300000000010303070000000000000000"
+		oobHex := "400000000000000001000000250000004b32a96a00000000bbe2f6290000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000b00000071000000020b00000000000000000000000000000ac802d10000000000000000"
+		buf, err := hex.DecodeString(bufHex)
+		if err != nil {
+			t.Fatal(err)
+		}
+		oob, err := hex.DecodeString(oobHex)
+		if err != nil {
+			t.Fatal(err)
+		}
+		calls := 0
+		unixOpsImpl.RecvmsgFunc = func(fd int, p, oobBuf []byte, flags int) (int, int, int, unix.Sockaddr, error) {
+			calls++
+			if calls == 1 {
+				copy(p, buf)
+				copy(oobBuf, oob)
+				return len(buf), len(oob), 0, nil, nil
+			}
+			return 0, 0, 0, nil, unix.EAGAIN
+		}
+
+		ii, err := tracerouteTCPWithOps(index, zeroTime, address, ttl, 3000, wg, model.DiscardLogger, "advanced", unixOpsImpl)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if ii == nil || ii.ICMPError == nil {
+			t.Fatal("expected an ICMP error")
+		}
+		if ii.ICMPError.Quote.Protocol != 6 || ii.ICMPError.Quote.DstPort != 443 {
+			t.Fatalf("expected the parsed quote to be kept, got %+v", ii.ICMPError.Quote)
+		}
+	})
+
 	t.Run("connected", func(t *testing.T) {
 		wg.Add(1)
 		address := "127.0.0.1:1"

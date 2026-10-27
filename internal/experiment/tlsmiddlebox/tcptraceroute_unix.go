@@ -226,7 +226,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 			quotedPacket, err = parseQuotedPacket(quoted)
 
 			if err != nil {
-				fmt.Println("quote parse failed:", err)
+				logger.Warnf("tlsmiddlebox: cannot parse ICMP quote: %s", err.Error())
 				return nil, err
 			}
 
@@ -283,9 +283,14 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 		var ii *ICMPIteration
 		var asn uint
 		var org, country_code string
+		var asnErr, ccErr error
 
-		asn, org, err = LookupASN(ip.String(), "")
-		country_code, err = LookupCC(ip.String(), "")
+		asn, org, asnErr = LookupASN(ip.String(), "")
+		country_code, ccErr = LookupCC(ip.String(), "")
+		lookupErr := asnErr
+		if lookupErr == nil {
+			lookupErr = ccErr
+		}
 
 		if privacyMode == "advanced" {
 
@@ -304,7 +309,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 				},
 			}
 
-			if quotedPacket != nil && err == nil {
+			if quotedPacket != nil {
 				ii.ICMPError.Quote = *quotedPacket
 			}
 		} else {
@@ -323,7 +328,7 @@ func tracerouteTCPWithOps(index int64, zeroTime time.Time, address string, ttl i
 		}
 
 		ol := logx.NewOperationLogger(logger, "Traceroute #%d TTL %d %s Router %s", index, ttl, address, ip.String())
-		ol.Stop(err)
+		ol.Stop(lookupErr)
 		return ii, nil
 	}
 
