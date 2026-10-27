@@ -1,0 +1,38 @@
+# Runs the tlsmiddlebox experiment across real kernel routers and middleboxes in network
+# namespaces (internal/experiment/tlsmiddlebox/testdata/netns), which needs root
+name: tlsmiddlebox
+on:
+  pull_request:
+    paths:
+      - "internal/experiment/tlsmiddlebox/**"
+      - "internal/measurexlite/**"
+      - "internal/netxlite/**"
+      - "go.mod"
+      - "GOVERSION"
+      - ".github/workflows/tlsmiddlebox.yml"
+  push:
+    branches:
+      - "master"
+      - "release/**"
+      - "fullbuild"
+
+jobs:
+  test_netns:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-tlsmiddlebox-${{ steps.goversion.outputs.version }}"
+
+      - run: go test -c -tags netns -o tlsmiddlebox.test ./internal/experiment/tlsmiddlebox
+        env:
+          CGO_ENABLED: 0
+
+      - run: sudo internal/experiment/tlsmiddlebox/testdata/netns/topo.sh ./tlsmiddlebox.test -test.run '^TestNetns$' -test.v

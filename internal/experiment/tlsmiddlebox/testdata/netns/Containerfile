@@ -1,0 +1,5 @@
+# The image in which run.sh runs topo.sh and the test binary
+FROM docker.io/library/debian:12
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends iproute2 iptables procps python3 openssl \
+ && rm -rf /var/lib/apt/lists/*
