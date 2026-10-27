@@ -635,6 +635,10 @@ func TestNewFactory(t *testing.T) {
 			enabledByDefault: true,
 			inputPolicy:      model.InputOptional,
 		},
+		"quicfp": {
+			//enabledByDefault: false,
+			inputPolicy: model.InputStrictlyRequired,
+		},
 		"quicping": {
 			enabledByDefault: true,
 			inputPolicy:      model.InputStrictlyRequired,

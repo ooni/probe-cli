@@ -37,6 +37,10 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/legacy/legacymodel"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 const (
@@ -47,22 +51,22 @@ const (
 // Config contains the experiment configuration.
 type Config struct {
 	// Repetitions is the number of times to repeat each vector.
-	Repetitions int64 `ooni:"number of times to repeat each test vector"`
+	Repetitions int64 `json:"repetitions,omitempty" ooni:"number of times to repeat each test vector"`
 
 	// Port is the port to test.
-	Port int64 `ooni:"port is the port to test"`
+	Port int64 `json:"port,omitempty" ooni:"port is the port to test"`
 
 	// SNI overrides the SNI placed in the synthetic ClientHello. If
 	// empty, the resolved input domain is used, matching normal QUIC/TLS
 	// probing convention.
-	SNI string `ooni:"overrides the SNI used in the synthetic ClientHello"`
+	SNI string `json:"sni,omitempty" ooni:"overrides the SNI used in the synthetic ClientHello"`
 
 	// VectorTimeout is how long (in milliseconds) to wait for a response
 	// to a single vector repetition before declaring it timed out.
-	VectorTimeout int64 `ooni:"milliseconds to wait for a response before declaring a vector timed out"`
+	VectorTimeout int64 `json:"vector_timeout,omitempty" ooni:"milliseconds to wait for a response before declaring a vector timed out"`
 
 	// netListenUDP allows mocking the real net.ListenUDP call in tests.
-	netListenUDP func(network string, laddr *net.UDPAddr) (UDPLikeConn, error)
+	netListenUDP func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
 }
 
 func (c *Config) repetitions() int64 {
@@ -86,7 +90,7 @@ func (c *Config) vectorTimeout() time.Duration {
 	return 2 * time.Second
 }
 
-func (c *Config) doListenUDP(network string, laddr *net.UDPAddr) (UDPLikeConn, error) {
+func (c *Config) doListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 	if c.netListenUDP != nil {
 		return c.netListenUDP(network, laddr)
 	}
@@ -116,12 +120,12 @@ type VectorResult struct {
 // SinglePing is the result of sending one vector once. Requests holds one
 // entry per datagram sent (more than one only for quic_feature_multi_packet_initial).
 type SinglePing struct {
-	ConnIDDst string                     `json:"conn_id_dst"`
-	ConnIDSrc string                     `json:"conn_id_src"`
-	Failure   *string                    `json:"failure"`
-	Requests  []*ArchivalMaybeBinaryData `json:"requests"`
-	T         float64                    `json:"t"`
-	Responses []*SinglePingResponse      `json:"responses"`
+	ConnIDDst string                                 `json:"conn_id_dst"`
+	ConnIDSrc string                                 `json:"conn_id_src"`
+	Failure   *string                                `json:"failure"`
+	Requests  []*legacymodel.ArchivalMaybeBinaryData `json:"requests"`
+	T         float64                                `json:"t"`
+	Responses []*SinglePingResponse                  `json:"responses"`
 	// Blocked is a best-effort heuristic: true if no response of any kind
 	// arrived before the deadline. As documented at the package level,
 	// this is NOT the same thing as Table 9's "Bypasses Censor" row,
@@ -131,11 +135,11 @@ type SinglePing struct {
 
 // SinglePingResponse is one datagram received in reply to a SinglePing.
 type SinglePingResponse struct {
-	Data              *ArchivalMaybeBinaryData `json:"response_data"`
-	Failure           *string                  `json:"failure"`
-	T                 float64                  `json:"t"`
-	Type              string                   `json:"type"` // "version_negotiation" | "unknown"
-	SupportedVersions []uint32                 `json:"supported_versions,omitempty"`
+	Data              *legacymodel.ArchivalMaybeBinaryData `json:"response_data"`
+	Failure           *string                              `json:"failure"`
+	T                 float64                              `json:"t"`
+	Type              string                               `json:"type"` // "version_negotiation" | "unknown"
+	SupportedVersions []uint32                             `json:"supported_versions,omitempty"`
 }
 
 // Measurer performs the measurement.
@@ -143,15 +147,15 @@ type Measurer struct {
 	config Config
 }
 
-// ExperimentName implements ExperimentMeasurer.ExperimentName.
+// ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m *Measurer) ExperimentName() string { return testName }
 
-// ExperimentVersion implements ExperimentMeasurer.ExperimentVersion.
+// ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
 func (m *Measurer) ExperimentVersion() string { return testVersion }
 
-// resolveTarget parses measurement.Input (a bare host, host:port, or URL,
-// matching internal/experiment/quicping's convention) into a target address
-// and the SNI to embed in the ClientHello.
+// resolveTarget parses a bare host, host:port, or URL (matching
+// internal/experiment/quicping's convention) into a target address and the
+// SNI to embed in the ClientHello.
 func (m *Measurer) resolveTarget(input string) (addr *net.UDPAddr, sni string, err error) {
 	host := input
 	port := ""
@@ -178,7 +182,7 @@ func (m *Measurer) resolveTarget(input string) (addr *net.UDPAddr, sni string, e
 // whose Version-Negotiation Destination Connection ID matches srcID (i.e.
 // the source connection ID we sent), classifying whatever arrives.
 func (m *Measurer) sendAndAwait(
-	pconn UDPLikeConn,
+	pconn model.UDPLikeConn,
 	destAddr *net.UDPAddr,
 	reqs [][]byte,
 	srcID connectionID,
@@ -207,8 +211,8 @@ func (m *Measurer) sendAndAwait(
 		versions, dst, verr := dissectVersionNegotiation(raw)
 		if verr != nil {
 			responses = append(responses, &SinglePingResponse{
-				Data:    &ArchivalMaybeBinaryData{Value: string(raw)},
-				Failure: NewFailure(verr),
+				Data:    &legacymodel.ArchivalMaybeBinaryData{Value: string(raw)},
+				Failure: tracex.NewFailure(verr),
 				T:       respT,
 				Type:    "unknown",
 			})
@@ -220,7 +224,7 @@ func (m *Measurer) sendAndAwait(
 			continue
 		}
 		responses = append(responses, &SinglePingResponse{
-			Data:              &ArchivalMaybeBinaryData{Value: string(raw)},
+			Data:              &legacymodel.ArchivalMaybeBinaryData{Value: string(raw)},
 			T:                 respT,
 			Type:              "version_negotiation",
 			SupportedVersions: versions,
@@ -229,12 +233,23 @@ func (m *Measurer) sendAndAwait(
 	}
 }
 
-// Run implements ExperimentMeasurer.Run.
-func (m *Measurer) Run(ctx context.Context, args *ExperimentArgs) error {
+// Run implements model.ExperimentMeasurer.Run.
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
 
-	destAddr, sni, err := m.resolveTarget(measurement.Input)
+	// Obtain the richer-input target, exactly like quicping.
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
+	m.config = *target.Config
+
+	destAddr, sni, err := m.resolveTarget(target.URL)
 	if err != nil {
 		return err
 	}
@@ -245,7 +260,7 @@ func (m *Measurer) Run(ctx context.Context, args *ExperimentArgs) error {
 	}
 
 	tk := &TestKeys{
-		Domain:      measurement.Input,
+		Domain:      target.URL,
 		SNI:         sni,
 		Repetitions: m.config.repetitions(),
 	}
@@ -283,15 +298,15 @@ func (m *Measurer) Run(ctx context.Context, args *ExperimentArgs) error {
 			sendT := time.Since(measurement.MeasurementStartTimeSaved).Seconds()
 			if berr != nil {
 				vr.Pings = append(vr.Pings, &SinglePing{
-					Failure: NewFailure(berr),
+					Failure: tracex.NewFailure(berr),
 					T:       sendT,
 				})
 				continue
 			}
 
-			var archivalReqs []*ArchivalMaybeBinaryData
+			var archivalReqs []*legacymodel.ArchivalMaybeBinaryData
 			for _, r := range reqs {
-				archivalReqs = append(archivalReqs, &ArchivalMaybeBinaryData{Value: string(r)})
+				archivalReqs = append(archivalReqs, &legacymodel.ArchivalMaybeBinaryData{Value: string(r)})
 			}
 
 			sess.Logger().Infof("quicfp: %s -> %s", v.Name, destAddr)
@@ -300,7 +315,7 @@ func (m *Measurer) Run(ctx context.Context, args *ExperimentArgs) error {
 			sp := &SinglePing{
 				ConnIDDst: hex.EncodeToString(dst),
 				ConnIDSrc: hex.EncodeToString(src),
-				Failure:   NewFailure(senderr),
+				Failure:   tracex.NewFailure(senderr),
 				Requests:  archivalReqs,
 				T:         sendT,
 				Responses: responses,
@@ -319,7 +334,7 @@ func (m *Measurer) Run(ctx context.Context, args *ExperimentArgs) error {
 	return nil
 }
 
-// NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) ExperimentMeasurer {
-	return &Measurer{config: config}
+// NewExperimentMeasurer creates a new model.ExperimentMeasurer.
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }
