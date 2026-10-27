@@ -5,8 +5,10 @@ package tlsmiddlebox
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"testing"
@@ -36,11 +38,19 @@ func TestNetns(t *testing.T) {
 		rules       []string // for r2's FORWARD chain, in order
 		control     string   // the control SNI
 		clientID    int64    // the uTLS fingerprint (ClientIDs), or 0 for Go's ClientHello
+		privacy     string   // the privacy mode, or "" for the default
 		wantTarget  []string
 		wantControl []string
 	}{{
 		name:        "no middlebox",
 		control:     "control.test",
+		wantTarget:  []string{hu, hu, hu, ok},
+		wantControl: []string{hu, hu, hu, ok},
+	}, {
+		// records the routers' addresses and the packets they quote
+		name:        "no middlebox, advanced privacy mode",
+		control:     "control.test",
+		privacy:     "advanced",
 		wantTarget:  []string{hu, hu, hu, ok},
 		wantControl: []string{hu, hu, hu, ok},
 	}, {
@@ -94,7 +104,7 @@ func TestNetns(t *testing.T) {
 				r2(t, "-A FORWARD "+rule)
 				defer r2(t, "-D FORWARD "+rule)
 			}
-			trace := runNetns(t, tc.control, tc.clientID)
+			trace := runNetns(t, tc.control, tc.clientID, tc.privacy)
 			// time exceeded from r1-r3, then connected: no case filters SYNs
 			if got := traceroute(trace.TCPTraceroute); got != "1:11/0 2:11/0 3:11/0 4:C 5:C 6:C" {
 				t.Errorf("traceroute: %s", got)
@@ -103,6 +113,45 @@ func TestNetns(t *testing.T) {
 			check(t, "control", trace.ControlTrace, tc.control, tc.wantControl)
 		})
 	}
+}
+
+// probeIP and serverIP are topo.sh's addresses of the probe and the server.
+var probeIP, serverIP = net.IPv4(10, 0, 1, 2).To4(), net.IPv4(10, 0, 4, 2).To4()
+
+// findAddress returns the paths in the JSON of v where ip appears: in a string
+// as text, or in a base64 string (how []byte and binary data are archived)
+// as its four bytes in network order.
+func findAddress(t *testing.T, v any, ip net.IP) (found []string) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var walk func(path string, x any)
+	walk = func(path string, x any) {
+		switch x := x.(type) {
+		case map[string]any:
+			for k, v := range x {
+				walk(path+"."+k, v)
+			}
+		case []any:
+			for i, v := range x {
+				walk(fmt.Sprintf("%s[%d]", path, i), v)
+			}
+		case string:
+			if strings.Contains(x, ip.String()) {
+				found = append(found, path+" (text)")
+			}
+			if b, err := base64.StdEncoding.DecodeString(x); err == nil && bytes.Contains(b, ip) {
+				found = append(found, path+" (bytes)")
+			}
+		}
+	}
+	walk("", doc)
+	return found
 }
 
 // r2 runs iptables in r2's namespace.
@@ -114,7 +163,7 @@ func r2(t *testing.T, rule string) {
 }
 
 // runNetns measures https://target.test at topo.sh's server.
-func runNetns(t *testing.T, control string, clientID int64) *CompleteTrace {
+func runNetns(t *testing.T, control string, clientID int64, privacy string) *CompleteTrace {
 	meas := &model.Measurement{Input: "https://target.test", MeasurementStartTimeSaved: time.Now()}
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
@@ -123,27 +172,27 @@ func runNetns(t *testing.T, control string, clientID int64) *CompleteTrace {
 		Target: &Target{
 			URL: "https://target.test",
 			Config: &Config{
-				TestHelper: "tlshandshake://10.0.4.2:443",
-				SNIControl: control,
-				ClientId:   clientID,
-				MaxTTL:     6,
+				TestHelper:  "tlshandshake://10.0.4.2:443",
+				SNIControl:  control,
+				ClientId:    clientID,
+				PrivacyMode: privacy,
+				MaxTTL:      6,
 			},
 		},
 	}
 	if err := NewExperimentMeasurer().Run(context.Background(), args); err != nil {
 		t.Fatal(err)
 	}
-	// the probe's own address must not reach the measurement, e.g. through an
-	// error string such as "read tcp <local>-><remote>"
-	data, err := json.Marshal(meas.TestKeys)
-	if err != nil {
-		t.Fatal(err)
+	// The probe's own address must not reach the measurement, e.g. through an
+	// error string such as "read tcp <local>-><remote>". The server's address
+	// must, as text (the traces' address) and as bytes (its certificate has it
+	// as a subjectAltName), or the search would prove nothing.
+	if found := findAddress(t, meas.TestKeys, probeIP); len(found) > 0 {
+		t.Errorf("the test keys contain the probe's address %s at %v", probeIP, found)
 	}
-	if bytes.Contains(data, []byte(`10.0.1.2`)) {
-		t.Errorf("the test keys contain the probe's address 10.0.1.2: %s", data)
-	}
-	if !bytes.Contains(data, []byte(`10.0.4.2`)) {
-		t.Errorf("the test keys lack the server's address, so the check above proves nothing")
+	found := strings.Join(findAddress(t, meas.TestKeys, serverIP), " ")
+	if !strings.Contains(found, "(text)") || !strings.Contains(found, "(bytes)") {
+		t.Errorf("the server's address %s should be found as text and as bytes, got %q", serverIP, found)
 	}
 	traces := meas.TestKeys.(*TestKeys).IterativeTrace
 	if len(traces) != 1 {

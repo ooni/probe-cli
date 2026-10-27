@@ -9,7 +9,7 @@ d = tempfile.mkdtemp()
 cert, key = os.path.join(d, "cert.pem"), os.path.join(d, "key.pem")
 subprocess.run(["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256",
                 "-nodes", "-days", "1", "-subj", "/CN=target.test", "-keyout", key, "-out", cert,
-                "-addext", "subjectAltName=DNS:target.test,DNS:control.test"],
+                "-addext", "subjectAltName=DNS:target.test,DNS:control.test,IP:10.0.4.2"],
                check=True, capture_output=True)
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ctx.load_cert_chain(cert, key)
