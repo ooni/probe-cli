@@ -330,3 +330,23 @@ func TestDissectVersionNegotiation(t *testing.T) {
 		t.Fatalf("unexpected versions: %v", versions)
 	}
 }
+
+func TestResolveTarget(t *testing.T) {
+	cases := []struct {
+		input, wantAddr, wantSNI string
+	}{
+		{"127.0.0.1", "127.0.0.1:443", "127.0.0.1"},
+		{"127.0.0.1:8443", "127.0.0.1:8443", "127.0.0.1"},
+		{"https://127.0.0.1:8443/", "127.0.0.1:8443", "127.0.0.1"},
+	}
+	for _, c := range cases {
+		m := &Measurer{}
+		addr, sni, err := m.resolveTarget(c.input)
+		if err != nil {
+			t.Fatalf("%s: %v", c.input, err)
+		}
+		if addr.String() != c.wantAddr || sni != c.wantSNI {
+			t.Errorf("%s: got %s %s, want %s %s", c.input, addr, sni, c.wantAddr, c.wantSNI)
+		}
+	}
+}

@@ -162,6 +162,14 @@ func (m *Measurer) resolveTarget(input string) (addr *net.UDPAddr, sni string, e
 	if u, uerr := url.ParseRequestURI(input); uerr == nil && u.Hostname() != "" {
 		host = u.Hostname()
 		port = u.Port()
+	} else if h, p, serr := net.SplitHostPort(input); serr == nil {
+		// A plain "host:port" input, no URL scheme -- e.g. a bare IP:port.
+		// Must be tried before falling back to "the whole input is one
+		// bare host", or a string like "127.0.0.1:49772" gets treated as
+		// a single (unresolvable) hostname with the default port
+		// appended on top.
+		host = h
+		port = p
 	}
 	if port == "" {
 		port = m.config.port()
