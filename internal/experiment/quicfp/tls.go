@@ -10,12 +10,17 @@ import (
 // paper: each length field is set to zero, half its correct value, double
 // its correct value, its field-width maximum, and (for Message Length and
 // Extensions Length only) a value that excludes the final extension.
+// PermTooLong is used only for Session ID Length, which the paper tests
+// with a single "too long" value rather than the zero/half/double/max set
+// (the field's correct/default value is 0, so "half"/"double" of it would
+// be meaningless).
 const (
 	PermZero                 = "zero"
 	PermHalf                 = "half"
 	PermDouble               = "double"
 	PermMax                  = "max"
 	PermExcludeLastExtension = "exclude_last_extension"
+	PermTooLong              = "too_long"
 )
 
 // tlsField locates one patchable length field inside a built ClientHello.
@@ -28,15 +33,22 @@ type tlsField struct {
 	Correct int
 }
 
-// clientHello holds a built ClientHello and the offsets of the four fields
-// Table 9 manipulates.
+// clientHello holds a built ClientHello and the offsets of every field
+// Table 12 manipulates for QUIC (Table 9 only surfaces four of these as a
+// condensed view; the other four -- Session ID / Cipher Suite /
+// Compression Methods / SNI Name Length -- are additional rows Table 12
+// tests that Table 9 collapses out of its summary).
 type clientHello struct {
 	Raw []byte
 
-	MessageLength      tlsField // the Handshake header's 3-byte length field
-	ExtensionsLength   tlsField // the 2-byte length prefix of the extensions block
-	SNIExtensionLength tlsField // the 2-byte extension_data length of the server_name extension
-	SNIListLength      tlsField // the 2-byte server_name_list length inside that extension_data
+	MessageLength            tlsField // the Handshake header's 3-byte length field
+	SessionIDLength          tlsField // the 1-byte legacy_session_id length prefix
+	CipherSuiteLength        tlsField // the 2-byte cipher_suites length prefix
+	CompressionMethodsLength tlsField // the 1-byte legacy_compression_methods length prefix
+	ExtensionsLength         tlsField // the 2-byte length prefix of the extensions block
+	SNIExtensionLength       tlsField // the 2-byte extension_data length of the server_name extension
+	SNIListLength            tlsField // the 2-byte server_name_list length inside that extension_data
+	SNINameLength            tlsField // the 2-byte HostName length inside the ServerName entry
 
 	// lastExtensionSize is the on-wire size (type+length+data) of the
 	// final extension, used to compute the "exclude_last_extension"
@@ -106,6 +118,7 @@ func buildClientHello(sni string) (*clientHello, error) {
 	}
 	b.bytes(random)
 
+	sessionIDLenOff := len(b.buf)
 	b.u8(0x00) // legacy_session_id length = 0 (empty)
 
 	// cipher_suites: three standard TLS 1.3 suites.
@@ -114,9 +127,11 @@ func buildClientHello(sni string) (*clientHello, error) {
 		0x13, 0x02, // TLS_AES_256_GCM_SHA384
 		0x13, 0x03, // TLS_CHACHA20_POLY1305_SHA256
 	}
+	cipherSuiteLenOff := len(b.buf)
 	b.u16(uint16(len(cipherSuites)))
 	b.bytes(cipherSuites)
 
+	compressionMethodsLenOff := len(b.buf)
 	b.u8(0x01) // legacy_compression_methods length = 1
 	b.u8(0x00) // null compression
 
@@ -133,6 +148,7 @@ func buildClientHello(sni string) (*clientHello, error) {
 	sniListLenOff := b.reserveU16()
 	sniListStart := len(b.buf)
 	b.u8(0x00) // name_type = host_name
+	sniNameLenOff := len(b.buf)
 	b.u16(uint16(len(sni)))
 	b.bytes([]byte(sni))
 	sniListLen := len(b.buf) - sniListStart
@@ -181,12 +197,16 @@ func buildClientHello(sni string) (*clientHello, error) {
 	b.patchU24(msgLenOff, bodyLen)
 
 	ch := &clientHello{
-		Raw:                b.buf,
-		MessageLength:      tlsField{Offset: msgLenOff, Width: 3, Correct: bodyLen},
-		ExtensionsLength:   tlsField{Offset: extsLenOff, Width: 2, Correct: extsLen},
-		SNIExtensionLength: tlsField{Offset: sniExtLenOff, Width: 2, Correct: sniExtDataLen},
-		SNIListLength:      tlsField{Offset: sniListLenOff, Width: 2, Correct: sniListLen},
-		lastExtensionSize:  lastExtSize,
+		Raw:                      b.buf,
+		MessageLength:            tlsField{Offset: msgLenOff, Width: 3, Correct: bodyLen},
+		SessionIDLength:          tlsField{Offset: sessionIDLenOff, Width: 1, Correct: 0},
+		CipherSuiteLength:        tlsField{Offset: cipherSuiteLenOff, Width: 2, Correct: len(cipherSuites)},
+		CompressionMethodsLength: tlsField{Offset: compressionMethodsLenOff, Width: 1, Correct: 1},
+		ExtensionsLength:         tlsField{Offset: extsLenOff, Width: 2, Correct: extsLen},
+		SNIExtensionLength:       tlsField{Offset: sniExtLenOff, Width: 2, Correct: sniExtDataLen},
+		SNIListLength:            tlsField{Offset: sniListLenOff, Width: 2, Correct: sniListLen},
+		SNINameLength:            tlsField{Offset: sniNameLenOff, Width: 2, Correct: len(sni)},
+		lastExtensionSize:        lastExtSize,
 	}
 	return ch, nil
 }
@@ -209,7 +229,7 @@ func applyPermutation(ch *clientHello, field tlsField, permutation string) []byt
 		value = field.Correct / 2
 	case PermDouble:
 		value = (field.Correct * 2) & maxVal
-	case PermMax:
+	case PermMax, PermTooLong:
 		value = maxVal
 	case PermExcludeLastExtension:
 		value = field.Correct - ch.lastExtensionSize
@@ -218,6 +238,8 @@ func applyPermutation(ch *clientHello, field tlsField, permutation string) []byt
 	}
 
 	switch field.Width {
+	case 1:
+		out[field.Offset] = byte(value)
 	case 2:
 		binary.BigEndian.PutUint16(out[field.Offset:field.Offset+2], uint16(value))
 	case 3:

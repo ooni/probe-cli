@@ -48,6 +48,25 @@ func tlsLengthFieldSpecs() []tlsLengthFieldSpec {
 			Permutations: withExclude,
 		},
 		{
+			FieldName: "session_id_length",
+			Select:    func(ch *clientHello) tlsField { return ch.SessionIDLength },
+			// The paper tests only one value for this field ("Too
+			// Long"), not the usual zero/half/double/max set: the
+			// field's correct value is 0 (empty session ID), so
+			// "half"/"double" of that would be meaningless.
+			Permutations: []string{PermTooLong},
+		},
+		{
+			FieldName:    "cipher_suite_length",
+			Select:       func(ch *clientHello) tlsField { return ch.CipherSuiteLength },
+			Permutations: basic,
+		},
+		{
+			FieldName:    "compression_methods_length",
+			Select:       func(ch *clientHello) tlsField { return ch.CompressionMethodsLength },
+			Permutations: basic,
+		},
+		{
 			FieldName:    "extensions_length",
 			Select:       func(ch *clientHello) tlsField { return ch.ExtensionsLength },
 			Permutations: withExclude,
@@ -60,6 +79,11 @@ func tlsLengthFieldSpecs() []tlsLengthFieldSpec {
 		{
 			FieldName:    "sni_list_length",
 			Select:       func(ch *clientHello) tlsField { return ch.SNIListLength },
+			Permutations: basic,
+		},
+		{
+			FieldName:    "sni_name_length",
+			Select:       func(ch *clientHello) tlsField { return ch.SNINameLength },
 			Permutations: basic,
 		},
 	}

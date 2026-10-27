@@ -1,7 +1,8 @@
 // Package quicfp implements the quicfp network experiment: a QUIC parser
 // fingerprinting probe that reproduces every field of Table 9 ("QUIC Parser
-// Fingerprints") from Ablove et al., "Technical Analysis of the Geedge
-// Networks Firewall Source Code Leak" (USENIX Security 2026).
+// Fingerprints") and Table 12 ("TLS and QUIC Parser Fingerprints") from
+// Ablove et al., "Technical Analysis of the Geedge Networks Firewall Source
+// Code Leak" (USENIX Security 2026).
 //
 // Where internal/experiment/quicping sends a single, content-free QUIC
 // Initial packet to elicit a Version Negotiation response, quicfp sends one
@@ -14,9 +15,10 @@
 //   - QUIC Features: fragmentation, below-1200-byte datagrams, forced
 //     version negotiation, and a ClientHello split across multiple Initial
 //     packets.
-//   - TLS Length Fields: Message Length, Extensions Length, SNI Extension
-//     Length, and SNI List Length, each set to zero/half/double/max, plus
-//     (for the first two) a value that excludes the final extension.
+//   - TLS Length Fields: all eight fields Table 12 tests (Message,
+//     Session ID, Cipher Suite, Compression Methods, Extensions, SNI
+//     Extension, SNI List, and SNI Name Length), each set to the
+//     permutations the paper describes.
 //
 // Table 9's final row, "Bypasses Censor", is not something a single vantage
 // point can determine on its own -- the paper derives it by comparing

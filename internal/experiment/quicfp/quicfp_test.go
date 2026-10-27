@@ -83,6 +83,31 @@ func TestBuildClientHelloOffsets(t *testing.T) {
 	if !bytes.Contains(ch.Raw, []byte("example.com")) {
 		t.Fatal("SNI not found in built ClientHello")
 	}
+
+	// The four Table-12-only fields added alongside Table 9's original
+	// four: confirm each field's offset/width actually points at the
+	// correct on-wire value.
+	checks := []struct {
+		name  string
+		field tlsField
+	}{
+		{"session id length", ch.SessionIDLength},
+		{"cipher suite length", ch.CipherSuiteLength},
+		{"compression methods length", ch.CompressionMethodsLength},
+		{"sni name length", ch.SNINameLength},
+	}
+	for _, c := range checks {
+		var got int
+		switch c.field.Width {
+		case 1:
+			got = int(ch.Raw[c.field.Offset])
+		case 2:
+			got = int(ch.Raw[c.field.Offset])<<8 | int(ch.Raw[c.field.Offset+1])
+		}
+		if got != c.field.Correct {
+			t.Errorf("%s: on-wire=%d want=%d", c.name, got, c.field.Correct)
+		}
+	}
 }
 
 func TestApplyPermutation(t *testing.T) {
@@ -105,12 +130,17 @@ func TestApplyPermutation(t *testing.T) {
 		{ch.ExtensionsLength, PermMax, 0xffff},
 		{ch.SNIExtensionLength, PermDouble, (ch.SNIExtensionLength.Correct * 2) & 0xffff},
 		{ch.SNIListLength, PermHalf, ch.SNIListLength.Correct / 2},
+		{ch.SessionIDLength, PermTooLong, 0xff},
+		{ch.CipherSuiteLength, PermMax, 0xffff},
+		{ch.CompressionMethodsLength, PermZero, 0},
 	}
 
 	for _, c := range cases {
 		patched := applyPermutation(ch, c.field, c.perm)
 		var got int
 		switch c.field.Width {
+		case 1:
+			got = int(patched[c.field.Offset])
 		case 2:
 			got = int(patched[c.field.Offset])<<8 | int(patched[c.field.Offset+1])
 		case 3:
@@ -134,7 +164,10 @@ func TestBuildVectorsCoversTable9(t *testing.T) {
 
 	wantVersions := 7
 	wantFeatures := 4
-	wantLengthFields := 4*4 + 2 // 4 fields x 4 basic perms, +2 exclude_last_extension
+	// message_length(5) + session_id_length(1) + cipher_suite_length(4) +
+	// compression_methods_length(4) + extensions_length(5) +
+	// sni_extension_length(4) + sni_list_length(4) + sni_name_length(4)
+	wantLengthFields := 5 + 1 + 4 + 4 + 5 + 4 + 4 + 4
 
 	var gotVersions, gotFeatures, gotLengthFields int
 	seen := map[string]bool{}
