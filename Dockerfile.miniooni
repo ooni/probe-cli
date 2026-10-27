@@ -1,6 +1,6 @@
 # builder
 FROM rust:1.88-bookworm AS ruststage
-FROM golang:1.26 AS builder
+FROM golang:1.27 AS builder
 
 COPY --from=ruststage /usr/local/cargo /usr/local/cargo
 COPY --from=ruststage /usr/local/rustup /usr/local/rustup
