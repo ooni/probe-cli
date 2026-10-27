@@ -296,8 +296,10 @@ func TestMultiPacketInitialRoundTrip(t *testing.T) {
 	if len(packets) != 2 {
 		t.Fatalf("expected 2 packets, got %d", len(packets))
 	}
-	if len(packets[0]) < minInitialDatagramSize {
-		t.Fatalf("first packet must be padded to >=1200 bytes, got %d", len(packets[0]))
+	for i, pkt := range packets {
+		if len(pkt) < minInitialDatagramSize {
+			t.Fatalf("packet %d must be padded to >=1200 bytes, got %d", i, len(pkt))
+		}
 	}
 
 	var joined []byte

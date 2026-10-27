@@ -210,10 +210,12 @@ func buildFragmentedPacket(version uint32, salt [20]byte, ch []byte) (raw []byte
 }
 
 // buildMultiPacketInitial carries the ClientHello across TWO separate UDP
-// datagrams (Table 9's "Multi-Packet Initial" row): the first packet (which
-// RFC 9000 §14.1 requires to be padded to 1200 bytes) carries CRYPTO offset
-// [0,mid), and the second -- which needs no such padding -- carries the
-// remainder at the correct offset. Both packets share the same connection
+// datagrams (Table 9's "Multi-Packet Initial" row): the first packet carries
+// CRYPTO offset [0,mid), and the second carries the remainder at the correct
+// offset. Both are padded to 1200 bytes: RFC 9000 §14.1 requires it of every
+// datagram carrying a client Initial, and a server must drop a smaller one,
+// so an unpadded second packet would also test the "Below 1200 Bytes" row.
+// Both packets share the same connection
 // IDs and use increasing packet numbers so their AEAD nonces do not repeat.
 func buildMultiPacketInitial(version uint32, salt [20]byte, ch []byte) (packets [][]byte, dst, src connectionID, err error) {
 	if len(ch) < 2 {
@@ -226,7 +228,7 @@ func buildMultiPacketInitial(version uint32, salt [20]byte, ch []byte) (packets 
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("quicfp: sealing first packet: %w", err)
 	}
-	second, err := sealPacket(version, salt, dst, src, 3, cryptoFrame(uint64(mid), ch[mid:]), 0)
+	second, err := sealPacket(version, salt, dst, src, 3, cryptoFrame(uint64(mid), ch[mid:]), minInitialDatagramSize)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("quicfp: sealing second packet: %w", err)
 	}
