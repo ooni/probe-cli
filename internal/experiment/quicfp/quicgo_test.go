@@ -41,6 +41,10 @@ func TestRunAgainstQUICGo(t *testing.T) {
 		switch {
 		case vr.Name == "quic_feature_below_1200_bytes":
 			want = "" // no answer
+		case vr.Name == "quic_feature_oversized_datagram":
+			// quic-go reads datagrams into a 1452-byte buffer (its
+			// protocol.MaxPacketBufferSize) and drops a larger one unanswered
+			want = ""
 		case vr.Name == "quic_feature_forced_negotiation",
 			vr.Category == CategoryQUICVersion && *vr.QUICVersion != 1 && *vr.QUICVersion != versionV2:
 			want = "version_negotiation"

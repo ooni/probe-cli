@@ -169,7 +169,7 @@ func TestBuildVectorsCoversTable9(t *testing.T) {
 	}
 
 	wantVersions := 7
-	wantFeatures := 4
+	wantFeatures := 5
 	// message_length(5) + session_id_length(1) + cipher_suite_length(4) +
 	// compression_methods_length(4) + extensions_length(5) +
 	// sni_extension_length(4) + sni_list_length(4) + sni_name_length(4)
@@ -233,6 +233,32 @@ func TestStandardPacketSizeAndRoundTrip(t *testing.T) {
 	}
 	if !bytes.Equal(reconstructed, ch.Raw) {
 		t.Fatalf("round-tripped ClientHello does not match original: got %d bytes want %d bytes", len(reconstructed), len(ch.Raw))
+	}
+}
+
+func TestOversizedPacketIsBigEnoughToFragment(t *testing.T) {
+	ch, err := buildClientHello("example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, dst, src, err := buildOversizedPacket(1, saltV1, ch.Raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) < ipFragmentationTargetSize {
+		t.Fatalf("expected at least %d bytes, got %d", ipFragmentationTargetSize, len(raw))
+	}
+
+	plaintext, err := decryptInitialPacket(raw, dst, saltV1, len(dst), len(src))
+	if err != nil {
+		t.Fatalf("decrypt failed: %v", err)
+	}
+	reconstructed, err := parseFrames(plaintext)
+	if err != nil {
+		t.Fatalf("parseFrames failed: %v", err)
+	}
+	if !bytes.Equal(reconstructed, ch.Raw) {
+		t.Fatal("round-tripped ClientHello does not match original")
 	}
 }
 

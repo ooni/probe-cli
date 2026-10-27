@@ -193,6 +193,27 @@ func buildBelow1200Packet(version uint32, salt [20]byte, ch []byte) (raw []byte,
 	return
 }
 
+// ipFragmentationTargetSize is comfortably larger than any common path MTU
+// (1500 for Ethernet, 1492 for PPPoE, and most others in between), so a
+// datagram padded to this size needs at least two IP fragments on nearly
+// any real link, while staying well under the 65507-byte UDP payload limit.
+const ipFragmentationTargetSize = 2800
+
+// buildOversizedPacket pads the Initial datagram out to
+// ipFragmentationTargetSize, so that -- combined with
+// disablePathMTUDiscovery on the sending socket -- it is delivered as
+// multiple IP fragments rather than one datagram. This is NOT Table 9/12's
+// "Fragmentation" row, which is QUIC-layer CRYPTO frame fragmentation (see
+// buildFragmentedPacket): the paper measures IP fragment reassembly only for
+// TLS over TCP (Section 6.2, Table 6). quic_feature_oversized_datagram adapts
+// that to QUIC as an extra test with no row in either table.
+func buildOversizedPacket(version uint32, salt [20]byte, ch []byte) (raw []byte, dst, src connectionID, err error) {
+	dst, src = generateConnectionIDs()
+	frame := cryptoFrame(0, ch)
+	raw, err = sealPacket(version, salt, dst, src, 2, frame, ipFragmentationTargetSize)
+	return
+}
+
 // buildFragmentedPacket carries the whole ClientHello in a SINGLE datagram
 // but split across two separate CRYPTO frames with contiguous, correctly
 // offset stream data (Table 9's "Fragmentation" row): this tests whether

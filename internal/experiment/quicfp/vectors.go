@@ -137,6 +137,22 @@ func buildVectors(sni string) ([]*TestVector, error) {
 			},
 		},
 		&TestVector{
+			// Not a row of Table 9/12: see buildOversizedPacket.
+			Name:     "quic_feature_oversized_datagram",
+			Category: CategoryQUICFeature,
+			Build: func() ([][]byte, connectionID, connectionID, error) {
+				ch, err := buildClientHello(sni)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				raw, dst, src, err := buildOversizedPacket(1, saltV1, ch.Raw)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				return [][]byte{raw}, dst, src, nil
+			},
+		},
+		&TestVector{
 			Name:     "quic_feature_below_1200_bytes",
 			Category: CategoryQUICFeature,
 			Build: func() ([][]byte, connectionID, connectionID, error) {

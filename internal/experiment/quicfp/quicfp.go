@@ -12,9 +12,10 @@
 //
 //   - QUIC Version:  one representative version per row (gQUIC Q023-Q043,
 //     Q041/Q044-45, Q046-49, T050-51; IETF draft-22-28, draft-29/v1, v2).
-//   - QUIC Features: fragmentation, below-1200-byte datagrams, forced
-//     version negotiation, and a ClientHello split across multiple Initial
-//     packets.
+//   - QUIC Features: CRYPTO-frame fragmentation, below-1200-byte datagrams,
+//     forced version negotiation, a ClientHello split across multiple
+//     Initial packets, and (an extra test not in either table) an
+//     IP-fragmented oversized datagram.
 //   - TLS Length Fields: all eight fields Table 12 tests (Message,
 //     Session ID, Cipher Suite, Compression Methods, Extensions, SNI
 //     Extension, SNI List, and SNI Name Length), each set to the
@@ -331,6 +332,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			if err != nil {
 				return err
 			}
+			disablePathMTUDiscovery(pconn)
 			senderr, responses, answered := m.sendAndAwait(pconn, destAddr, reqs, src, measurement.MeasurementStartTimeSaved, timeout)
 			pconn.Close()
 
