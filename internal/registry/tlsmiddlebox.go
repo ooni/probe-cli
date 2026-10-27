@@ -11,17 +11,16 @@ import (
 
 func init() {
 	const canonicalName = "tlsmiddlebox"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return tlsmiddlebox.NewExperimentMeasurer(
-					*config.(*tlsmiddlebox.Config),
-				)
+				return tlsmiddlebox.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &tlsmiddlebox.Config{},
 			enabledByDefault: true,
-			inputPolicy:      model.InputStrictlyRequired,
+			inputPolicy:      model.InputOrStaticDefault,
+			newLoader:        tlsmiddlebox.NewLoader,
 		}
-	}
+	})
 }

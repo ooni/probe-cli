@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "http_host_header"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return httphostheader.NewExperimentMeasurer()
@@ -22,5 +22,5 @@ func init() {
 			inputPolicy:      model.InputOrQueryBackend,
 			newLoader:        httphostheader.NewLoader,
 		}
-	}
+	})
 }

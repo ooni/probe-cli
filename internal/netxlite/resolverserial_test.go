@@ -239,6 +239,59 @@ func TestSerialResolver(t *testing.T) {
 		})
 	})
 
+	t.Run("LookupSVCB", func(t *testing.T) {
+		t.Run("for round-trip error", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			r := &SerialResolver{
+				NumTimeouts: &atomic.Int64{},
+				Txp: &mocks.DNSTransport{
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+						return nil, expected
+					},
+					MockRequiresPadding: func() bool {
+						return false
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := r.LookupSVCB(ctx, "example.com")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if svcb != nil {
+				t.Fatal("unexpected result")
+			}
+		})
+
+		t.Run("for decode success", func(t *testing.T) {
+			expected := []*model.SVCB{{TargetName: "example.com"}}
+			r := &SerialResolver{
+				NumTimeouts: &atomic.Int64{},
+				Txp: &mocks.DNSTransport{
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+						response := &mocks.DNSResponse{
+							MockDecodeSVCB: func() ([]*model.SVCB, error) {
+								return expected, nil
+							},
+						}
+						return response, nil
+					},
+					MockRequiresPadding: func() bool {
+						return false
+					},
+				},
+			}
+			ctx := context.Background()
+			svcb, err := r.LookupSVCB(ctx, "example.com")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(svcb) != 1 || svcb[0].TargetName != "example.com" {
+				t.Fatal("unexpected result", svcb)
+			}
+		})
+	})
+
 	t.Run("LookupNS", func(t *testing.T) {
 		t.Run("for round-trip error", func(t *testing.T) {
 			expected := errors.New("mocked error")

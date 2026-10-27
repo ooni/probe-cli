@@ -33,7 +33,7 @@ const (
 
 	// userauthVersion is the ooniprobe-rs release we use for BOTH the from-source
 	// build and the prebuilt bundle download.
-	userauthVersion = "0.1.6"
+	userauthVersion = "0.1.8"
 
 	// userauthSourceSHA256 pins the source tarball for userauthVersion.
 	//
@@ -42,7 +42,7 @@ const (
 	// (which pins nothing) and forget that the from-source path also
 	// needs its hash updated to match, since the mismatch only surfaces
 	// when someone actually builds with USERAUTH_FROM_SOURCE=1.
-	userauthSourceSHA256 = "c76057a566aa14737c7cb8d8ec85f6fc555d0b1fdb600be99becc61f64d624c7"
+	userauthSourceSHA256 = "9fe305e6f0deddd4d8a2a859a1806829315e8dc448885a7a184a4bc1c6f8c3c0"
 
 	// userauthFromSourceEnv, when set to "1", makes the userauth subcommand build the
 	// staticlib from source instead of downloading the prebuilt bundle.

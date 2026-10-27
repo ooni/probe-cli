@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "simple_sni"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return chapter02.NewExperimentMeasurer(
@@ -22,5 +22,5 @@ func init() {
 			config:        &chapter02.Config{},
 			inputPolicy:   model.InputOrQueryBackend,
 		}
-	}
+	})
 }

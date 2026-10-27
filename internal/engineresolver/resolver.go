@@ -88,6 +88,11 @@ func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPS
 	return nil, errLookupNotImplemented
 }
 
+// LookupSVCB implements Resolver.LookupSVCB.
+func (r *Resolver) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	return nil, errLookupNotImplemented
+}
+
 // LookupNS implements Resolver.LookupNS.
 func (r *Resolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
 	return nil, errLookupNotImplemented

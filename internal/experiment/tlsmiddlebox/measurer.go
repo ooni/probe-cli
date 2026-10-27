@@ -7,16 +7,18 @@ package tlsmiddlebox
 import (
 	"context"
 	"errors"
+	"net"
 	"net/url"
 	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
 	testName    = "tlsmiddlebox"
-	testVersion = "0.1.2"
+	testVersion = "0.1.6"
 )
 
 // Measurer performs the measurement.
@@ -35,57 +37,89 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 var (
-	// errNoInputProvided indicates you didn't provide any input
-	errNoInputProvided = errors.New("no input provided")
+	// ErrNoInput indicates that no input was provided
+	ErrNoInput = errors.New("no input provided")
 
-	// errInputIsNotAnURL indicates that input is not an URL
-	errInputIsNotAnURL = errors.New("input is not an URL")
+	// ErrInputIsNotAnURL indicates that the input is not an URL.
+	ErrInputIsNotAnURL = errors.New("input is not an URL")
 
-	// errInvalidInputScheme indicates that the input scheme is invalid
-	errInvalidInputScheme = errors.New("input scheme must be tlstrace")
+	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
+	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be https")
 
 	// errInvalidTestHelper indicates that the testhelper is invalid
 	errInvalidTestHelper = errors.New("invalid testhelper")
 
 	// errInvalidTHScheme indicates that the TH scheme is invalid
 	errInvalidTHScheme = errors.New("th scheme must be tlshandshake")
+
+	// ErrInputRequired indicates that no richer-input target was provided.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+
+	// errInvalidClientId indicates that the ClientId is invalid
+	errInvalidClientId = errors.New("ClientId does not match any known fingerprint")
 )
 
-// // Run implements ExperimentMeasurer.Run.
+// Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	_ = args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
-	if measurement.Input == "" {
-		return errNoInputProvided
+	// obtain the richer-input target
+	if args.Target == nil {
+		return ErrInputRequired
 	}
-	parsed, err := url.Parse(string(measurement.Input))
+	target, ok := args.Target.(*Target)
+
+	if !ok {
+		return ErrInvalidInputType
+	}
+
+	config := target.Config
+
+	input := target.URL
+
+	if input == "" {
+		return ErrNoInput
+	}
+
+	URL, err := url.Parse(input)
+
 	if err != nil {
-		return errInputIsNotAnURL
+		return ErrInputIsNotAnURL
 	}
-	if parsed.Scheme != "tlstrace" {
-		return errInvalidInputScheme
+	if URL.Scheme != "https" {
+		return ErrUnsupportedInput
 	}
-	th, err := m.config.testhelper(parsed.Host)
+	th, err := target.Config.testhelper(URL.Host)
 	if err != nil {
 		return errInvalidTestHelper
 	}
 	if th.Scheme != "tlshandshake" {
 		return errInvalidTHScheme
 	}
+	if clientId := config.clientid(); clientId > 0 && ClientIDs[clientId] == nil {
+		return errInvalidClientId
+	}
 	tk := NewTestKeys()
 	measurement.TestKeys = tk
 	wg := new(sync.WaitGroup)
 	// 1. perform a DNSLookup
-	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), th.Hostname(), tk)
+	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), th.Hostname(), tk, config)
 	if err != nil {
 		return err
 	}
+
+	// 3. choose IPv4 over IPv6 addresses when available
+	addrs = chooseIPv4(addrs)
+
 	// 2. measure addresses
 	addrs = prepareAddrs(addrs, th.Port())
 	for i, addr := range addrs {
 		wg.Add(1)
-		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, parsed.Hostname(), tk, wg)
+		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, URL.Hostname(), tk, wg, config)
 	}
 	wg.Wait()
 	return nil
@@ -93,7 +127,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 // TraceAddress measures a single address after the DNSLookup
 func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, tk *TestKeys, wg *sync.WaitGroup) error {
+	address string, sni string, tk *TestKeys, wg *sync.WaitGroup, config *Config) error {
 	defer wg.Done()
 	trace := &CompleteTrace{
 		Address: address,
@@ -103,11 +137,35 @@ func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.
 	if err != nil {
 		return err // skip tracing if we cannot connect with default TTL
 	}
-	m.TLSTrace(ctx, index, zeroTime, logger, address, sni, trace)
+	m.TLSTrace(ctx, index, zeroTime, logger, address, sni, trace, config)
 	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) *Measurer {
-	return &Measurer{config: config}
+func NewExperimentMeasurer() *Measurer {
+	return &Measurer{}
+}
+
+// chooseIPv4 returns IPv4 IP addresses if the DNS resolution contained both
+// IPv4 and IPv6 addresses, else it returns the IPv6 addresses
+func chooseIPv4(addrs []string) []string {
+	var ipv4, ipv6 []string
+
+	for _, addr := range addrs {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			continue
+		}
+
+		if ip.To4() != nil {
+			ipv4 = append(ipv4, addr)
+		} else {
+			ipv6 = append(ipv6, addr)
+		}
+	}
+
+	if len(ipv4) > 0 {
+		return ipv4
+	}
+	return ipv6
 }

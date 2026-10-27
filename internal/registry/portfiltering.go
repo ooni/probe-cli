@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "portfiltering"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return portfiltering.NewExperimentMeasurer(
@@ -24,5 +24,5 @@ func init() {
 			interruptible:    false,
 			inputPolicy:      model.InputNone,
 		}
-	}
+	})
 }

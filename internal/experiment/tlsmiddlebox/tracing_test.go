@@ -28,10 +28,10 @@ func TestStartIterativeTrace(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		zeroTime := time.Now()
 		ctx := context.Background()
-		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
+		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com", &Config{})
 		if trace.SNI != "example.com" {
 			t.Fatal("unexpected servername")
 		}
@@ -57,10 +57,10 @@ func TestStartIterativeTrace(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		zeroTime := time.Now()
 		ctx := context.Background()
-		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
+		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com", &Config{})
 		if trace.SNI != "example.com" {
 			t.Fatal("unexpected servername")
 		}
@@ -75,6 +75,25 @@ func TestStartIterativeTrace(t *testing.T) {
 	})
 }
 
+func TestRunTraceroute(t *testing.T) {
+	wg := new(sync.WaitGroup)
+	index := int64(1)
+	m := NewExperimentMeasurer()
+
+	t.Run("failure case, no port in address", func(t *testing.T) {
+		wg.Add(1)
+		address := "8.8.8.8"
+		zeroTime := time.Now()
+		trace := m.runTraceroute(index, zeroTime, model.DiscardLogger, address, "example.com", &Config{})
+		if trace.SNI != "example.com" {
+			t.Fatal("unexpected servername")
+		}
+		if len(trace.Iterations) != 0 {
+			t.Fatal("unexpected number of iterations")
+		}
+	})
+}
+
 func TestHandshakeWithTTL(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -85,13 +104,13 @@ func TestHandshakeWithTTL(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		tr := &IterativeTrace{}
 		zeroTime := time.Now()
 		ctx := context.Background()
 		wg := new(sync.WaitGroup)
 		wg.Add(1)
-		m.handshakeWithTTL(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com", 3, tr, wg)
+		m.handshakeWithTTL(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com", 3, tr, wg, &Config{})
 		if len(tr.Iterations) != 1 {
 			t.Fatal("unexpected number of iterations")
 		}
@@ -116,13 +135,13 @@ func TestHandshakeWithTTL(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		m := NewExperimentMeasurer(Config{})
+		m := NewExperimentMeasurer()
 		tr := &IterativeTrace{}
 		zeroTime := time.Now()
 		ctx := context.Background()
 		wg := new(sync.WaitGroup)
 		wg.Add(1)
-		m.handshakeWithTTL(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com", 3, tr, wg)
+		m.handshakeWithTTL(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com", 3, tr, wg, &Config{})
 		if len(tr.Iterations) != 1 {
 			t.Fatal("unexpected number of iterations")
 		}

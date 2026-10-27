@@ -12,18 +12,19 @@ import (
 )
 
 func init() {
-	const canonicalName = "web_connectivity@v0.5"
-	AllExperiments[canonicalName] = func() *Factory {
+	// Register web_connectivity LTE as the "v0.5" version of the
+	// "web_connectivity" experiment. The registration stamps the base name as
+	// the canonical name, so "@v0.5" never leaks into the measurement.
+	registerVersion("web_connectivity", "v0.5", func() *Factory {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return webconnectivitylte.NewExperimentMeasurer()
 			},
-			canonicalName:    canonicalName,
 			config:           &webconnectivitylte.Config{},
 			enabledByDefault: true,
 			interruptible:    false,
 			inputPolicy:      model.InputOrQueryBackend,
 			newLoader:        webconnectivitylte.NewLoader,
 		}
-	}
+	})
 }

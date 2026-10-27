@@ -248,7 +248,7 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 
 // registerAllExperiments registers a subcommand for each experiment
 func registerAllExperiments(rootCmd *cobra.Command, globalOptions *Options) {
-	for name, ff := range registry.AllExperiments {
+	for name, ff := range registry.RegisteredFactories() {
 		subCmd := &cobra.Command{
 			Use:   name,
 			Short: fmt.Sprintf("Runs the %s experiment", name),

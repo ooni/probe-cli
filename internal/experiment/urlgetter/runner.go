@@ -106,6 +106,11 @@ func (r Runner) httpGet(ctx context.Context, url string) error {
 func (r Runner) dnsLookup(ctx context.Context, hostname string) error {
 	resolver := netx.NewResolver(r.HTTPConfig)
 	_, err := resolver.LookupHost(ctx, hostname)
+
+	// Optionally issue an SVCB query on the same resolver.
+	if r.Config.DNSSVCBName != "" {
+		_, _ = resolver.LookupSVCB(ctx, r.Config.DNSSVCBName)
+	}
 	return err
 }
 

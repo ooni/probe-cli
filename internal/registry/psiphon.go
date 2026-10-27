@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "psiphon"
-	AllExperiments[canonicalName] = func() *Factory {
+	register(canonicalName, func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return psiphon.NewExperimentMeasurer()
@@ -22,5 +22,5 @@ func init() {
 			inputPolicy:      model.InputOptional,
 			newLoader:        psiphon.NewLoader,
 		}
-	}
+	})
 }

@@ -370,12 +370,12 @@ func TestSessionNewExperimentBuilder(t *testing.T) {
 		}
 	})
 
-	t.Run("for webconnectivity with feature flags", func(t *testing.T) {
+	t.Run("for webconnectivity with the check-in versions map", func(t *testing.T) {
 		memstore := &kvstore.Memory{}
 		resp := &model.OOAPICheckInResult{
 			Conf: model.OOAPICheckInResultConfig{
-				Features: map[string]bool{
-					"webconnectivity_0.5": true,
+				Versions: map[string]string{
+					"web_connectivity": "v0.5",
 				},
 			},
 			ProbeASN: "",

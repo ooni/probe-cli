@@ -24,6 +24,8 @@ type UnderlyingNetwork struct {
 	MockGetaddrinfoLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 
 	MockGetaddrinfoResolverNetwork func() string
+
+	MockGetSystemResolverAddress func() (string, bool)
 }
 
 var _ model.UnderlyingNetwork = &UnderlyingNetwork{}
@@ -54,4 +56,8 @@ func (un *UnderlyingNetwork) GetaddrinfoLookupANY(ctx context.Context, domain st
 
 func (un *UnderlyingNetwork) GetaddrinfoResolverNetwork() string {
 	return un.MockGetaddrinfoResolverNetwork()
+}
+
+func (un *UnderlyingNetwork) GetSystemResolverAddress() (string, bool) {
+	return un.MockGetSystemResolverAddress()
 }

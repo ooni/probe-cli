@@ -271,6 +271,100 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			})
 		})
 
+		t.Run("dnsResponse.DecodeSVCB", func(t *testing.T) {
+			t.Run("with failure", func(t *testing.T) {
+				// Ensure that we're not trying to decode if rcode != 0
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeSVCB, queryID)
+				rawResponse := dnsGenReplyWithError(rawQuery, dns.RcodeRefused)
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				svcb, err := resp.DecodeSVCB()
+				if !errors.Is(err, ErrOODNSRefused) {
+					t.Fatal("unexpected err", err)
+				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
+				}
+				if svcb != nil {
+					t.Fatal("expected nil svcb result")
+				}
+			})
+
+			t.Run("with full answer", func(t *testing.T) {
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeSVCB, queryID)
+				rawResponse := dnsGenSVCBReplySuccess(rawQuery, "example.com.", 443, []string{"sample"})
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				svcb, err := resp.DecodeSVCB()
+				if err != nil {
+					t.Fatal(err)
+				}
+				firstSvcb := svcb[0]
+				if firstSvcb.TargetName != "example.com." {
+					t.Fatal("unexpected target name")
+				}
+				if firstSvcb.Port != 443 {
+					t.Fatal("unexpected port")
+				}
+				if firstSvcb.ALPN[0] != "sample" {
+					t.Fatal("unexpected protocol")
+				}
+				if string(firstSvcb.Ech) != "ECHCONFIG" {
+					t.Fatal("unexpected ech config")
+				}
+				if !firstSvcb.NoDefaultALPN {
+					t.Fatal("expected NoDefaultALPN to be true")
+				}
+				// mandatory lists the keys marked mandatory (order-independent)
+				gotMandatory := map[string]bool{}
+				for _, m := range firstSvcb.Mandatory {
+					gotMandatory[m] = true
+				}
+				if len(gotMandatory) != 2 || !gotMandatory["alpn"] || !gotMandatory["port"] {
+					t.Fatal("unexpected mandatory", firstSvcb.Mandatory)
+				}
+				// an unknown SvcParam key is not a typed field but must survive in Raw
+				if len(firstSvcb.Raw) <= 0 {
+					t.Fatal("expected non-empty Raw")
+				}
+				rr, _, err := dns.UnpackRR(firstSvcb.Raw, 0)
+				if err != nil {
+					t.Fatal("Raw did not re-parse:", err)
+				}
+				reparsed, ok := rr.(*dns.SVCB)
+				if !ok {
+					t.Fatal("Raw did not re-parse to *dns.SVCB")
+				}
+				var foundLocal bool
+				for _, kv := range reparsed.Value {
+					if local, ok := kv.(*dns.SVCBLocal); ok && local.KeyCode == 12345 {
+						foundLocal = true
+					}
+				}
+				if !foundLocal {
+					t.Fatal("unknown SVCBLocal key did not survive in Raw")
+				}
+			})
+		})
+
 		t.Run("dnsResponse.DecodeNS", func(t *testing.T) {
 			t.Run("with failure", func(t *testing.T) {
 				// Ensure that we're not trying to decode if rcode != 0
@@ -750,6 +844,52 @@ func dnsGenHTTPSReplySuccess(rawQuery []byte, alpns, ipv4s, ipv6s []string) []by
 		}
 		answer.Value = append(answer.Value, &dns.SVCBIPv6Hint{Hint: addrs})
 	}
+	data, err := reply.Pack()
+	runtimex.PanicOnError(err, "reply.Pack failed")
+	return data
+}
+
+// dnsGenSVCBReplySuccess generates a successful SVCB response containing
+// the given host, port, and alpns.
+func dnsGenSVCBReplySuccess(rawQuery []byte, target string, port int, alpns []string) []byte {
+	query := new(dns.Msg)
+	err := query.Unpack(rawQuery)
+	runtimex.PanicOnError(err, "query.Unpack failed")
+	runtimex.Assert(len(query.Question) == 1, "expected just a single question")
+	question := query.Question[0]
+	runtimex.Assert(question.Qtype == dns.TypeSVCB, "expected SVCB query")
+	reply := new(dns.Msg)
+	reply.Compress = true
+	reply.MsgHdr.RecursionAvailable = true
+	reply.SetReply(query)
+	answer := &dns.SVCB{
+		Hdr: dns.RR_Header{
+			Name:   dns.Fqdn("x.org"),
+			Rrtype: dns.TypeSVCB,
+			Class:  dns.ClassINET,
+			Ttl:    100,
+		},
+		Target:   dns.Fqdn(target),
+		Priority: 0,
+		Value:    []dns.SVCBKeyValue{},
+	}
+	reply.Answer = append(reply.Answer, answer)
+	var mandatory []dns.SVCBKey
+	if port != 0 {
+		answer.Value = append(answer.Value, &dns.SVCBPort{Port: uint16(port)})
+		mandatory = append(mandatory, dns.SVCB_PORT)
+	}
+	if len(alpns) > 0 {
+		answer.Value = append(answer.Value, &dns.SVCBAlpn{Alpn: alpns})
+		mandatory = append(mandatory, dns.SVCB_ALPN)
+	}
+	answer.Value = append(answer.Value, &dns.SVCBECHConfig{ECH: []byte("ECHCONFIG")})
+	answer.Value = append(answer.Value, &dns.SVCBNoDefaultAlpn{})
+	if len(mandatory) > 0 {
+		answer.Value = append(answer.Value, &dns.SVCBMandatory{Code: mandatory})
+	}
+	// an unknown/unmodeled SvcParam key (miekg parses it as *dns.SVCBLocal)
+	answer.Value = append(answer.Value, &dns.SVCBLocal{KeyCode: 12345, Data: []byte("blob")})
 	data, err := reply.Pack()
 	runtimex.PanicOnError(err, "reply.Pack failed")
 	return data
