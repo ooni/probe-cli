@@ -55,7 +55,7 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 	if measurer.ExperimentName() != "tlsmiddlebox" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.1.6" {
+	if measurer.ExperimentVersion() != "0.1.7" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
