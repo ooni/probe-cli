@@ -89,6 +89,42 @@ func tlsLengthFieldSpecs() []tlsLengthFieldSpec {
 	}
 }
 
+// VectorInfo is the public, wire-independent description of one test
+// vector: its name and Table 9 classification, without the Build closure.
+// Tooling (e.g. generating a signature-file skeleton, or listing vectors
+// for a CLI --list flag) should use AllVectors instead of re-deriving this
+// list by hand.
+type VectorInfo struct {
+	Name        string
+	Category    string
+	Field       string
+	Permutation string
+	QUICGroup   string
+}
+
+// AllVectors returns the name/category/field/permutation metadata for
+// every vector buildVectors would produce for SNI sni. The SNI does not
+// affect the returned metadata (only the packet bytes Build() produces
+// later), so any non-empty placeholder is fine when you only need the
+// list of names, e.g. "example.com".
+func AllVectors(sni string) ([]VectorInfo, error) {
+	vectors, err := buildVectors(sni)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]VectorInfo, 0, len(vectors))
+	for _, v := range vectors {
+		out = append(out, VectorInfo{
+			Name:        v.Name,
+			Category:    v.Category,
+			Field:       v.Field,
+			Permutation: v.Permutation,
+			QUICGroup:   v.QUICGroup,
+		})
+	}
+	return out, nil
+}
+
 // buildVectors returns every test vector implementing Table 9, addressed at
 // SNI sni. Vectors are built lazily (via the closures in TestVector.Build)
 // so that each repetition gets a fresh ClientHello (fresh random Random/
