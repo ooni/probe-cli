@@ -72,17 +72,27 @@ func computeSecrets(destConnID []byte, salt [20]byte) (clientSecret, serverSecre
 	return
 }
 
+// keyLabelPrefix returns the prefix of the HKDF labels that derive the packet
+// protection keys: "quic " (RFC 9001 §5.1), or "quicv2 " for QUIC v2 (RFC 9369
+// §3.3.2). The other versions are best-effort (see versions.go) and use v1's.
+func keyLabelPrefix(version uint32) string {
+	if version == versionV2 {
+		return "quicv2 "
+	}
+	return "quic "
+}
+
 // computeInitialKeyAndIV derives the AEAD key and IV from an Initial secret.
 // https://www.rfc-editor.org/rfc/rfc9001.html#protection-keys
-func computeInitialKeyAndIV(secret []byte) (key, iv []byte) {
-	key = hkdfExpandLabel(secret, []byte{}, "quic key", 16)
-	iv = hkdfExpandLabel(secret, []byte{}, "quic iv", 12)
+func computeInitialKeyAndIV(secret []byte, version uint32) (key, iv []byte) {
+	key = hkdfExpandLabel(secret, []byte{}, keyLabelPrefix(version)+"key", 16)
+	iv = hkdfExpandLabel(secret, []byte{}, keyLabelPrefix(version)+"iv", 12)
 	return
 }
 
 // computeHP derives the header-protection key from an Initial secret.
-func computeHP(secret []byte) []byte {
-	return hkdfExpandLabel(secret, []byte{}, "quic hp", 16)
+func computeHP(secret []byte, version uint32) []byte {
+	return hkdfExpandLabel(secret, []byte{}, keyLabelPrefix(version)+"hp", 16)
 }
 
 // xorNonceAEAD wraps an AEAD, XORing a fixed mask into the nonce before each
@@ -142,8 +152,8 @@ func (f *xorNonceAEAD) Open(pn int64, ciphertext, additionalData []byte) ([]byte
 // (the concatenated frames that make up the packet body), using packet
 // number pn and the associated-data (unprotected header) hdr.
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-packet-protection
-func encryptPayload(payload []byte, clientSecret []byte, hdr []byte, pn int64) ([]byte, error) {
-	key, iv := computeInitialKeyAndIV(clientSecret)
+func encryptPayload(payload []byte, clientSecret []byte, hdr []byte, pn int64, version uint32) ([]byte, error) {
+	key, iv := computeInitialKeyAndIV(clientSecret, version)
 	aead, err := newAEADAESGCM(key, iv)
 	if err != nil {
 		return nil, err
@@ -154,8 +164,8 @@ func encryptPayload(payload []byte, clientSecret []byte, hdr []byte, pn int64) (
 // encryptHeader applies QUIC header protection to raw (which must already
 // contain the AEAD-sealed payload appended after hdr).
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-header-protection
-func encryptHeader(raw, hdr, clientSecret []byte, pnLen int) ([]byte, error) {
-	hp := computeHP(clientSecret)
+func encryptHeader(raw, hdr, clientSecret []byte, pnLen int, version uint32) ([]byte, error) {
+	hp := computeHP(clientSecret, version)
 	block, err := aes.NewCipher(hp)
 	if err != nil {
 		return nil, fmt.Errorf("quicfp: aes.NewCipher failed: %w", err)
@@ -201,10 +211,11 @@ func decryptInitialPacket(raw []byte, dstConnID connectionID, salt [20]byte, dst
 	}
 
 	clientSecret, _ := computeSecrets(dstConnID, salt)
+	version := binary.BigEndian.Uint32(raw[1:5])
 
 	// Undo header protection (self-inverse XOR, see comment above).
 	work := append([]byte{}, raw...)
-	if _, err := encryptHeader(work, make([]byte, hdrLen), clientSecret, pnLen); err != nil {
+	if _, err := encryptHeader(work, make([]byte, hdrLen), clientSecret, pnLen, version); err != nil {
 		return nil, fmt.Errorf("quicfp: undoing header protection: %w", err)
 	}
 
@@ -214,7 +225,7 @@ func decryptInitialPacket(raw []byte, dstConnID connectionID, salt [20]byte, dst
 		return nil, fmt.Errorf("quicfp: length mismatch: got %d want %d", len(ciphertext), remLen-uint64(pnLen))
 	}
 
-	key, iv := computeInitialKeyAndIV(clientSecret)
+	key, iv := computeInitialKeyAndIV(clientSecret, version)
 	aead, err := newAEADAESGCM(key, iv)
 	if err != nil {
 		return nil, err
@@ -226,12 +237,12 @@ func decryptInitialPacket(raw []byte, dstConnID connectionID, salt [20]byte, dst
 // header hdr (whose last pnLen bytes are the cleartext packet number) and
 // the plaintext frame payload, it returns the fully protected UDP datagram
 // bytes ready to send.
-func cryptoProtect(hdr, payload, destConnID []byte, salt [20]byte, pn int64, pnLen int) ([]byte, error) {
+func cryptoProtect(hdr, payload, destConnID []byte, salt [20]byte, pn int64, pnLen int, version uint32) ([]byte, error) {
 	clientSecret, _ := computeSecrets(destConnID, salt)
-	sealed, err := encryptPayload(payload, clientSecret, hdr, pn)
+	sealed, err := encryptPayload(payload, clientSecret, hdr, pn, version)
 	if err != nil {
 		return nil, err
 	}
 	raw := append(append([]byte{}, hdr...), sealed...)
-	return encryptHeader(raw, hdr, clientSecret, pnLen)
+	return encryptHeader(raw, hdr, clientSecret, pnLen, version)
 }

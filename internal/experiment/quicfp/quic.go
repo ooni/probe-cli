@@ -127,7 +127,13 @@ func paddingFrames(n int) []byte {
 // number, plus the numeric Length field's target so the caller can size the
 // frame payload accordingly. remainderLen is len(framePayload)+aeadTagLen.
 func buildUnprotectedHeader(version uint32, destConnID, srcConnID connectionID, pn int64, remainderLen int) []byte {
-	hdr := []byte{0xc0 | byte(pnLen-1)} // long header, fixed bit, Initial type, reserved=0
+	// long header, fixed bit, Initial type (0b00, but 0b01 in v2: RFC 9369
+	// §3.2), reserved bits 0, packet number length
+	typeBits := byte(0x00)
+	if version == versionV2 {
+		typeBits = 0x10
+	}
+	hdr := []byte{0xc0 | typeBits | byte(pnLen-1)}
 	var v [4]byte
 	binary.BigEndian.PutUint32(v[:], version)
 	hdr = append(hdr, v[:]...)
@@ -161,7 +167,7 @@ func sealPacket(version uint32, salt [20]byte, destConnID, srcConnID connectionI
 	// sealed) Payload field that follows it (RFC 9000 §17.2).
 	remainderLen := pnLen + len(payload) + aeadTagLen
 	hdr := buildUnprotectedHeader(version, destConnID, srcConnID, pn, remainderLen)
-	return cryptoProtect(hdr, payload, destConnID, salt, pn, pnLen)
+	return cryptoProtect(hdr, payload, destConnID, salt, pn, pnLen, version)
 }
 
 // buildStandardPacket builds a single Initial datagram carrying the whole
