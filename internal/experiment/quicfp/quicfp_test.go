@@ -428,3 +428,62 @@ func TestRunUsesAFreshSocketPerPing(t *testing.T) {
 		}
 	}
 }
+
+func TestSendAndAwaitMatchesTheAnswer(t *testing.T) {
+	target := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 443}
+	other := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 2), Port: 443}
+	src := connectionID{1, 2, 3, 4}
+	longHeader := func(first byte, version uint32, dst connectionID) []byte {
+		pkt := []byte{first, byte(version >> 24), byte(version >> 16), byte(version >> 8), byte(version), byte(len(dst))}
+		return append(append(pkt, dst...), 0)
+	}
+	type datagram struct {
+		from *net.UDPAddr
+		data []byte
+	}
+	cases := []struct {
+		name         string
+		in           []datagram
+		wantType     string // of the last recorded response, "" for none
+		wantAnswered bool
+	}{
+		{"nothing", nil, "", false},
+		{"from another host", []datagram{{other, longHeader(0xc0, 1, src)}}, "", false},
+		{"to another connection", []datagram{{target, longHeader(0xc0, 1, connectionID{9})}}, "", false},
+		{"not a long header", []datagram{{target, []byte{0x40, 1, 2}}}, "unknown", false},
+		{"version negotiation", []datagram{{target, append(longHeader(0x80, 0, src), 0, 0, 0, 1)}}, "version_negotiation", true},
+		{"v1 initial", []datagram{{target, longHeader(0xc0, 1, src)}}, "initial", true},
+		{"v1 handshake", []datagram{{target, longHeader(0xe0, 1, src)}}, "handshake", true},
+		{"v2 initial", []datagram{{target, longHeader(0xd0, versionV2, src)}}, "initial", true},
+		{"stray, then the answer", []datagram{{other, longHeader(0xc0, 1, src)}, {target, longHeader(0xc0, 1, src)}}, "initial", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			in := c.in
+			conn := &mocks.UDPLikeConn{
+				MockSetDeadline: func(t time.Time) error { return nil },
+				MockWriteTo:     func(p []byte, addr net.Addr) (int, error) { return len(p), nil },
+				MockReadFrom: func(p []byte) (int, net.Addr, error) {
+					if len(in) == 0 {
+						return 0, nil, errors.New("i/o timeout")
+					}
+					d := in[0]
+					in = in[1:]
+					return copy(p, d.data), d.from, nil
+				},
+			}
+			m := &Measurer{}
+			err, responses, answered := m.sendAndAwait(conn, target, [][]byte{{0}}, src, time.Now(), time.Second)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotType := ""
+			if len(responses) > 0 {
+				gotType = responses[len(responses)-1].Type
+			}
+			if gotType != c.wantType || answered != c.wantAnswered {
+				t.Fatalf("got type %q answered %v, want %q %v", gotType, answered, c.wantType, c.wantAnswered)
+			}
+		})
+	}
+}

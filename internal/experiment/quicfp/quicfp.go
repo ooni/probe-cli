@@ -31,6 +31,7 @@
 package quicfp
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"net"
@@ -127,8 +128,8 @@ type SinglePing struct {
 	Requests  []*legacymodel.ArchivalMaybeBinaryData `json:"requests"`
 	T         float64                                `json:"t"`
 	Responses []*SinglePingResponse                  `json:"responses"`
-	// Blocked is a best-effort heuristic: true if no response of any kind
-	// arrived before the deadline. As documented at the package level,
+	// Blocked is a best-effort heuristic: true if the target did not answer
+	// (see sendAndAwait) before the deadline. As documented at the package level,
 	// this is NOT the same thing as Table 9's "Bypasses Censor" row,
 	// which requires comparing against a control measurement.
 	Blocked bool `json:"blocked"`
@@ -139,7 +140,7 @@ type SinglePingResponse struct {
 	Data              *legacymodel.ArchivalMaybeBinaryData `json:"response_data"`
 	Failure           *string                              `json:"failure"`
 	T                 float64                              `json:"t"`
-	Type              string                               `json:"type"` // "version_negotiation" | "unknown"
+	Type              string                               `json:"type"` // "version_negotiation", "initial", "handshake", "retry", "0rtt" or "unknown"
 	SupportedVersions []uint32                             `json:"supported_versions,omitempty"`
 }
 
@@ -188,9 +189,11 @@ func (m *Measurer) resolveTarget(input string) (addr *net.UDPAddr, sni string, e
 
 // sendAndAwait sends every datagram in reqs (back-to-back, on the same
 // 4-tuple) from pconn, a socket of this ping's own, and waits up to the
-// configured vector timeout for a response
-// whose Version-Negotiation Destination Connection ID matches srcID (i.e.
-// the source connection ID we sent), classifying whatever arrives.
+// configured vector timeout for the target to answer: a long-header packet
+// (Version Negotiation, or an Initial, Handshake or Retry from a server that
+// accepted the version) addressed to srcID, the source connection ID we
+// sent. It returns at the first answer, with answered set; anything else
+// from the target is recorded as "unknown" and the wait goes on.
 func (m *Measurer) sendAndAwait(
 	pconn model.UDPLikeConn,
 	destAddr *net.UDPAddr,
@@ -198,45 +201,53 @@ func (m *Measurer) sendAndAwait(
 	srcID connectionID,
 	startedAt time.Time,
 	timeout time.Duration,
-) (sendErr error, responses []*SinglePingResponse) {
+) (sendErr error, responses []*SinglePingResponse, answered bool) {
 	_ = pconn.SetDeadline(time.Now().Add(timeout))
 	for _, req := range reqs {
 		if _, err := pconn.WriteTo(req, destAddr); err != nil {
-			return err, nil
+			return err, nil, false
 		}
 	}
 	buf := make([]byte, 2048)
 	for {
-		n, _, err := pconn.ReadFrom(buf)
+		n, from, err := pconn.ReadFrom(buf)
 		respT := time.Since(startedAt).Seconds()
 		if err != nil {
 			// Deadline exceeded: stop waiting for this vector,
 			// reported as "no response", i.e. Blocked=true upstream.
-			return nil, responses
+			return nil, responses, false
+		}
+		if udp, ok := from.(*net.UDPAddr); !ok || !udp.IP.Equal(destAddr.IP) || udp.Port != destAddr.Port {
+			continue // not from the target
 		}
 		raw := append([]byte{}, buf[:n]...)
-		versions, dst, verr := dissectVersionNegotiation(raw)
-		if verr != nil {
+		version, dst, derr := dissectLongHeader(raw)
+		if derr != nil {
+			// From the target but not a long-header packet: record it,
+			// but it doesn't count as an answer to this ping.
 			responses = append(responses, &SinglePingResponse{
 				Data:    &legacymodel.ArchivalMaybeBinaryData{Value: string(raw)},
-				Failure: tracex.NewFailure(verr),
+				Failure: tracex.NewFailure(derr),
 				T:       respT,
 				Type:    "unknown",
 			})
 			continue
 		}
-		if hex.EncodeToString(dst) != hex.EncodeToString(srcID) {
-			// Not addressed to us (or a stray packet); keep waiting
-			// until the deadline.
-			continue
+		if !bytes.Equal(dst, srcID) {
+			continue // addressed to another connection
 		}
-		responses = append(responses, &SinglePingResponse{
-			Data:              &legacymodel.ArchivalMaybeBinaryData{Value: string(raw)},
-			T:                 respT,
-			Type:              "version_negotiation",
-			SupportedVersions: versions,
-		})
-		return nil, responses
+		resp := &SinglePingResponse{
+			Data: &legacymodel.ArchivalMaybeBinaryData{Value: string(raw)},
+			T:    respT,
+			Type: longHeaderPacketType(raw[0], version),
+		}
+		if version == 0 {
+			resp.Type = "version_negotiation"
+			resp.SupportedVersions, _, _ = dissectVersionNegotiation(raw)
+		}
+		responses = append(responses, resp)
+		answered = true
+		return nil, responses, answered
 	}
 }
 
@@ -320,7 +331,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			if err != nil {
 				return err
 			}
-			senderr, responses := m.sendAndAwait(pconn, destAddr, reqs, src, measurement.MeasurementStartTimeSaved, timeout)
+			senderr, responses, answered := m.sendAndAwait(pconn, destAddr, reqs, src, measurement.MeasurementStartTimeSaved, timeout)
 			pconn.Close()
 
 			sp := &SinglePing{
@@ -330,7 +341,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 				Requests:  archivalReqs,
 				T:         sendT,
 				Responses: responses,
-				Blocked:   senderr == nil && len(responses) == 0,
+				Blocked:   senderr == nil && !answered,
 			}
 			vr.Pings = append(vr.Pings, sp)
 		}

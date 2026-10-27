@@ -272,3 +272,27 @@ func dissectVersionNegotiation(pkt []byte) (versions []uint32, dst connectionID,
 	}
 	return versions, dst, nil
 }
+
+// dissectLongHeader parses the version and Destination Connection ID of a
+// long-header packet (RFC 8999 §5.1), which every QUIC version shares.
+func dissectLongHeader(pkt []byte) (version uint32, dst connectionID, err error) {
+	if len(pkt) < 6 || pkt[0]&0x80 == 0 {
+		return 0, nil, errors.New("quicfp: not a long header packet")
+	}
+	dstLen := int(pkt[5])
+	if 6+dstLen > len(pkt) {
+		return 0, nil, errors.New("quicfp: truncated destination connection ID")
+	}
+	return binary.BigEndian.Uint32(pkt[1:5]), connectionID(pkt[6 : 6+dstLen]), nil
+}
+
+// longHeaderPacketType names the type of a long-header packet of the given
+// version from the type bits of its first byte (RFC 9000 §17.2 for v1, RFC
+// 9369 §3.2 for v2, which numbers the same types differently).
+func longHeaderPacketType(first byte, version uint32) string {
+	bits := (first >> 4) & 0x03
+	if version == versionV2 {
+		return [4]string{"retry", "initial", "0rtt", "handshake"}[bits]
+	}
+	return [4]string{"initial", "0rtt", "handshake", "retry"}[bits]
+}
