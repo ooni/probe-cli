@@ -7,6 +7,7 @@ package tlsmiddlebox
 import (
 	"context"
 	"errors"
+	"net"
 	"net/url"
 	"sync"
 	"time"
@@ -17,7 +18,7 @@ import (
 
 const (
 	testName    = "tlsmiddlebox"
-	testVersion = "0.1.3"
+	testVersion = "0.1.6"
 )
 
 // Measurer performs the measurement.
@@ -43,7 +44,7 @@ var (
 	ErrInputIsNotAnURL = errors.New("input is not an URL")
 
 	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
-	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be tlstrace")
+	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be https")
 
 	// errInvalidTestHelper indicates that the testhelper is invalid
 	errInvalidTestHelper = errors.New("invalid testhelper")
@@ -56,6 +57,9 @@ var (
 
 	// ErrInvalidInputType indicates that the richer-input target has the wrong type.
 	ErrInvalidInputType = targetloading.ErrInvalidInputType
+
+	// errInvalidClientId indicates that the ClientId is invalid
+	errInvalidClientId = errors.New("ClientId does not match any known fingerprint")
 )
 
 // Run implements ExperimentMeasurer.Run.
@@ -86,7 +90,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if err != nil {
 		return ErrInputIsNotAnURL
 	}
-	if URL.Scheme != "tlstrace" {
+	if URL.Scheme != "https" {
 		return ErrUnsupportedInput
 	}
 	th, err := target.Config.testhelper(URL.Host)
@@ -96,6 +100,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if th.Scheme != "tlshandshake" {
 		return errInvalidTHScheme
 	}
+	if clientId := config.clientid(); clientId > 0 && ClientIDs[clientId] == nil {
+		return errInvalidClientId
+	}
 	tk := NewTestKeys()
 	measurement.TestKeys = tk
 	wg := new(sync.WaitGroup)
@@ -104,6 +111,10 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if err != nil {
 		return err
 	}
+
+	// 3. choose IPv4 over IPv6 addresses when available
+	addrs = chooseIPv4(addrs)
+
 	// 2. measure addresses
 	addrs = prepareAddrs(addrs, th.Port())
 	for i, addr := range addrs {
@@ -133,4 +144,28 @@ func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer() *Measurer {
 	return &Measurer{}
+}
+
+// chooseIPv4 returns IPv4 IP addresses if the DNS resolution contained both
+// IPv4 and IPv6 addresses, else it returns the IPv6 addresses
+func chooseIPv4(addrs []string) []string {
+	var ipv4, ipv6 []string
+
+	for _, addr := range addrs {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			continue
+		}
+
+		if ip.To4() != nil {
+			ipv4 = append(ipv4, addr)
+		} else {
+			ipv6 = append(ipv6, addr)
+		}
+	}
+
+	if len(ipv4) > 0 {
+		return ipv4
+	}
+	return ipv6
 }

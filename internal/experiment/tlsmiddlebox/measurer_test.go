@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -13,12 +14,48 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
+func TestChooseIPv4(t *testing.T) {
+	t.Run("returns IPv4", func(t *testing.T) {
+		var addrs = []string{"1.2.3.4", "5.6.7.8", "2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31", "2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64"}
+		result := chooseIPv4(addrs)
+
+		if len(result) != 2 {
+			t.Fatalf("expected 2 IPv4 addresses, got %d: %v", len(result), result)
+		}
+
+		if !slices.Contains(result, "1.2.3.4") {
+			t.Errorf("missing IPv4 address 1.2.3.4: %v", result)
+		}
+
+		if !slices.Contains(result, "5.6.7.8") {
+			t.Errorf("missing IPv4 address 5.6.7.8: %v", result)
+		}
+	})
+
+	t.Run("returns IPv6", func(t *testing.T) {
+		var addrs = []string{"2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31", "2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64"}
+		result := chooseIPv4(addrs)
+
+		if len(result) != 2 {
+			t.Fatalf("expected 2 IPv6 addresses, got %d: %v", len(result), result)
+		}
+
+		if !slices.Contains(result, "2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31") {
+			t.Errorf("missing IPv6 address 2001:db8:7a3f:91c2:4e8b:2d10:6f5a:8c31: %v", result)
+		}
+
+		if !slices.Contains(result, "2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64") {
+			t.Errorf("missing IPv6 address 2001:db8:4c71:a9e2:8b36:f105:7d2a:9e64: %v", result)
+		}
+	})
+}
+
 func TestMeasurerExperimentNameVersion(t *testing.T) {
 	measurer := NewExperimentMeasurer()
 	if measurer.ExperimentName() != "tlsmiddlebox" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.1.3" {
+	if measurer.ExperimentVersion() != "0.1.6" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
@@ -73,15 +110,42 @@ func TestMeasurer_input_failure(t *testing.T) {
 	})
 
 	t.Run("with invalid testhelper", func(t *testing.T) {
-		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "\t", "")
+		_, _, err := runHelper(context.Background(), "https://example.com", "\t", "")
 		if !errors.Is(err, errInvalidTestHelper) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid TH scheme", func(t *testing.T) {
-		_, _, err := runHelper(context.Background(), "tlstrace://example.com", "http://google.com", "")
+		_, _, err := runHelper(context.Background(), "https://example.com", "http://google.com", "")
 		if !errors.Is(err, errInvalidTHScheme) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid ClientId", func(t *testing.T) {
+		m := NewExperimentMeasurer()
+		meas := &model.Measurement{
+			Input: model.MeasurementInput("https://example.com"),
+		}
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: meas,
+			Session:     sess,
+			Target: &Target{
+				Config: &Config{
+					ClientId: 5, // we only know fingerprints between 1 and 4
+				},
+				URL: "https://example.com",
+			},
+		}
+		err := m.Run(context.Background(), args)
+		if !errors.Is(err, errInvalidClientId) {
 			t.Fatal("unexpected error", err)
 		}
 	})
@@ -99,7 +163,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -146,7 +210,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -193,7 +257,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "https://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}

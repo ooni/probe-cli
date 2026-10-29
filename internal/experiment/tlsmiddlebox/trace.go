@@ -3,6 +3,9 @@ package tlsmiddlebox
 import (
 	"errors"
 	"fmt"
+	"net"
+	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
@@ -47,6 +50,29 @@ type ICMPIteration struct {
 	ICMPError *model.ArchivalICMPErrorMessage `json:"icmp_error"`
 }
 
+// matches a bracketed IPv6 address (with an optional port) OR an IPv4 address (with an optional port) OR an unbracketed IPv6 address with NO port
+var ipRegex = regexp.MustCompile(
+	`\[[0-9a-fA-F:.]+\](?::\d+)?|\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?|[0-9a-fA-F]*:[0-9a-fA-F:]+`,
+)
+
+// scrubs IPv4 and IPv6 addresses from error messages
+func scrubIPsFromError(s string) string {
+	return ipRegex.ReplaceAllStringFunc(s, func(candidate string) string {
+		ip := strings.Trim(candidate, "[]")
+
+		host, _, err := net.SplitHostPort(candidate)
+		if err == nil {
+			ip = host
+		}
+
+		if net.ParseIP(ip) != nil {
+			return "[scrubbed]"
+		}
+
+		return candidate
+	})
+}
+
 // errorChain unwraps and iterates through the error list and records
 // the type and error at each step
 func errorChain(err error) []model.FailureChainData {
@@ -59,7 +85,7 @@ func errorChain(err error) []model.FailureChainData {
 	for err != nil {
 		chain = append(chain, model.FailureChainData{
 			Type:  fmt.Sprintf("%T", err),
-			Error: err.Error(),
+			Error: scrubIPsFromError(err.Error()),
 		})
 
 		err = errors.Unwrap(err)
