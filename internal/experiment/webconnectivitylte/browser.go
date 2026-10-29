@@ -13,8 +13,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// We claim to be the Chrome on stable (156 on 2026-10-29). Update the
-// User-Agent and sec-ch-ua together, to a current Chrome.
+// We claim to be the Chrome on stable (156 on 2026-10-29). The ClientHello
+// comes from ooni/utls-light (netxlite's NewTLSHandshakerChrome): update it,
+// the User-Agent and sec-ch-ua together, to a current Chrome.
 
 // browserUserAgent is Chrome 156's on Windows. It doesn't follow
 // [model.HTTPHeaderUserAgent], which other experiments use.

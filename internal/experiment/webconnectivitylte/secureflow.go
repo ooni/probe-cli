@@ -158,7 +158,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		ol.Stop(err)
 		return err
 	}
-	tlsHandshaker := trace.NewTLSHandshakerStdlib(t.Logger)
+	tlsHandshaker := trace.NewTLSHandshakerChrome(t.Logger)
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.

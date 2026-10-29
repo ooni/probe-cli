@@ -279,6 +279,10 @@ type MeasuringNetwork interface {
 	// Passing a nil `id` will make this function panic.
 	NewTLSHandshakerUTLS(logger DebugLogger, id *utls.ClientHelloID) TLSHandshaker
 
+	// NewTLSHandshakerChrome creates a new TLS handshaker that sends
+	// Chrome's ClientHello, using ooni/utls-light, with error wrapping.
+	NewTLSHandshakerChrome(logger DebugLogger) TLSHandshaker
+
 	// NewUDPListener creates a new UDPListener with error wrapping.
 	NewUDPListener() UDPListener
 }

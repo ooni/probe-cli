@@ -21,6 +21,8 @@ type MeasuringNetwork struct {
 
 	MockNewTLSHandshakerUTLS func(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker
 
+	MockNewTLSHandshakerChrome func(logger model.DebugLogger) model.TLSHandshaker
+
 	MockNewUDPListener func() model.UDPListener
 }
 
@@ -64,4 +66,9 @@ func (mn *MeasuringNetwork) NewTLSHandshakerUTLS(logger model.DebugLogger, id *u
 // NewUDPListener implements model.MeasuringNetwork.
 func (mn *MeasuringNetwork) NewUDPListener() model.UDPListener {
 	return mn.MockNewUDPListener()
+}
+
+// NewTLSHandshakerChrome implements model.MeasuringNetwork.
+func (mn *MeasuringNetwork) NewTLSHandshakerChrome(logger model.DebugLogger) model.TLSHandshaker {
+	return mn.MockNewTLSHandshakerChrome(logger)
 }
