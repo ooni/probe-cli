@@ -78,7 +78,7 @@ func compareTestKeys(expected, got *TestKeys, ignoreFields ...string) error {
 		// ignore the fields that are specific to LTE
 		options = append(options, cmpopts.IgnoreFields(TestKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
 
-	case "0.5.28":
+	case "0.5.29":
 		// ignore the fields that are specific to v0.4
 		options = append(options, cmpopts.IgnoreFields(TestKeys{}, "XStatus"))
 
