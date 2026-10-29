@@ -443,20 +443,17 @@ func (m *Measurer) download(ctx context.Context, index int64, zeroTime time.Time
 	// which would download more than maxBytes. Closing the connection is enough.
 	d.StatusCode = int64(resp.StatusCode)
 
-	var sink io.Writer = io.Discard
-	var body strings.Builder
-	if keepBody {
-		sink = &body
-	}
-	n, err := io.CopyN(sink, resp.Body, maxBytes)
+	// StreamAllContext, unlike CopyContext, returns what it read before a timeout,
+	// which is how a throttled download ends.
+	body, err := netxlite.StreamAllContext(ctx, io.LimitReader(resp.Body, maxBytes))
 	d.T = trace.TimeSince(zeroTime).Seconds()
+	n := int64(len(body))
 	d.BodyLength = n
-	d.body = []byte(body.String())
+	if keepBody {
+		d.body = body
+	}
 	if elapsed := d.T - d.T0; elapsed > 0 {
 		d.GoodputKbps = float64(n) * 8 / elapsed / 1000
-	}
-	if errors.Is(err, io.EOF) {
-		err = nil // the body is shorter than maxBytes
 	}
 	if err != nil {
 		d.Failure = measurexlite.NewFailure(netxlite.NewTopLevelGenericErrWrapper(err))
