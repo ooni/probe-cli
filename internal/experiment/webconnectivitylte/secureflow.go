@@ -158,7 +158,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		ol.Stop(err)
 		return err
 	}
-	tlsHandshaker := trace.NewTLSHandshakerStdlib(t.Logger)
+	tlsHandshaker := trace.NewTLSHandshakerUTLS(t.Logger, browserClientHello)
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
@@ -293,10 +293,10 @@ func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) 
 		return nil, err
 	}
 	httpReq.Header.Set("Host", t.HostHeader)
-	httpReq.Header.Set("Accept", model.HTTPHeaderAccept)
-	httpReq.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
-	httpReq.Header.Set("Referer", t.Referer)
-	httpReq.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
+	browserSetHeaders(httpReq.Header, true)
+	if t.Referer != "" {
+		httpReq.Header.Set("Referer", t.Referer)
+	}
 	httpReq.Host = t.HostHeader
 	if t.CookieJar != nil {
 		for _, cookie := range t.CookieJar.Cookies(httpURL) {

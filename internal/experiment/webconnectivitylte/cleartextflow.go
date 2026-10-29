@@ -237,10 +237,10 @@ func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, erro
 		return nil, err
 	}
 	httpReq.Header.Set("Host", t.HostHeader)
-	httpReq.Header.Set("Accept", model.HTTPHeaderAccept)
-	httpReq.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
-	httpReq.Header.Set("Referer", t.Referer)
-	httpReq.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
+	browserSetHeaders(httpReq.Header, false)
+	if t.Referer != "" {
+		httpReq.Header.Set("Referer", t.Referer)
+	}
 	httpReq.Host = t.HostHeader
 	if t.CookieJar != nil {
 		for _, cookie := range t.CookieJar.Cookies(httpURL) {
