@@ -31,7 +31,7 @@ func TestConfigureCustomCheckers(t *testing.T) {
 			return "web_connectivity"
 		},
 		MockExperimentVersion: func() string {
-			return "0.5.28"
+			return "0.5.29"
 		},
 		MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 			args.Measurement.TestKeys = &webconnectivitylte.TestKeys{
@@ -70,17 +70,17 @@ func TestReadWriteEventsExistentialChecker(t *testing.T) {
 		expect:  webconnectivityqa.ErrCheckerUnexpectedWebConnectivityVersion,
 	}, {
 		name:    "with read/write network events",
-		version: "0.5.28",
+		version: "0.5.29",
 		tk:      `{"network_events":[{"operation":"read"},{"operation":"write"}]}`,
 		expect:  nil,
 	}, {
 		name:    "without network events",
-		version: "0.5.28",
+		version: "0.5.29",
 		tk:      `{"network_events":[]}`,
 		expect:  webconnectivityqa.ErrCheckerNoReadWriteEvents,
 	}, {
 		name:    "with no read/write network events",
-		version: "0.5.28",
+		version: "0.5.29",
 		tk:      `{"network_events":[{"operation":"connect"},{"operation":"close"}]}`,
 		expect:  webconnectivityqa.ErrCheckerNoReadWriteEvents,
 	}}

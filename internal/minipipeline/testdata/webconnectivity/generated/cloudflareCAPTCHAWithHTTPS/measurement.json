@@ -14,12 +14,11 @@
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
   "probe_network_name": "Consortium GARR",
-  "report_id": "",
   "resolver_asn": "AS137",
   "resolver_ip": "130.192.3.21",
   "resolver_network_name": "Consortium GARR",
   "software_name": "ooniprobe",
-  "software_version": "3.22.0-alpha",
+  "software_version": "3.32.0-alpha",
   "test_helpers": {
     "backend": {
       "address": "https://0.th.ooni.org/",
@@ -150,7 +149,7 @@
           "headers_list": [
             [
               "Accept",
-              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
             ],
             [
               "Accept-Language",
@@ -161,20 +160,55 @@
               "www.cloudflare-cache.com"
             ],
             [
-              "Referer",
-              ""
+              "Sec-Fetch-Dest",
+              "document"
+            ],
+            [
+              "Sec-Fetch-Mode",
+              "navigate"
+            ],
+            [
+              "Sec-Fetch-Site",
+              "none"
+            ],
+            [
+              "Sec-Fetch-User",
+              "?1"
+            ],
+            [
+              "Upgrade-Insecure-Requests",
+              "1"
             ],
             [
               "User-Agent",
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.36"
+            ],
+            [
+              "sec-ch-ua",
+              "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\""
+            ],
+            [
+              "sec-ch-ua-mobile",
+              "?0"
+            ],
+            [
+              "sec-ch-ua-platform",
+              "\"Windows\""
             ]
           ],
           "headers": {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Language": "en-US,en;q=0.9",
             "Host": "www.cloudflare-cache.com",
-            "Referer": "",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.36",
+            "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
           },
           "method": "GET",
           "tor": {
@@ -302,13 +336,37 @@
       "http_request": "https://www.cloudflare-cache.com/",
       "http_request_headers": {
         "Accept": [
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
         ],
         "Accept-Language": [
           "en-US,en;q=0.9"
         ],
+        "Sec-Fetch-Dest": [
+          "document"
+        ],
+        "Sec-Fetch-Mode": [
+          "navigate"
+        ],
+        "Sec-Fetch-Site": [
+          "none"
+        ],
+        "Sec-Fetch-User": [
+          "?1"
+        ],
+        "Upgrade-Insecure-Requests": [
+          "1"
+        ],
         "User-Agent": [
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.3"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+        ],
+        "sec-ch-ua": [
+          "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\""
+        ],
+        "sec-ch-ua-mobile": [
+          "?0"
+        ],
+        "sec-ch-ua-platform": [
+          "\"Windows\""
         ]
       },
       "tcp_connect": [
@@ -386,5 +444,5 @@
   "test_name": "web_connectivity",
   "test_runtime": 0,
   "test_start_time": "2024-02-12 20:33:47",
-  "test_version": "0.5.28"
+  "test_version": "0.5.29"
 }
