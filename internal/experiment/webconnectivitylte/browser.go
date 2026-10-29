@@ -14,12 +14,20 @@ import (
 	utls "github.com/refraction-networking/utls"
 )
 
-// browserClientHello is the ClientHello of the Chrome version that
-// [model.HTTPHeaderUserAgent] and [browserSecChUA] claim. Update all three together.
-var browserClientHello = &utls.HelloChrome_120
+// We claim to be the Chrome on stable (156 on 2026-10-29). Update the
+// ClientHello, the User-Agent and sec-ch-ua together, to a current Chrome.
 
-// browserSecChUA is Chrome 120's sec-ch-ua header.
-const browserSecChUA = `"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"`
+// browserClientHello is uTLS's newest Chrome ClientHello, captured from
+// Chrome 155.
+var browserClientHello = &utls.HelloChrome_155
+
+// browserUserAgent is Chrome 156's on Windows. It doesn't follow
+// [model.HTTPHeaderUserAgent], which other experiments use.
+const browserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+
+// browserSecChUA is Chrome 156's sec-ch-ua header. Chromium derives the
+// GREASE brand and the order from the major version.
+const browserSecChUA = `"Not:A-Brand";v="8", "Chromium";v="156", "Google Chrome";v="156"`
 
 // browserAccept is Chrome's Accept header for navigations.
 const browserAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
@@ -34,7 +42,7 @@ func browserSetHeaders(header http.Header, secure bool) {
 		header["sec-ch-ua-platform"] = []string{`"Windows"`}
 	}
 	header.Set("Upgrade-Insecure-Requests", "1")
-	header.Set("User-Agent", model.HTTPHeaderUserAgent)
+	header.Set("User-Agent", browserUserAgent)
 	header.Set("Accept", browserAccept)
 	if secure {
 		header.Set("Sec-Fetch-Site", "none")
