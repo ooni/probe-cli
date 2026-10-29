@@ -3,6 +3,7 @@ package webconnectivitylte
 import (
 	"context"
 	"net"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -89,14 +90,13 @@ func (c *Control) Run(parentCtx context.Context) {
 		endpoints = append(endpoints, net.JoinHostPort(address, "443"))
 		endpoints = append(endpoints, net.JoinHostPort(address, "80"))
 	}
+	// the test helper fetches with their User-Agent, Accept and Accept-Language
+	headers := http.Header{}
+	browserSetHeaders(headers, c.URL.Scheme == "https")
 	creq := &webconnectivity.ControlRequest{
-		HTTPRequest: c.URL.String(),
-		HTTPRequestHeaders: map[string][]string{
-			"Accept":          {model.HTTPHeaderAccept},
-			"Accept-Language": {model.HTTPHeaderAcceptLanguage},
-			"User-Agent":      {model.HTTPHeaderUserAgent},
-		},
-		TCPConnect: endpoints,
+		HTTPRequest:        c.URL.String(),
+		HTTPRequestHeaders: headers,
+		TCPConnect:         endpoints,
 	}
 	c.TestKeys.SetControlRequest(creq)
 
