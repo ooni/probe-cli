@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/browserhttp"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -92,7 +93,8 @@ func (c *Control) Run(parentCtx context.Context) {
 	}
 	// the test helper fetches the URL with these headers
 	headers := http.Header{}
-	browserSetHeaders(headers, c.URL.Scheme == "https")
+	browserhttp.SetHeaders(headers, c.URL.Scheme == "https")
+	headers.Del("Accept-Encoding") // the test helper doesn't decode bodies
 	creq := &webconnectivity.ControlRequest{
 		HTTPRequest:        c.URL.String(),
 		HTTPRequestHeaders: headers,

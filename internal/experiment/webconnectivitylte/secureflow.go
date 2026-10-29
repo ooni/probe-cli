@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/browserhttp"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -158,7 +159,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		ol.Stop(err)
 		return err
 	}
-	tlsHandshaker := trace.NewTLSHandshakerUTLS(t.Logger, browserClientHello)
+	tlsHandshaker := trace.NewTLSHandshakerUTLS(t.Logger, browserhttp.ClientHello)
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
@@ -188,11 +189,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
-	httpTransport := netxlite.NewHTTPTransportWithOptions(
-		t.Logger,
-		netxlite.NewNullDialer(),
-		netxlite.NewSingleUseTLSDialer(tlsConn),
-	)
+	httpTransport := netxlite.WrapHTTPTransport(t.Logger, browserhttp.NewTransport(tlsConn, alpn))
 
 	// create HTTP request
 	const httpTimeout = 10 * time.Second
@@ -293,10 +290,8 @@ func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) 
 		return nil, err
 	}
 	httpReq.Header.Set("Host", t.HostHeader)
-	browserSetHeaders(httpReq.Header, true)
-	if t.Referer != "" {
-		httpReq.Header.Set("Referer", t.Referer)
-	}
+	// no Referer: Chrome sends none on the redirects of a typed URL
+	browserhttp.SetHeaders(httpReq.Header, true)
 	httpReq.Host = t.HostHeader
 	if t.CookieJar != nil {
 		for _, cookie := range t.CookieJar.Cookies(httpURL) {

@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/browserhttp"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -152,11 +153,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
-	httpTransport := netxlite.NewHTTPTransportWithOptions(
-		t.Logger,
-		netxlite.NewSingleUseDialer(tcpConn),
-		netxlite.NewNullTLSDialer(),
-	)
+	httpTransport := netxlite.WrapHTTPTransport(t.Logger, browserhttp.NewTransport(tcpConn, alpn))
 
 	// create HTTP request
 	const httpTimeout = 10 * time.Second
@@ -237,10 +234,8 @@ func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, erro
 		return nil, err
 	}
 	httpReq.Header.Set("Host", t.HostHeader)
-	browserSetHeaders(httpReq.Header, false)
-	if t.Referer != "" {
-		httpReq.Header.Set("Referer", t.Referer)
-	}
+	// no Referer: Chrome sends none on the redirects of a typed URL
+	browserhttp.SetHeaders(httpReq.Header, false)
 	httpReq.Host = t.HostHeader
 	if t.CookieJar != nil {
 		for _, cookie := range t.CookieJar.Cookies(httpURL) {

@@ -9,6 +9,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20261005170209-c4a09096ab40
 	github.com/alecthomas/kingpin/v2 v2.4.0
+	github.com/andybalholm/brotli v1.1.1
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/cloudflare/circl v1.6.5
@@ -22,6 +23,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hexops/gotextdiff v1.0.3
+	github.com/klauspost/compress v1.20.1
 	github.com/mattn/go-colorable v0.1.16
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/miekg/dns v1.1.73
@@ -69,7 +71,6 @@ require (
 	github.com/Psiphon-Labs/quic-go v0.0.0-20250527153145-79fe45fb83b1 // indirect
 	github.com/Psiphon-Labs/utls v1.1.1-0.20260729134728-7a1fc711853d // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
-	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/armon/go-proxyproto v0.0.0-20180202201750-5b7edb60ff5f // indirect
 	github.com/aws/aws-sdk-go-v2 v1.32.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.28.0 // indirect
@@ -115,7 +116,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kamstrup/intmap v0.5.2 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/klauspost/reedsolomon v1.12.0 // indirect
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
