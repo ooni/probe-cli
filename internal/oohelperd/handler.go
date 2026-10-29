@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/browserhttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -58,6 +59,10 @@ type Handler struct {
 	// newHTTPClient is the MANDATORY factory to create a new HTTPClient.
 	newHTTPClient func(model.Logger) model.HTTPClient
 
+	// newBrowserHTTPClient is the OPTIONAL factory to create a new HTTPClient
+	// that fetches like a browser, for probes that do (see measure.go).
+	newBrowserHTTPClient func(model.Logger) model.HTTPClient
+
 	// newHTTP3Client is the MANDATORY factory to create a new HTTP3Client.
 	newHTTP3Client func(model.Logger) model.HTTPClient
 
@@ -93,6 +98,10 @@ func NewHandler(logger model.Logger, netx *netxlite.Netx) *Handler {
 				netx, logger,
 				netxlite.NewHTTPTransportWithResolver,
 			)
+		},
+
+		newBrowserHTTPClient: func(logger model.Logger) model.HTTPClient {
+			return newHTTPClientWithTransportFactory(netx, logger, browserhttp.NewDialingTransport)
 		},
 
 		newHTTP3Client: func(logger model.Logger) model.HTTPClient {

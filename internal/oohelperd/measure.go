@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/browserhttp"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -99,14 +100,19 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 		})
 	}
 
-	// http: start
+	// http: start. A probe that fetches like a browser gets a control that
+	// does too, so that bot detection treats both alike.
+	newClient := config.newHTTPClient
+	if config.useBrowserClient(creq.HTTPRequestHeaders) {
+		newClient = config.newBrowserHTTPClient
+	}
 	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
 	go httpDo(ctx, &httpConfig{
 		Headers:           creq.HTTPRequestHeaders,
 		Logger:            logger,
 		MaxAcceptableBody: config.maxAcceptableBody,
-		NewClient:         config.newHTTPClient,
+		NewClient:         newClient,
 		Out:               httpch,
 		URL:               creq.HTTPRequest,
 		Wg:                wg,
@@ -179,4 +185,10 @@ Loop:
 	}
 
 	return cresp, nil
+}
+
+// useBrowserClient tells whether to fetch with newBrowserHTTPClient: when
+// the probe's request headers are a browser's and we have that client.
+func (h *Handler) useBrowserClient(headers map[string][]string) bool {
+	return h.newBrowserHTTPClient != nil && browserhttp.IsBrowserRequest(headers)
 }

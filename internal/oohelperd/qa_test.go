@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/browserhttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
@@ -133,5 +134,50 @@ func TestQAEnableDisableQUIC(t *testing.T) {
 				)
 			}
 		})
+	}
+}
+
+// TestQABrowserRequest ensures that a probe fetching like a browser gets a
+// control that fetches the same page as the default client does.
+func TestQABrowserRequest(t *testing.T) {
+	control := func(headers map[string][]string) model.THHTTPRequestResult {
+		env := netemx.MustNewScenario(netemx.InternetScenario)
+		defer env.Close()
+		handler := oohelperd.NewHandler(
+			model.DiscardLogger,
+			&netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: env.ClientStack}},
+		)
+		reqbody := &model.THRequest{
+			HTTPRequest:        "https://www.example.com/",
+			HTTPRequestHeaders: headers,
+			TCPConnect:         []string{netemx.AddressWwwExampleCom},
+		}
+		req := runtimex.Try1(http.NewRequest(
+			"POST", "http://127.0.0.1:8080/", bytes.NewReader(must.MarshalJSON(reqbody))))
+		resprec := httptest.NewRecorder()
+		handler.ServeHTTP(resprec, req)
+		resp := resprec.Result()
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			t.Fatal("expected 200 Ok")
+		}
+		var jsonresp model.THResponse
+		must.UnmarshalJSON(runtimex.Try1(netxlite.ReadAllContext(context.Background(), resp.Body)), &jsonresp)
+		return jsonresp.HTTPRequest
+	}
+
+	browser := http.Header{}
+	browserhttp.SetHeaders(browser, true)
+	browser.Del("Accept-Encoding") // as Web Connectivity sends them
+	got := control(browser)
+	want := control(map[string][]string{
+		"Accept-Language": {model.HTTPHeaderAcceptLanguage},
+		"Accept":          {model.HTTPHeaderAccept},
+		"User-Agent":      {model.HTTPHeaderUserAgent},
+	})
+
+	if got.Failure != nil || got.StatusCode != want.StatusCode || got.Title != want.Title ||
+		got.BodyLength != want.BodyLength {
+		t.Fatalf("browser control: %+v, default control: %+v", got, want)
 	}
 }
