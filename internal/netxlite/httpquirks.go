@@ -29,7 +29,7 @@ func NewHTTPTransportWithResolver(netx *Netx, logger model.DebugLogger, reso mod
 // using the given dialer and logger.
 //
 // The returned transport will gracefully handle TLS connections
-// created using gitlab.com/yawning/utls.git, if the TLS dialer
+// created using github.com/refraction-networking/utls, if the TLS dialer
 // is a dialer using such library for TLS operations.
 //
 // The returned transport will not have a configured proxy, not

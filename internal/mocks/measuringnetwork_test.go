@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 func TestMeasuringN(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 func TestNewTrace(t *testing.T) {

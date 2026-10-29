@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/quic-go/quic-go"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 // DNSResponse is a parsed DNS response ready for further processing.
@@ -272,7 +272,7 @@ type MeasuringNetwork interface {
 	NewTLSHandshakerStdlib(logger DebugLogger) TLSHandshaker
 
 	// NewTLSHandshakerUTLS creates a new TLS handshaker using
-	// gitlab.com/yawning/utls for TLS that implements error wrapping.
+	// github.com/refraction-networking/utls for TLS that implements error wrapping.
 	//
 	// The id is the address of something like utls.HelloFirefox_55.
 	//
