@@ -393,10 +393,10 @@ func (m *Measurer) download(ctx context.Context, index int64, zeroTime time.Time
 	}
 	defer conn.Close()
 
-	tlsConfig := &tls.Config{ // #nosec G402 - we verify the chain below
+	tlsConfig := &tls.Config{
 		NextProtos:         []string{"http/1.1"},
 		ServerName:         sni,
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // #nosec G402 - we verify the chain below
 	}
 	tlsConn, err := trace.NewTLSHandshakerStdlib(logger).Handshake(ctx, conn, tlsConfig)
 	d.TLSHandshake = trace.FirstTLSHandshakeOrNil()
