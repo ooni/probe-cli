@@ -361,7 +361,7 @@ func ClassifyTLSHandshakeError(err error) string {
 	if strings.HasSuffix(err.Error(), "tls: unrecognized name") {
 		return FailureSSLInvalidHostname
 	}
-	if strings.HasSuffix(err.Error(), "tls: alert(112)") { // yawning/utls
+	if strings.HasSuffix(err.Error(), "tls: alert(112)") { // refraction-networking/utls
 		return FailureSSLInvalidHostname
 	}
 
