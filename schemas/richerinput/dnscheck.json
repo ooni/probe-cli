@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DNSCheckConfig",
+  "description": "Config contains the experiment's configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "default_addrs": {
+      "type": "string",
+      "description": "default addresses for domain",
+      "x-ooni": { "name": "DefaultAddrs" }
+    },
+    "domain": {
+      "type": "string",
+      "description": "domain to resolve using the specified resolver",
+      "x-ooni": { "name": "Domain" }
+    },
+    "http3_enabled": {
+      "type": "boolean",
+      "description": "use http3 instead of http/1.1 or http2",
+      "x-ooni": { "name": "HTTP3Enabled" }
+    },
+    "http_host": {
+      "type": "string",
+      "description": "force using specific HTTP Host header",
+      "x-ooni": { "name": "HTTPHost" }
+    },
+    "svcb_enabled": {
+      "type": "boolean",
+      "description": "probe DDR (SVCB for _dns.resolver.arpa or _dns.<hostname>) support for this resolver",
+      "x-ooni": { "name": "SVCBEnabled" }
+    },
+    "tls_server_name": {
+      "type": "string",
+      "description": "force TLS to using a specific SNI in Client Hello",
+      "x-ooni": { "name": "TLSServerName" }
+    },
+    "tls_version": {
+      "type": "string",
+      "description": "Force specific TLS version (e.g. 'TLSv1.3')",
+      "x-ooni": { "name": "TLSVersion" }
+    }
+  }
+}
