@@ -7,7 +7,7 @@
 // a TLS handshake using the established connection.
 //
 // Rather than using the Go standard library, like we did in the
-// previous chapter, we will use the `gitlab.com/yawning/utls.git`
+// previous chapter, we will use the `github.com/refraction-networking/utls`
 // library to customize the ClientHello to look like Firefox.
 //
 // (This file is auto-generated from the corresponding source file,
@@ -35,7 +35,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 func main() {
@@ -74,7 +74,7 @@ func handshakeTLS(ctx context.Context, tcpConn net.Conn, config *tls.Config) (mo
 	//
 	// The following line of code is where we diverge from the
 	// previous chapter. Here we're creating a TLS handshaker
-	// that uses `gitlab.com/yawning/utls.git` and sets the
+	// that uses `github.com/refraction-networking/utls` and sets the
 	// ClientHello to look like Firefox 55. (This is also
 	// know as TLS parroting because we're parroting what this
 	// version of Firefox would do.)

@@ -6,7 +6,7 @@ package measurexlite
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/model"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 // NewTLSHandshakerUTLS is equivalent to netxlite.Netx.NewTLSHandshakerUTLS
