@@ -309,7 +309,7 @@ func (mx *Measurer) TCPConnectWithDB(ctx context.Context, db WritableDB, address
 // Caveats:
 //
 // The mx.TLSHandshaker field could point to a TLS handshaker using
-// the Go stdlib or one using gitlab.com/yawning/utls.git.
+// the Go stdlib or one using github.com/refraction-networking/utls.
 //
 // In the latter case, the content of the ClientHello message
 // will not only depend on the config field but also on the
