@@ -45,6 +45,8 @@ func Onboarding(config *config.Config) error {
 
 	output.SectionTitle("Pop Quiz!")
 	output.Paragraph("")
+	output.Paragraph("To confirm your understanding of how OONI Probe works, mark each of the following statements as true or false.")
+	fmt.Println()
 	answer := ""
 	quiz1 := &survey.Select{
 		Message: "Anyone monitoring my internet activity may be able to see that I am running OONI Probe.",
