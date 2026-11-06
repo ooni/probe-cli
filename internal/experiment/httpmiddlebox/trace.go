@@ -31,8 +31,8 @@ type IterativeTrace struct {
 
 // Iteration is a single network iteration with variable TTL
 type Iteration struct {
-	TTL       int                                     `json:"ttl"`
-	Handshake *model.ArchivalTLSOrQUICHandshakeResult `json:"handshake"`
+	TTL               int                              `json:"ttl"`
+	HTTPRequestResult *model.ArchivalHTTPRequestResult `json:"http_request_result"`
 }
 
 // IterativeTraceroute is an iterative traceroute towards the address
@@ -94,26 +94,21 @@ func errorChain(err error) []model.FailureChainData {
 	return chain
 }
 
-// NewIterationFromHandshake returns a new iteration from a model.ArchivalTLSOrQUICHandshakeResult
-func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model.ArchivalTLSOrQUICHandshakeResult, sni string) *Iteration {
+// NewIterationFromArchivalHTTPRequestResult returns a new iteration from a model.ArchivalHTTPRequestResult
+func newIterationFromArchivalHTTPRequestResult(ttl int, err error, soErr error, httpRequestResult *model.ArchivalHTTPRequestResult, sni string) *Iteration {
+	fmt.Println(err)
 	if err != nil {
-		if handshake != nil {
-			handshake = &model.ArchivalTLSOrQUICHandshakeResult{}
-		}
-
-		handshake.Failure = tracex.NewFailure(err)
-		handshake.FailureChain = errorChain(err)
-		handshake.ServerName = sni
+		httpRequestResult.Failure = tracex.NewFailure(err)
+		httpRequestResult.FailureChain = errorChain(err)
 
 		return &Iteration{
-			TTL:       ttl,
-			Handshake: handshake,
+			TTL:               ttl,
+			HTTPRequestResult: httpRequestResult,
 		}
 	}
-	handshake.SoError = tracex.NewFailure(soErr)
 	return &Iteration{
-		TTL:       ttl,
-		Handshake: handshake,
+		TTL:               ttl,
+		HTTPRequestResult: httpRequestResult,
 	}
 }
 

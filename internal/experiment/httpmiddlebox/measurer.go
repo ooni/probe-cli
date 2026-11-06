@@ -44,7 +44,7 @@ var (
 	ErrInputIsNotAnURL = errors.New("input is not an URL")
 
 	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
-	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be https")
+	ErrUnsupportedInput = errors.New("unsupported input scheme, input scheme must be http")
 
 	// errInvalidTestHelper indicates that the testhelper is invalid
 	errInvalidTestHelper = errors.New("invalid testhelper")
@@ -90,7 +90,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if err != nil {
 		return ErrInputIsNotAnURL
 	}
-	if URL.Scheme != "https" {
+	if URL.Scheme != "http" {
 		return ErrUnsupportedInput
 	}
 	th, err := target.Config.testhelper(URL.Host)

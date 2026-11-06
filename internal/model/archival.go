@@ -318,6 +318,7 @@ type ArchivalHTTPRequestResult struct {
 	Address       string               `json:"address,omitempty"`
 	ALPN          string               `json:"alpn,omitempty"`
 	Failure       *string              `json:"failure"`
+	FailureChain  []FailureChainData   `json:"failure_chain,omitempty"`
 	Request       ArchivalHTTPRequest  `json:"request"`
 	Response      ArchivalHTTPResponse `json:"response"`
 	T0            float64              `json:"t0,omitempty"`

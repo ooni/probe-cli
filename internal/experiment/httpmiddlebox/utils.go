@@ -12,7 +12,7 @@ import (
 // adding the configured port as a prefix
 func prepareAddrs(addrs []string, port string) (out []string) {
 	if port == "" {
-		port = "443"
+		port = "80"
 	}
 	for _, addr := range addrs {
 		if net.ParseIP(addr) == nil {

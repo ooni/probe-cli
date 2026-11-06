@@ -8,7 +8,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
+	"io"
 	"net"
+	"net/http"
+	"net/url"
 	"sort"
 	"sync"
 	"syscall"
@@ -20,6 +24,30 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
+
+// Measures HTTP endpoints.
+//
+// The zero value of this structure IS NOT valid and you MUST initialize
+// all the fields marked as MANDATORY before using this structure.
+type HTTPTraceConfig struct {
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
+	// CookieJar contains the OPTIONAL cookie jar, used for redirects.
+	CookieJar http.CookieJar
+
+	// HostHeader is the OPTIONAL host header to use.
+	HostHeader string
+
+	// Referer contains the OPTIONAL referer, used for redirects.
+	Referer string
+
+	// URLPath is the OPTIONAL URL path.
+	URLPath string
+
+	// URLRawQuery is the OPTIONAL URL raw query.
+	URLRawQuery string
+}
 
 // ClientIDs to map configurable inputs to uTLS fingerprints
 // We use a non-zero index to map to each ClientID
@@ -97,12 +125,13 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	defer wg.Done()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	// 1. Connect to the target IP
-	// TODO(DecFox, bassosimone): Do we need a trace for this TCP connect?
+	newHTTPTraceConfig := HTTPTraceConfig{}
+	newHTTPTraceConfig.Logger = logger
 	d := NewDialerTTLWrapper()
-	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
+	ol := logx.NewOperationLogger(logger, "[#%d] GET https://%s using %s", index, sni, address)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil, sni)
+		iteration := newIterationFromArchivalHTTPRequestResult(ttl, err, nil, nil, sni)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -111,26 +140,146 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 2. Set the TTL to the passed value
 	err = setConnTTL(conn, ttl)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil, sni)
+		iteration := newIterationFromArchivalHTTPRequestResult(ttl, err, nil, nil, sni)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
 	}
-	// 3. Perform the handshake and extract the SO_ERROR value (if any)
-	// Note: we switch to a uTLS Handshaker if the configured ClientID is non-zero
-	thx := trace.NewTLSHandshakerStdlib(logger)
-	clientId := config.clientid()
-	if clientId > 0 {
-		thx = trace.NewTLSHandshakerUTLS(logger, ClientIDs[clientId])
+	// 3. Perform the HTTP request and extract the SO_ERROR value (if any)
+	httpTransport := netxlite.NewHTTPTransportWithOptions(
+		logger,
+		netxlite.NewSingleUseDialer(conn),
+		netxlite.NewNullTLSDialer(),
+	)
+
+	const httpTimeout = 10 * time.Second
+	httpCtx, httpCancel := context.WithTimeout(ctx, httpTimeout)
+	defer httpCancel()
+	httpReq, err := m.newHTTPRequest(httpCtx, address, newHTTPTraceConfig)
+	if err != nil {
+		if newHTTPTraceConfig.Referer == "" {
+			// when the referer is empty, the failing URL comes from our backend
+			// or from the user, so it's a fundamental failure. After that, we
+			// are dealing with websites provided URLs, so we should not flag a
+			// fundamental failure, because we want to see the measurement submitted.
+			iteration := newIterationFromArchivalHTTPRequestResult(ttl, err, nil, nil, sni)
+			tr.addIterations(iteration)
+		}
+		ol.Stop(err)
 	}
-	_, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
+
+	// perform HTTP transaction
+	httpRequestResult, err := m.httpTransaction(
+		httpCtx,
+		"tcp",
+		address,
+		"",
+		httpTransport,
+		httpReq,
+		trace,
+		newHTTPTraceConfig,
+	)
+	if err != nil {
+		ol.Stop(err)
+	}
+
+	fmt.Println(httpRequestResult.Response.Headers)
+
 	ol.Stop(err)
 	soErr := extractSoError(conn)
 	// 4. reset the TTL value to ensure that conn closes successfully
 	// Note: Do not check for errors here
 	_ = setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, err, soErr, trace.FirstTLSHandshakeOrNil(), sni)
+	iteration := newIterationFromArchivalHTTPRequestResult(ttl, err, soErr, httpRequestResult, sni)
 	tr.addIterations(iteration)
+}
+
+// urlHost computes the host to include into the URL
+func (m *Measurer) urlHost(scheme string, address string, newHTTPTraceConfig HTTPTraceConfig) (string, error) {
+	addr, port, err := net.SplitHostPort(address)
+	if err != nil {
+		newHTTPTraceConfig.Logger.Warnf("BUG: net.SplitHostPort failed for %s: %s", address, err.Error())
+		return "", err
+	}
+	urlHost := newHTTPTraceConfig.HostHeader
+	if urlHost == "" {
+		urlHost = addr
+	}
+	if port == "80" && scheme == "http" {
+		return urlHost, nil
+	}
+	urlHost = net.JoinHostPort(urlHost, port)
+	return urlHost, nil
+}
+
+// newHTTPRequest creates a new HTTP request.
+func (m *Measurer) newHTTPRequest(ctx context.Context, address string, newHTTPTraceConfig HTTPTraceConfig) (*http.Request, error) {
+
+	const urlScheme = "http"
+	urlHost, err := m.urlHost(urlScheme, address, newHTTPTraceConfig)
+	if err != nil {
+		return nil, err
+	}
+	httpURL := &url.URL{
+		Scheme:   urlScheme,
+		Host:     urlHost,
+		Path:     newHTTPTraceConfig.URLPath,
+		RawQuery: newHTTPTraceConfig.URLRawQuery,
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Host", newHTTPTraceConfig.HostHeader)
+	httpReq.Header.Set("Accept", model.HTTPHeaderAccept)
+	httpReq.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
+	httpReq.Header.Set("Referer", newHTTPTraceConfig.Referer)
+	httpReq.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
+	httpReq.Host = newHTTPTraceConfig.HostHeader
+	if newHTTPTraceConfig.CookieJar != nil {
+		for _, cookie := range newHTTPTraceConfig.CookieJar.Cookies(httpURL) {
+			httpReq.AddCookie(cookie)
+		}
+	}
+	return httpReq, nil
+}
+
+// httpTransaction runs the HTTP transaction and saves the results.
+func (m *Measurer) httpTransaction(ctx context.Context, network, address, alpn string,
+	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace, newHTTPTraceConfig HTTPTraceConfig) (*model.ArchivalHTTPRequestResult, error) {
+	const maxbody = 1 << 19
+	started := trace.TimeSince(trace.ZeroTime())
+
+	resp, err := txp.RoundTrip(req)
+	var body []byte
+	if err == nil {
+		defer resp.Body.Close()
+		if cookies := resp.Cookies(); newHTTPTraceConfig.CookieJar != nil && len(cookies) > 0 {
+			newHTTPTraceConfig.CookieJar.SetCookies(req.URL, cookies)
+		}
+		reader := io.LimitReader(resp.Body, maxbody)
+		body, err = netxlite.StreamAllContext(ctx, reader) //err can be non-nil even if a response was received
+	}
+
+	finished := trace.TimeSince(trace.ZeroTime())
+
+	ev := measurexlite.NewArchivalHTTPRequestResult(
+		trace.Index(),
+		started,
+		network,
+		address,
+		alpn,
+		txp.Network(),
+		req,
+		resp,
+		maxbody,
+		body,
+		err,
+		finished,
+		trace.Tags()...,
+	)
+
+	return ev, err
 }
 
 // extractSoError fetches the SO_ERROR value and returns a non-nil error if
@@ -167,7 +316,7 @@ func alignIterations(in []*Iteration) (out []*Iteration) {
 	})
 	for _, iter := range in {
 		out = append(out, iter)
-		if iter.Handshake.Failure == nil || *iter.Handshake.Failure == netxlite.FailureConnectionReset {
+		if iter.HTTPRequestResult.Failure == nil || *iter.HTTPRequestResult.Failure == netxlite.FailureConnectionReset {
 			break
 		}
 	}
