@@ -272,10 +272,13 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	})
 
 	ol.Stop(err)
+
+	// Register late replies before publishing results: the parent may finish
+	// after receiving them and release its WaitGroup reference.
+	t.WaitGroup.Add(1)
 	out <- addrs
 
 	// wait for late DNS replies
-	t.WaitGroup.Add(1)
 	go t.waitForLateReplies(parentCtx, trace)
 }
 
