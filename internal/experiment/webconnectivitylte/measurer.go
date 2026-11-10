@@ -106,9 +106,6 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// See https://github.com/ooni/probe/issues/2676
 	tk.ClientResolver = sess.ResolverIP()
 
-	// create variables required to run parallel tasks
-	wg := &sync.WaitGroup{}
-
 	// create cookiejar
 	jar, err := cookiejar.New(&cookiejar.Options{
 		PublicSuffixList: publicsuffix.List,
@@ -125,6 +122,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	registerExtensions(measurement)
+
+	// create the wait group shared by background tasks
+	wg := &sync.WaitGroup{}
 
 	// start background tasks
 	resos := &DNSResolvers{
