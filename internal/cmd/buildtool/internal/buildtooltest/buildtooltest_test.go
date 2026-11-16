@@ -209,10 +209,10 @@ func TestDependenciesCallCounter(t *testing.T) {
 		}
 	})
 
-	t.Run("LinuxReadGOVERSION", func(t *testing.T) {
+	t.Run("GolangToolchainVersion", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
-		cc.LinuxReadGOVERSION("xo")
-		if cc.Counter[TagLinuxReadGOVERSION] != 1 {
+		cc.GolangToolchainVersion()
+		if cc.Counter[TagGolangToolchainVersion] != 1 {
 			t.Fatal("did not increment")
 		}
 	})

@@ -20,13 +20,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
+      - uses: actions/setup-go@v6
         with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+          go-version-file: go.mod
 
       - run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
 
@@ -93,13 +89,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
+      - uses: actions/setup-go@v6
         with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+          go-version-file: go.mod
 
       - run: make DESKTOP/darwin
 
@@ -164,16 +156,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-      - uses: magnetikonline/action-golang-cache@v4
+      - uses: actions/setup-go@v6
         with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+          go-version-file: go.mod
 
       - name: Build the desktop jar
-        run: ./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
+        run: go run ./internal/cmd/buildtool desktop oomobile --target=windows
         shell: bash
 
       - uses: actions/upload-artifact@v4

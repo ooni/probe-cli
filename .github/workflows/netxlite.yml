@@ -20,15 +20,9 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      - uses: magnetikonline/action-golang-cache@v4
+      - uses: actions/setup-go@v6
         with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"
+          go-version-file: go.mod
 
       # The first test compiles and links against libc and uses getaddrinfo
       - run: go test -race ./internal/netxlite/...

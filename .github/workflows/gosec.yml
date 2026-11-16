@@ -16,14 +16,9 @@ jobs:
     - name: Checkout Source
       uses: actions/checkout@v4
 
-    - name: Get GOVERSION content
-      id: goversion
-      run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-
-    - uses: magnetikonline/action-golang-cache@v4
+    - uses: actions/setup-go@v6
       with:
-        go-version: "${{ steps.goversion.outputs.version }}"
-        cache-key-suffix: "-gosec-${{ steps.goversion.outputs.version }}"
+        go-version-file: go.mod
 
     - name: Run Gosec security scanner
       continue-on-error: true # TODO(https://github.com/ooni/probe/issues/2180)
