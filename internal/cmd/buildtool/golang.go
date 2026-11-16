@@ -17,6 +17,7 @@ import (
 // goModInfo
 type goModInfo struct {
 	// Go is the `go` directive
+	Go string
 
 	// Toolchain is the `toolchain` directive.
 	Toolchain string
