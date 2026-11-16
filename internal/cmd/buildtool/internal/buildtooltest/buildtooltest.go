@@ -140,7 +140,7 @@ const (
 	TagAndroidSDKCheck             = "androidSDK"
 	TagGOPATH                      = "GOPATH"
 	TagGolangCheck                 = "golangCheck"
-	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
+	TagGolangToolchainVersion      = "golangToolchainVersion"
 	TagLinuxWriteDockerfile        = "linuxWriteDockerfile"
 	TagMustChdir                   = "mustChdir"
 	TagPsiphonFilesExist           = "psiphonFilesExist"
@@ -194,11 +194,10 @@ func (cc *DependenciesCallCounter) GolangCheck() {
 	cc.increment(TagGolangCheck)
 }
 
-// linuxReadGOVERSION implements buildtoolmodel.Dependencies
-func (cc *DependenciesCallCounter) LinuxReadGOVERSION(filename string) []byte {
-	cc.increment(TagLinuxReadGOVERSION)
-	v := append([]byte(CanonicalGolangVersion), '\n')
-	return v
+// GolangToolchainVersion implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) GolangToolchainVersion() string {
+	cc.increment(TagGolangToolchainVersion)
+	return CanonicalGolangVersion
 }
 
 // linuxWriteDockerfile implements buildtoolmodel.Dependencies
