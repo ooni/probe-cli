@@ -39,9 +39,9 @@ jobs:
         system: [ubuntu-latest]
     runs-on: "${{ matrix.system }}"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v6
         with:
           go-version: "${{ matrix.goversion }}"
 
