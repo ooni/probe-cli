@@ -33,7 +33,7 @@ func golangReadGoMod() *goModInfo {
 }
 
 // golangRunningVersion returns the version of the "go" binary on the PATH
-// as a canonical Go version string (e.g. "go1.27.3").
+// as a canonical Go version string (e.g. "go1.27.4").
 func golangRunningVersion() string {
 	firstline := string(must.FirstLineBytes(must.RunOutput(log.Log, "go", "version")))
 	vec := strings.Split(firstline, " ")

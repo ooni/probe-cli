@@ -28,6 +28,7 @@ help:
 #help: sources, which is what we do when publishing.
 userauth:
 	go run ./internal/cmd/buildtool $(shell go env GOOS) userauth
+	./script/libuniffi_strip_llvm_lto.sh
 
 #help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni

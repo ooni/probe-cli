@@ -4,7 +4,7 @@ import "testing"
 
 func TestGolangVersionCheckP(t *testing.T) {
 	t.Run("running newer than the floor passes", func(t *testing.T) {
-		if !golangVersionCheckP("1.27.0", "go1.27.3") {
+		if !golangVersionCheckP("1.27.0", "go1.27.4") {
 			t.Fatal("expected true")
 		}
 	})
