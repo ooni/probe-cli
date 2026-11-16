@@ -454,7 +454,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/fossils/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -507,7 +507,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/fossils/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -560,7 +560,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/fossils/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -613,7 +613,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.2.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/fossils/zlib-1.3.2.tar.gz",
 			},
 		}, {
 			Env: []string{},

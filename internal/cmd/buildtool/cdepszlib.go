@@ -25,7 +25,7 @@ func cdepsZlibBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) 
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/z/zlib.rb
-	cdepsMustFetch("https://zlib.net/zlib-1.3.2.tar.gz")
+	cdepsMustFetch("https://zlib.net/fossils/zlib-1.3.2.tar.gz")
 	deps.VerifySHA256( // must be mockable
 		"bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
 		"zlib-1.3.2.tar.gz",

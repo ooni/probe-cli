@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_ios_mobile:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,7 +31,7 @@ jobs:
       # ./internal/cmd/buildtool needs coreutils for sha256 plus GNU build tools
       - run: brew install autoconf automake coreutils libtool
 
-      - run: make EXPECTED_XCODE_VERSION=15.4 ios
+      - run: make EXPECTED_XCODE_VERSION=16.4 ios
 
       - uses: actions/upload-artifact@v4
         with:
