@@ -272,11 +272,11 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	})
 
 	ol.Stop(err)
-	out <- addrs
-
 	// wait for late DNS replies
 	t.WaitGroup.Add(1)
 	go t.waitForLateReplies(parentCtx, trace)
+
+	out <- addrs
 }
 
 // Waits for late DNS replies.
