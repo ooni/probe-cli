@@ -165,7 +165,7 @@ func TestLinuxDockerBuildAll(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagLinuxReadGOVERSION:          1,
+				buildtooltest.TagGolangToolchainVersion:      1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagLinuxWriteDockerfile:        1,
 			}

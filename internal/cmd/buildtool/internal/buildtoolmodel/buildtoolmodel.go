@@ -24,15 +24,16 @@ type Dependencies interface {
 	// GOPATH returns the current GOPATH.
 	GOPATH() string
 
-	// GolangCheck ensures we have the correct
-	// version of golang as the "go" binary.
+	// GolangCheck ensures the "go" binary is new enough,
+	// per go.mod's minimum required Go version.
 	GolangCheck()
+
+	// GolangToolchainVersion returns the exact Go toolchain version
+	// pinned by go.mod, used to select the golang Docker image.
+	GolangToolchainVersion() string
 
 	// LinuxWriteDockerfile writes the dockerfile for linux.
 	LinuxWriteDockerfile(filename string, content []byte, mode fs.FileMode)
-
-	// LinuxReadGOVERSION reads the GOVERSION file for linux.
-	LinuxReadGOVERSION(filename string) []byte
 
 	// MustChdir changes the current working directory and returns the
 	// function to return to the original working directory.

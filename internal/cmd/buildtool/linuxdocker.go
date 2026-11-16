@@ -35,8 +35,7 @@ func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 	defer log.Infof("done")
 	deps.PsiphonMaybeCopyConfigFiles()
 
-	golangVersion := string(must.FirstLineBytes(deps.LinuxReadGOVERSION("GOVERSION")))
-	golangDockerImage := "golang:" + golangVersion + "-alpine"
+	golangDockerImage := "golang:" + deps.GolangToolchainVersion() + "-alpine"
 
 	var (
 		goarm      string
