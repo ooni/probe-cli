@@ -14,14 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get GOVERSION content
-        id: goversion
-        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
-
-      - uses: magnetikonline/action-golang-cache@v4
+      - uses: actions/setup-go@v6
         with:
-          go-version: "${{ steps.goversion.outputs.version }}"
-          cache-key-suffix: "-libtorlinux-${{ steps.goversion.outputs.version }}"
+          go-version-file: go.mod
 
       - run: go run ./internal/cmd/buildtool linux cdeps zlib openssl libevent tor
 

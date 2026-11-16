@@ -42,12 +42,12 @@ func (*buildDeps) GOPATH() string {
 
 // GolangCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) GolangCheck() {
-	golangCheck("GOVERSION")
+	golangCheck()
 }
 
-// LinuxReadGOVERSION implements buildtoolmodel.Dependencies
-func (*buildDeps) LinuxReadGOVERSION(filename string) []byte {
-	return must.ReadFile(filename)
+// GolangToolchainVersion implements buildtoolmodel.Dependencies
+func (*buildDeps) GolangToolchainVersion() string {
+	return golangToolchainVersion()
 }
 
 // LinuxWriteDockerfile implements buildtoolmodel.Dependencies

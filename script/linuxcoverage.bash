@@ -7,13 +7,15 @@
 
 set -euxo pipefail
 
-# Use the pinned toolchain (see GOVERSION) to vendor.
-./script/go.bash mod vendor
+# Vendor dependencies using the Go toolchain pinned by go.mod.
+go mod vendor
 
-# Resolve the absolute path of the pinned go binary.
-go=$HOME/sdk/go$(cat GOVERSION)/bin/go
-if [[ ! -x $go ]]; then
-	echo "FATAL: expected the pinned go toolchain at $go" 1>&2
+# Resolve the absolute path of the go binary on PATH (CI installs the pinned
+# toolchain via actions/setup-go). We pass an absolute path because the test
+# run below goes through "sudo unshare", which may sanitize PATH.
+go=$(command -v go)
+if [[ -z $go ]]; then
+	echo "FATAL: go not found on PATH" 1>&2
 	exit 1
 fi
 
