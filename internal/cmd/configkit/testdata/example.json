@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExampleConfig",
+  "description": "Config contains the experiment's configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "the domain",
+      "x-ooni": { "name": "Domain" }
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "whether enabled",
+      "x-ooni": { "name": "Enabled" }
+    }
+  }
+}

@@ -74,17 +74,6 @@ func (e *Endpoints) maybeRegister(resolverURL string) {
 	}
 }
 
-// Config contains the experiment's configuration.
-type Config struct {
-	DefaultAddrs  string `json:"default_addrs" ooni:"default addresses for domain"`
-	Domain        string `json:"domain" ooni:"domain to resolve using the specified resolver"`
-	HTTP3Enabled  bool   `json:"http3_enabled" ooni:"use http3 instead of http/1.1 or http2"`
-	HTTPHost      string `json:"http_host" ooni:"force using specific HTTP Host header"`
-	SVCBEnabled   bool   `json:"svcb_enabled" ooni:"probe DDR (SVCB for _dns.resolver.arpa or _dns.<hostname>) support for this resolver"`
-	TLSServerName string `json:"tls_server_name" ooni:"force TLS to using a specific SNI in Client Hello"`
-	TLSVersion    string `json:"tls_version" ooni:"Force specific TLS version (e.g. 'TLSv1.3')"`
-}
-
 // TestKeys contains the results of the dnscheck experiment.
 type TestKeys struct {
 	DefaultAddrs     string                        `json:"x_default_addrs"`
