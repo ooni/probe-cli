@@ -143,7 +143,7 @@ func TestExperimentSetOptions(t *testing.T) {
 		ExtraOptions: map[string]any{
 			"Message": "jarjarbinks",
 		},
-		InitialOptions: []byte(`{"Message": "foobar", "ReturnError": true}`),
+		InitialOptions: []byte(`{"message": "foobar", "return_error": true}`),
 		Name:           "example",
 
 		// TODO(bassosimone): A zero-value session works here. The proper change

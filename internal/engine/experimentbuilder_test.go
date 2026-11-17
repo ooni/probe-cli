@@ -137,8 +137,8 @@ func TestExperimentBuilderBasicOperations(t *testing.T) {
 	// we can set all options using JSON
 	t.Run("SetOptionsJSON", func(t *testing.T) {
 		inputs := json.RawMessage(`{
-			"Message":     "foobar",
-			"ReturnError": true
+			"message":      "foobar",
+			"return_error": true
 		}`)
 		if err := builder.SetOptionsJSON(inputs); err != nil {
 			t.Fatal(err)

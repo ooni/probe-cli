@@ -29,7 +29,7 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: json.RawMessage(`{
-					"SleepTime": 10000000
+					"sleep_time": 10000000
 				}`),
 				TestName: "example",
 			}},
@@ -75,7 +75,7 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: json.RawMessage(`{
-					"SleepTime": 10000000
+					"sleep_time": 10000000
 				}`),
 				TestName: "example",
 			}},
@@ -134,7 +134,7 @@ func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: json.RawMessage(`{
-					"SleepTime": 10000000
+					"sleep_time": 10000000
 				}`),
 				TestName: "example",
 			}},
@@ -222,7 +222,7 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: json.RawMessage(`{
-					"SleepTime": 10000000
+					"sleep_time": 10000000
 				}`),
 				TestName: "", // empty!
 			}},
@@ -285,7 +285,7 @@ func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
 				Nettests: []V2Nettest{{
 					Inputs: []string{},
 					Options: json.RawMessage(`{
-					    "SleepTime": 10000000
+					    "sleep_time": 10000000
 					}`),
 					TestName: "example",
 				}},
@@ -342,7 +342,7 @@ func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
 				Nettests: []V2Nettest{{
 					Inputs: []string{},
 					Options: json.RawMessage(`{
-					    "SleepTime": 10000000
+					    "sleep_time": 10000000
 					}`),
 					TestName: "example",
 				}},
@@ -849,7 +849,7 @@ func TestV2MeasureEngineDescriptor(t *testing.T) {
 					json.RawMessage(`{"category_code":"NEWS"}`),
 				},
 				Options: json.RawMessage(`{
-					"SleepTime": 10000000
+					"sleep_time": 10000000
 				}`),
 				TestName: "example",
 			}},
