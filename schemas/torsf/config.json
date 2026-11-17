@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TorsfConfig",
+  "description": "Config contains the torsf experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "disable_persistent_datadir": {
+      "type": "boolean",
+      "description": "Disable using a persistent tor datadir",
+      "x-ooni": { "name": "DisablePersistentDatadir", "omitempty": true }
+    },
+    "disable_progress": {
+      "type": "boolean",
+      "description": "Disable printing progress messages",
+      "x-ooni": { "name": "DisableProgress", "omitempty": true }
+    },
+    "rendezvous_method": {
+      "type": "string",
+      "description": "Choose the method with which to rendezvous. Must be one of amp and domain_fronting. Leaving this field empty means we should use the default.",
+      "x-ooni": { "name": "RendezvousMethod", "omitempty": true }
+    }
+  }
+}

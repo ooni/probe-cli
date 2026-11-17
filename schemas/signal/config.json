@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SignalConfig",
+  "description": "Config contains the signal experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "signal_ca": {
+      "type": "string",
+      "x-ooni": { "name": "SignalCA", "omitempty": true }
+    }
+  }
+}

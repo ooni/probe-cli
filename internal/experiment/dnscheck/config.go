@@ -2,7 +2,6 @@
 
 package dnscheck
 
-// Config contains the experiment's configuration.
 type Config struct {
 	DefaultAddrs  string `json:"default_addrs" ooni:"default addresses for domain"`
 	Domain        string `json:"domain" ooni:"domain to resolve using the specified resolver"`

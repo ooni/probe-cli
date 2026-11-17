@@ -26,12 +26,6 @@ var (
 	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
-// Config contains the experiment config.
-type Config struct {
-	// TestHelperURL is the address of the test helper.
-	TestHelperURL string `json:"test_helper_url,omitempty"`
-}
-
 // TestKeys contains httphost test keys.
 type TestKeys struct {
 	urlgetter.TestKeys

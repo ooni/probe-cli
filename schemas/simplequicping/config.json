@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SimpleQUICPingConfig",
+  "description": "Config contains the experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "alpn": {
+      "type": "string",
+      "description": "space separated list of ALPNs to use",
+      "x-ooni": { "name": "ALPN", "omitempty": true }
+    },
+    "delay": {
+      "type": "integer",
+      "description": "number of milliseconds to wait before sending each ping",
+      "x-ooni": { "name": "Delay", "omitempty": true }
+    },
+    "repetitions": {
+      "type": "integer",
+      "description": "number of times to repeat the measurement",
+      "x-ooni": { "name": "Repetitions", "omitempty": true }
+    },
+    "sni": {
+      "type": "string",
+      "description": "the SNI value to use",
+      "x-ooni": { "name": "SNI", "omitempty": true }
+    }
+  }
+}

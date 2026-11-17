@@ -27,12 +27,6 @@ const (
 	testVersion = "0.1.0"
 )
 
-// Config contains the experiment configuration.
-type Config struct {
-	Delay int64  `ooni:"Milliseconds to wait between writes"`
-	SNI   string `ooni:"Force using the specified SNI"`
-}
-
 // TestKeys contains the experiment results.
 type TestKeys struct {
 	Experiment map[string]*ExperimentKeys `json:"experiment"`

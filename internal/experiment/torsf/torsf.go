@@ -27,18 +27,6 @@ import (
 // testVersion is the experiment version.
 const testVersion = "0.5.1"
 
-// Config contains the experiment config.
-type Config struct {
-	// DisablePersistentDatadir disables using a persistent datadir.
-	DisablePersistentDatadir bool `ooni:"Disable using a persistent tor datadir"`
-
-	// DisableProgress disables printing progress messages.
-	DisableProgress bool `ooni:"Disable printing progress messages"`
-
-	// RendezvousMethod allows to choose the method with which to rendezvous.
-	RendezvousMethod string `ooni:"Choose the method with which to rendezvous. Must be one of amp and domain_fronting. Leaving this field empty means we should use the default."`
-}
-
 // TestKeys contains the experiment's result.
 type TestKeys struct {
 	// BootstrapTime contains the bootstrap time on success.

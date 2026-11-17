@@ -21,15 +21,6 @@ const (
 	testVersion = "0.2.1"
 )
 
-// Config contains the experiment configuration.
-type Config struct {
-	// Delay is the delay between each repetition (in milliseconds).
-	Delay int64 `json:"delay,omitempty" ooni:"number of milliseconds to wait before sending each ping"`
-
-	// Repetitions is the number of repetitions for each ping.
-	Repetitions int64 `json:"repetitions,omitempty" ooni:"number of times to repeat the measurement"`
-}
-
 func (c *Config) delay() time.Duration {
 	if c.Delay > 0 {
 		return time.Duration(c.Delay) * time.Millisecond

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HTTPHostHeaderConfig",
+  "description": "Config contains the experiment config.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "test_helper_url": {
+      "type": "string",
+      "x-ooni": { "name": "TestHelperURL", "omitempty": true }
+    }
+  }
+}

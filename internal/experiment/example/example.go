@@ -16,16 +16,9 @@ const testVersion = "0.1.0"
 
 const testName = "example"
 
-// Config contains the experiment config.
-//
-// This contains all the settings that user can set to modify the behaviour
-// of this experiment. By tagging these variables with `ooni:"..."`, we allow
-// miniooni's -O flag to find them and set them.
-type Config struct {
-	Message     string `ooni:"Message to emit at test completion"`
-	ReturnError bool   `ooni:"Toogle to return a mocked error"`
-	SleepTime   int64  `ooni:"Amount of time to sleep for in nanosecond"`
-}
+// The experiment Config is generated from schemas/example/config.json (see
+// config.go). Its fields are the settings a user can set to modify the
+// behaviour of this experiment via miniooni's -O flag.
 
 // TestKeys contains the experiment's result.
 //

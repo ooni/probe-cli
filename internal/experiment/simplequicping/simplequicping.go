@@ -26,21 +26,6 @@ const (
 	testVersion = "0.2.2"
 )
 
-// Config contains the experiment configuration.
-type Config struct {
-	// ALPN allows to specify which ALPN or ALPNs to send.
-	ALPN string `json:"alpn,omitempty" ooni:"space separated list of ALPNs to use"`
-
-	// Delay is the delay between each repetition (in milliseconds).
-	Delay int64 `json:"delay,omitempty" ooni:"number of milliseconds to wait before sending each ping"`
-
-	// Repetitions is the number of repetitions for each ping.
-	Repetitions int64 `json:"repetitions,omitempty" ooni:"number of times to repeat the measurement"`
-
-	// SNI is the SNI value to use.
-	SNI string `json:"sni,omitempty" ooni:"the SNI value to use"`
-}
-
 func (c *Config) alpn() string {
 	if c.ALPN != "" {
 		return c.ALPN

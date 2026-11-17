@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpenVPNConfig",
+  "description": "Config contains the openvpn experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "auth": {
+      "type": "string",
+      "description": "OpenVPN authentication to use",
+      "x-ooni": { "name": "Auth", "omitempty": true }
+    },
+    "cipher": {
+      "type": "string",
+      "description": "OpenVPN cipher to use",
+      "x-ooni": { "name": "Cipher", "omitempty": true }
+    },
+    "compress": {
+      "type": "string",
+      "description": "OpenVPN compression to use",
+      "x-ooni": { "name": "Compress", "omitempty": true }
+    },
+    "provider": {
+      "type": "string",
+      "description": "VPN provider",
+      "x-ooni": { "name": "Provider", "omitempty": true }
+    },
+    "obfuscation": {
+      "type": "string",
+      "description": "Obfuscation to use (obfs4, none)",
+      "x-ooni": { "name": "Obfuscation", "omitempty": true }
+    },
+    "safe_key": {
+      "type": "string",
+      "description": "key to connect to the OpenVPN endpoint",
+      "x-ooni": { "name": "SafeKey", "omitempty": true }
+    },
+    "safe_cert": {
+      "type": "string",
+      "description": "cert to connect to the OpenVPN endpoint",
+      "x-ooni": { "name": "SafeCert", "omitempty": true }
+    },
+    "safe_ca": {
+      "type": "string",
+      "description": "ca to connect to the OpenVPN endpoint",
+      "x-ooni": { "name": "SafeCA", "omitempty": true }
+    }
+  }
+}

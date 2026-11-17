@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SNIBlockingConfig",
+  "description": "Config contains the experiment config.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "control_sni": {
+      "type": "string",
+      "x-ooni": { "name": "ControlSNI", "omitempty": true }
+    },
+    "test_helper_address": {
+      "type": "string",
+      "x-ooni": { "name": "TestHelperAddress", "omitempty": true }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TLSToolConfig",
+  "description": "Config contains the tlstool experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "delay": {
+      "type": "integer",
+      "description": "Milliseconds to wait between writes",
+      "x-ooni": { "name": "Delay", "omitempty": true }
+    },
+    "sni": {
+      "type": "string",
+      "description": "Force using the specified SNI",
+      "x-ooni": { "name": "SNI", "omitempty": true }
+    }
+  }
+}

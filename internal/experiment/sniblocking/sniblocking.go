@@ -32,15 +32,6 @@ var (
 	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
-// Config contains the experiment config.
-type Config struct {
-	// ControlSNI is the SNI to be used for the control.
-	ControlSNI string `json:"control_sni,omitempty"`
-
-	// TestHelperAddress is the address of the test helper.
-	TestHelperAddress string `json:"test_helper_address,omitempty"`
-}
-
 // Subresult contains the keys of a single measurement
 // that targets either the target or the control.
 type Subresult struct {

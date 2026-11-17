@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExampleConfig",
+  "description": "Config contains the example experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Message to emit at test completion",
+      "x-ooni": { "name": "Message", "omitempty": true }
+    },
+    "return_error": {
+      "type": "boolean",
+      "description": "Toogle to return a mocked error",
+      "x-ooni": { "name": "ReturnError", "omitempty": true }
+    },
+    "sleep_time": {
+      "type": "integer",
+      "description": "Amount of time to sleep for in nanosecond",
+      "x-ooni": { "name": "SleepTime", "omitempty": true }
+    }
+  }
+}

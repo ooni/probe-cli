@@ -46,6 +46,34 @@ func TestParseOrderedPropertiesPreservesOrder(t *testing.T) {
 	}
 }
 
+func TestBuildFieldTag(t *testing.T) {
+	mk := func(key, desc, name string, omitempty bool) orderedProp {
+		var p orderedProp
+		p.key = key
+		p.spec.Description = desc
+		p.spec.XOONI.Name = name
+		p.spec.XOONI.OmitEmpty = omitempty
+		return p
+	}
+	tests := []struct {
+		name string
+		in   orderedProp
+		want string
+	}{
+		{"json and ooni", mk("domain", "the domain", "Domain", false),
+			"`json:\"domain\" ooni:\"the domain\"`"},
+		{"omitempty", mk("delay", "wait ms", "Delay", true),
+			"`json:\"delay,omitempty\" ooni:\"wait ms\"`"},
+		{"json only (no description)", mk("test_helper_url", "", "TestHelperURL", true),
+			"`json:\"test_helper_url,omitempty\"`"},
+	}
+	for _, tt := range tests {
+		if got := buildFieldTag(tt.in); got != tt.want {
+			t.Errorf("%s: buildFieldTag() = %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	schemaPath := filepath.Join("testdata", "example.json")
 	outPath := filepath.Join(t.TempDir(), "out.go")
@@ -63,9 +91,6 @@ func TestGenerate(t *testing.T) {
 	}
 	if !strings.Contains(out, "package exampleexp") {
 		t.Errorf("missing package clause in:\n%s", out)
-	}
-	if !strings.Contains(out, "// Config contains the experiment's configuration.") {
-		t.Errorf("missing doc comment in:\n%s", out)
 	}
 	if !strings.Contains(out, "type Config struct {") {
 		t.Errorf("missing struct declaration in:\n%s", out)

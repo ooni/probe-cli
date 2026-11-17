@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VanillaTorConfig",
+  "description": "Config contains the vanilla_tor experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {
+    "disable_progress": {
+      "type": "boolean",
+      "description": "Disable printing progress messages",
+      "x-ooni": { "name": "DisableProgress", "omitempty": true }
+    }
+  }
+}

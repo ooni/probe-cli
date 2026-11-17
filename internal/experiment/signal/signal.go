@@ -88,12 +88,6 @@ Lrsybb0z5gg8w7ZblEuB9zOW9M3l60DXuJO6l7g+deV6P96rv2unHS8UlvWiVWDy
 -----END CERTIFICATE-----`
 )
 
-// Config contains the signal experiment config.
-type Config struct {
-	// SignalCA is used to pass in a custom CA in testing
-	SignalCA string
-}
-
 // TestKeys contains signal test keys.
 type TestKeys struct {
 	urlgetter.TestKeys
