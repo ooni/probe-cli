@@ -26,9 +26,6 @@ var (
 	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
-// Config contains the telegram experiment config.
-type Config struct{}
-
 // TestKeys contains telegram test keys.
 type TestKeys struct {
 	urlgetter.TestKeys

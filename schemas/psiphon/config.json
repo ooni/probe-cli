@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PsiphonConfig",
+  "description": "Config contains the psiphon experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {}
+}

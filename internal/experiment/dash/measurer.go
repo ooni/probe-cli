@@ -14,9 +14,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Config contains the experiment config.
-type Config struct{}
-
 // Simple contains the experiment summary.
 type Simple struct {
 	ConnectLatency  float64 `json:"connect_latency"`

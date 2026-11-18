@@ -29,9 +29,6 @@ var (
 	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
-// Config contains the experiment's configuration.
-type Config struct{}
-
 // TestKeys contains the experiment's result.
 type TestKeys struct {
 	urlgetter.TestKeys

@@ -32,9 +32,6 @@ const (
 	testVersion = "0.4.0"
 )
 
-// Config contains the experiment config.
-type Config struct{}
-
 // Summary contains a summary of what happened.
 type Summary struct {
 	Failure *string `json:"failure"`

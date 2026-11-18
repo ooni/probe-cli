@@ -38,9 +38,6 @@ const (
 
 var endpointPattern = regexp.MustCompile(`^tcpconnect://e[0-9]{1,2}\.whatsapp\.net:[0-9]{3,5}$`)
 
-// Config contains the experiment config.
-type Config struct{}
-
 // TestKeys contains the experiment results
 type TestKeys struct {
 	urlgetter.TestKeys

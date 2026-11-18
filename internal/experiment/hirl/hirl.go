@@ -25,9 +25,6 @@ const (
 	timeout     = 5 * time.Second
 )
 
-// Config contains the experiment config.
-type Config struct{}
-
 // TestKeys contains the experiment test keys.
 type TestKeys struct {
 	FailureList   []*string                             `json:"failure_list"`

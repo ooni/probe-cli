@@ -57,9 +57,6 @@ var Services = []string{
 	ServiceScontentCDN, ServiceStar,
 }
 
-// Config contains the experiment config.
-type Config struct{}
-
 // TestKeys contains the experiment results
 type TestKeys struct {
 	urlgetter.TestKeys

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TelegramConfig",
+  "description": "Config contains the telegram experiment configuration.",
+  "type": "object",
+  "x-ooni": {
+    "goType": "Config"
+  },
+  "properties": {}
+}

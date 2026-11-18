@@ -25,9 +25,6 @@ const (
 	testVersion = "0.2.1"
 )
 
-// Config contains the experiment config.
-type Config struct{}
-
 // TestKeys contains the experiment test keys.
 //
 // Here we are emitting for the same set of test keys that are

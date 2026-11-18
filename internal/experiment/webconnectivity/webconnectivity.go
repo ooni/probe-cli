@@ -19,9 +19,6 @@ const (
 	testVersion = "0.4.3"
 )
 
-// Config contains the experiment config.
-type Config struct{}
-
 // TestKeys contains webconnectivity test keys.
 type TestKeys struct {
 	Agent          string  `json:"agent"`
