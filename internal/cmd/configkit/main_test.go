@@ -65,73 +65,108 @@ type testConfig struct {
 }
 
 func TestSchemaProperties(t *testing.T) {
-	got, err := schemaProperties(reflect.TypeOf(testConfig{}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []property{
-		{key: "tagged_key", typ: "string", desc: "a tagged option"},
-		{key: "NoJSON", typ: "boolean", desc: "option without a json tag"},
-		{key: "count", typ: "integer", desc: "a count"},
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("schemaProperties mismatch:\n got %#v\nwant %#v", got, want)
-	}
-}
+	tests := []struct {
+		name    string
+		input   reflect.Type
+		want    []property
+		wantErr bool
+	}{{
+		name:  "filters, orders, and keys fields correctly",
+		input: reflect.TypeOf(testConfig{}),
+		want: []property{
+			{key: "tagged_key", typ: "string", desc: "a tagged option"},
+			{key: "NoJSON", typ: "boolean", desc: "option without a json tag"},
+			{key: "count", typ: "integer", desc: "a count"},
+		},
+	}, {
+		name: "errors on an unsupported ooni-tagged field type",
+		input: reflect.TypeOf(struct {
+			Bad float64 `ooni:"unsupported type"`
+		}{}),
+		wantErr: true,
+	}}
 
-func TestSchemaPropertiesUnsupportedType(t *testing.T) {
-	type badConfig struct {
-		Bad float64 `ooni:"unsupported type"`
-	}
-	if _, err := schemaProperties(reflect.TypeOf(badConfig{})); err == nil {
-		t.Fatal("expected error for an unsupported ooni-tagged field type, got nil")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := schemaProperties(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected an error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("schemaProperties mismatch:\n got %#v\nwant %#v", got, tt.want)
+			}
+		})
 	}
 }
 
 func TestRenderSchema(t *testing.T) {
-	out, err := renderSchema("example", "0.1.0", []property{
-		{key: "foo", typ: "string", desc: "a foo"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := string(out)
+	tests := []struct {
+		name       string
+		expName    string
+		expVersion string
+		props      []property
+		contains   []string
+	}{{
+		name:       "with properties",
+		expName:    "example",
+		expVersion: "0.1.0",
+		props:      []property{{key: "foo", typ: "string", desc: "a foo"}},
+		contains: []string{
+			`"$schema"`,
+			`"experiment_name": "example"`,
+			`"example experiment config"`,
+			`"experiment_version": "0.1.0"`,
+			`"foo"`,
+			`"a foo"`,
+		},
+	}, {
+		name:       "empty properties",
+		expName:    "dash",
+		expVersion: "0.0.0",
+		props:      nil,
+		contains: []string{
+			`"experiment_name": "dash"`,
+			`"properties": {}`,
+		},
+	}}
 
-	var parsed map[string]any
-	if err := json.Unmarshal(out, &parsed); err != nil {
-		t.Fatalf("output is not valid JSON: %v\n%s", err, s)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := renderSchema(tt.expName, tt.expVersion, tt.props)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := string(out)
 
-	for _, want := range []string{
-		`"$schema"`,
-		`"example experiment config"`,
-		`"version"`,
-		`"experiment_version": "0.1.0"`,
-		`"foo"`,
-		`"a foo"`,
-	} {
-		if !strings.Contains(s, want) {
-			t.Errorf("missing %q in:\n%s", want, s)
-		}
-	}
+			// it must always be valid JSON
+			var parsed map[string]any
+			if err := json.Unmarshal(out, &parsed); err != nil {
+				t.Fatalf("output is not valid JSON: %v\n%s", err, s)
+			}
 
-	iv := strings.Index(s, `"version"`)
-	ie := strings.Index(s, `"experiment_version"`)
-	it := strings.Index(s, `"type"`)
-	ip := strings.Index(s, `"properties"`)
-	if !(iv < ie && ie < it && it < ip) {
-		t.Errorf("unexpected key order: version=%d experiment_version=%d type=%d properties=%d\n%s",
-			iv, ie, it, ip, s)
-	}
-}
+			for _, want := range tt.contains {
+				if !strings.Contains(s, want) {
+					t.Errorf("missing %q in:\n%s", want, s)
+				}
+			}
 
-func TestRenderSchemaEmptyProperties(t *testing.T) {
-	out, err := renderSchema("dash", "0.0.0", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(out), `"properties": {}`) {
-		t.Errorf("expected empty properties object, got:\n%s", out)
+			// key order is invariant: experiment_name < version < experiment_version < type < properties
+			iname := strings.Index(s, `"experiment_name"`)
+			iv := strings.Index(s, `"version"`)
+			ie := strings.Index(s, `"experiment_version"`)
+			it := strings.Index(s, `"type"`)
+			ip := strings.Index(s, `"properties"`)
+			if !(iname < iv && iv < ie && ie < it && it < ip) {
+				t.Errorf("unexpected key order: experiment_name=%d version=%d experiment_version=%d type=%d properties=%d\n%s",
+					iname, iv, ie, it, ip, s)
+			}
+		})
 	}
 }
 
@@ -173,7 +208,7 @@ func TestRunGeneratesAndChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"message"`, `"return_error"`, `"experiment_version"`} {
+	for _, want := range []string{`"experiment_name": "example"`, `"message"`, `"return_error"`, `"experiment_version"`} {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("example schema missing %q:\n%s", want, data)
 		}
