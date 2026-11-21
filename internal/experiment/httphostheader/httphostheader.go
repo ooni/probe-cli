@@ -29,7 +29,7 @@ var (
 // Config contains the experiment config.
 type Config struct {
 	// TestHelperURL is the address of the test helper.
-	TestHelperURL string `json:"test_helper_url,omitempty"`
+	TestHelperURL string `json:"test_helper_url,omitempty" ooni:"URL of the test helper"`
 }
 
 // TestKeys contains httphost test keys.

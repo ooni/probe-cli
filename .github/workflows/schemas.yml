@@ -1,0 +1,24 @@
+# Verifies that the committed schemas are in sync with the Go Config structs.
+name: schemas
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-schemas-${{ steps.goversion.outputs.version }}"
+
+      - run: go run ./internal/cmd/configkit -check

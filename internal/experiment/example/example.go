@@ -22,9 +22,9 @@ const testName = "example"
 // of this experiment. By tagging these variables with `ooni:"..."`, we allow
 // miniooni's -O flag to find them and set them.
 type Config struct {
-	Message     string `ooni:"Message to emit at test completion"`
-	ReturnError bool   `ooni:"Toogle to return a mocked error"`
-	SleepTime   int64  `ooni:"Amount of time to sleep for in nanosecond"`
+	Message     string `json:"message,omitempty" ooni:"Message to emit at test completion"`
+	ReturnError bool   `json:"return_error,omitempty" ooni:"Toogle to return a mocked error"`
+	SleepTime   int64  `json:"sleep_time,omitempty" ooni:"Amount of time to sleep for in nanosecond"`
 }
 
 // TestKeys contains the experiment's result.

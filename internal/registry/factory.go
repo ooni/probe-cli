@@ -112,7 +112,7 @@ func (b *Factory) Options() (map[string]model.ExperimentOptionInfo, error) {
 
 	// make sure we're dealing with a pointer
 	ptrinfo := reflect.ValueOf(b.config)
-	if ptrinfo.Kind() != reflect.Ptr {
+	if ptrinfo.Kind() != reflect.Pointer {
 		return nil, ErrConfigIsNotAStructPointer
 	}
 
@@ -149,6 +149,21 @@ func (b *Factory) Options() (map[string]model.ExperimentOptionInfo, error) {
 	}
 
 	return result, nil
+}
+
+// ConfigType returns the [reflect.Type] of the experiment's Config struct.
+func (b *Factory) ConfigType() (reflect.Type, error) {
+	ptrinfo := reflect.ValueOf(b.config)
+	if ptrinfo.Kind() != reflect.Pointer {
+		return nil, ErrConfigIsNotAStructPointer
+	}
+
+	elem := ptrinfo.Elem()
+	if elem.Kind() != reflect.Struct {
+		return nil, ErrConfigIsNotAStructPointer
+	}
+
+	return elem.Type(), nil
 }
 
 // setOptionBool sets a bool option.
@@ -272,7 +287,7 @@ func (b *Factory) SetOptionsJSON(value json.RawMessage) error {
 func (b *Factory) fieldbyname(v interface{}, key string) (reflect.Value, error) {
 	// See https://stackoverflow.com/a/6396678/4354461
 	ptrinfo := reflect.ValueOf(v)
-	if ptrinfo.Kind() != reflect.Ptr {
+	if ptrinfo.Kind() != reflect.Pointer {
 		return reflect.Value{}, fmt.Errorf("%w but a %T", ErrConfigIsNotAStructPointer, v)
 	}
 	structinfo := ptrinfo.Elem()

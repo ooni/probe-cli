@@ -29,8 +29,8 @@ const (
 
 // Config contains the experiment configuration.
 type Config struct {
-	Delay int64  `ooni:"Milliseconds to wait between writes"`
-	SNI   string `ooni:"Force using the specified SNI"`
+	Delay int64  `json:"delay,omitempty" ooni:"Milliseconds to wait between writes"`
+	SNI   string `json:"sni,omitempty" ooni:"Force using the specified SNI"`
 }
 
 // TestKeys contains the experiment results.
