@@ -29,23 +29,23 @@ type Config struct {
 	Timeout  time.Duration
 
 	// settable from command line
-	DNSCache          string `ooni:"Add 'DOMAIN IP...' to cache"`
-	DNSHTTPHost       string `ooni:"Force using specific HTTP Host header for DNS requests"`
-	DNSSVCBName       string `ooni:"Also issue an SVCB query for this name during a dnslookup (e.g. '_dns.resolver.arpa.')"`
-	DNSTLSServerName  string `ooni:"Force TLS to using a specific SNI for encrypted DNS requests"`
-	DNSTLSVersion     string `ooni:"Force specific TLS version used for DoT/DoH (e.g. 'TLSv1.3')"`
-	FailOnHTTPError   bool   `ooni:"Fail HTTP request if status code is 400 or above"`
-	HTTP3Enabled      bool   `ooni:"use http3 instead of http/1.1 or http2"`
-	HTTPHost          string `ooni:"Force using specific HTTP Host header"`
-	Method            string `ooni:"Force HTTP method different than GET"`
-	NoFollowRedirects bool   `ooni:"Disable following redirects"`
-	NoTLSVerify       bool   `ooni:"Disable TLS verification"`
-	RejectDNSBogons   bool   `ooni:"Fail DNS lookup if response contains bogons"`
-	ResolverURL       string `ooni:"URL describing the resolver to use"`
-	TLSServerName     string `ooni:"Force TLS to using a specific SNI in Client Hello"`
-	TLSVersion        string `ooni:"Force specific TLS version (e.g. 'TLSv1.3')"`
-	Tunnel            string `ooni:"Run experiment over a tunnel, e.g. psiphon"`
-	UserAgent         string `ooni:"Use the specified User-Agent"`
+	DNSCache          string `json:"dns_cache,omitempty" ooni:"Add 'DOMAIN IP...' to cache"`
+	DNSHTTPHost       string `json:"dns_http_host,omitempty" ooni:"Force using specific HTTP Host header for DNS requests"`
+	DNSSVCBName       string `json:"dns_svcb_name,omitempty" ooni:"Also issue an SVCB query for this name during a dnslookup (e.g. '_dns.resolver.arpa.')"`
+	DNSTLSServerName  string `json:"dns_tls_server_name,omitempty" ooni:"Force TLS to using a specific SNI for encrypted DNS requests"`
+	DNSTLSVersion     string `json:"dns_tls_version,omitempty" ooni:"Force specific TLS version used for DoT/DoH (e.g. 'TLSv1.3')"`
+	FailOnHTTPError   bool   `json:"fail_on_http_error,omitempty" ooni:"Fail HTTP request if status code is 400 or above"`
+	HTTP3Enabled      bool   `json:"http3_enabled,omitempty" ooni:"use http3 instead of http/1.1 or http2"`
+	HTTPHost          string `json:"http_host,omitempty" ooni:"Force using specific HTTP Host header"`
+	Method            string `json:"method,omitempty" ooni:"Force HTTP method different than GET"`
+	NoFollowRedirects bool   `json:"no_follow_redirects,omitempty" ooni:"Disable following redirects"`
+	NoTLSVerify       bool   `json:"no_tls_verify,omitempty" ooni:"Disable TLS verification"`
+	RejectDNSBogons   bool   `json:"reject_dns_bogons,omitempty" ooni:"Fail DNS lookup if response contains bogons"`
+	ResolverURL       string `json:"resolver_url,omitempty" ooni:"URL describing the resolver to use"`
+	TLSServerName     string `json:"tls_server_name,omitempty" ooni:"Force TLS to using a specific SNI in Client Hello"`
+	TLSVersion        string `json:"tls_version,omitempty" ooni:"Force specific TLS version (e.g. 'TLSv1.3')"`
+	Tunnel            string `json:"tunnel,omitempty" ooni:"Run experiment over a tunnel, e.g. psiphon"`
+	UserAgent         string `json:"user_agent,omitempty" ooni:"Use the specified User-Agent"`
 }
 
 // TestKeys contains the experiment's result.

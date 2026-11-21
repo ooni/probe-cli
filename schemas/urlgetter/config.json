@@ -6,71 +6,71 @@
   "experiment_version": "0.2.0",
   "type": "object",
   "properties": {
-    "DNSCache": {
+    "dns_cache": {
       "type": "string",
       "description": "Add 'DOMAIN IP...' to cache"
     },
-    "DNSHTTPHost": {
+    "dns_http_host": {
       "type": "string",
       "description": "Force using specific HTTP Host header for DNS requests"
     },
-    "DNSSVCBName": {
+    "dns_svcb_name": {
       "type": "string",
       "description": "Also issue an SVCB query for this name during a dnslookup (e.g. '_dns.resolver.arpa.')"
     },
-    "DNSTLSServerName": {
+    "dns_tls_server_name": {
       "type": "string",
       "description": "Force TLS to using a specific SNI for encrypted DNS requests"
     },
-    "DNSTLSVersion": {
+    "dns_tls_version": {
       "type": "string",
       "description": "Force specific TLS version used for DoT/DoH (e.g. 'TLSv1.3')"
     },
-    "FailOnHTTPError": {
+    "fail_on_http_error": {
       "type": "boolean",
       "description": "Fail HTTP request if status code is 400 or above"
     },
-    "HTTP3Enabled": {
+    "http3_enabled": {
       "type": "boolean",
       "description": "use http3 instead of http/1.1 or http2"
     },
-    "HTTPHost": {
+    "http_host": {
       "type": "string",
       "description": "Force using specific HTTP Host header"
     },
-    "Method": {
+    "method": {
       "type": "string",
       "description": "Force HTTP method different than GET"
     },
-    "NoFollowRedirects": {
+    "no_follow_redirects": {
       "type": "boolean",
       "description": "Disable following redirects"
     },
-    "NoTLSVerify": {
+    "no_tls_verify": {
       "type": "boolean",
       "description": "Disable TLS verification"
     },
-    "RejectDNSBogons": {
+    "reject_dns_bogons": {
       "type": "boolean",
       "description": "Fail DNS lookup if response contains bogons"
     },
-    "ResolverURL": {
+    "resolver_url": {
       "type": "string",
       "description": "URL describing the resolver to use"
     },
-    "TLSServerName": {
+    "tls_server_name": {
       "type": "string",
       "description": "Force TLS to using a specific SNI in Client Hello"
     },
-    "TLSVersion": {
+    "tls_version": {
       "type": "string",
       "description": "Force specific TLS version (e.g. 'TLSv1.3')"
     },
-    "Tunnel": {
+    "tunnel": {
       "type": "string",
       "description": "Run experiment over a tunnel, e.g. psiphon"
     },
-    "UserAgent": {
+    "user_agent": {
       "type": "string",
       "description": "Use the specified User-Agent"
     }
