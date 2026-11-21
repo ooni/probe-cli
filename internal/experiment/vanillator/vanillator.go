@@ -28,7 +28,7 @@ const testVersion = "0.3.0"
 // Config contains the experiment config.
 type Config struct {
 	// DisableProgress disables printing progress messages.
-	DisableProgress bool `ooni:"Disable printing progress messages"`
+	DisableProgress bool `json:"disable_progress,omitempty" ooni:"Disable printing progress messages"`
 }
 
 // TestKeys contains the experiment's result.
