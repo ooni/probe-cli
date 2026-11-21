@@ -5,5 +5,10 @@
   "version": "3.32.0-alpha",
   "experiment_version": "0.5.28",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "dns_over_udp_resolver": {
+      "type": "string",
+      "description": "DNS-over-UDP resolver endpoint to use (e.g. '8.8.8.8:53')"
+    }
+  }
 }

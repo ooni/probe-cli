@@ -35,10 +35,10 @@ var (
 // Config contains the experiment config.
 type Config struct {
 	// ControlSNI is the SNI to be used for the control.
-	ControlSNI string `json:"control_sni,omitempty"`
+	ControlSNI string `json:"control_sni,omitempty" ooni:"SNI to use for the control"`
 
 	// TestHelperAddress is the address of the test helper.
-	TestHelperAddress string `json:"test_helper_address,omitempty"`
+	TestHelperAddress string `json:"test_helper_address,omitempty" ooni:"address of the test helper"`
 }
 
 // Subresult contains the keys of a single measurement

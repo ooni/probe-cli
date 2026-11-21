@@ -91,7 +91,7 @@ Lrsybb0z5gg8w7ZblEuB9zOW9M3l60DXuJO6l7g+deV6P96rv2unHS8UlvWiVWDy
 // Config contains the signal experiment config.
 type Config struct {
 	// SignalCA is used to pass in a custom CA in testing
-	SignalCA string
+	SignalCA string `json:"signal_ca,omitempty" ooni:"Custom CA to use for testing"`
 }
 
 // TestKeys contains signal test keys.

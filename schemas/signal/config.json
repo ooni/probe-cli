@@ -5,5 +5,10 @@
   "version": "3.32.0-alpha",
   "experiment_version": "0.2.5",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "signal_ca": {
+      "type": "string",
+      "description": "Custom CA to use for testing"
+    }
+  }
 }

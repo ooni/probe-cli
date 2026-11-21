@@ -5,5 +5,14 @@
   "version": "3.32.0-alpha",
   "experiment_version": "0.3.1",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "control_sni": {
+      "type": "string",
+      "description": "SNI to use for the control"
+    },
+    "test_helper_address": {
+      "type": "string",
+      "description": "address of the test helper"
+    }
+  }
 }
