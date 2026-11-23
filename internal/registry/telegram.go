@@ -11,7 +11,7 @@ import (
 
 func init() {
 	const canonicalName = "telegram"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.3", func() *Factory {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return telegram.NewExperimentMeasurer()

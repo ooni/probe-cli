@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "tor"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.4", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return tor.NewExperimentMeasurer(
 					*config.(*tor.Config),
 				)

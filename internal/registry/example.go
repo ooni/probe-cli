@@ -13,14 +13,14 @@ import (
 
 func init() {
 	const canonicalName = "example"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.1", func() *Factory {
 		// TODO(bassosimone,DecFox): as pointed out by @ainghazal, this experiment
 		// should be the one that people modify to start out new experiments, so it's
 		// kind of suboptimal that it has a constructor with explicit experiment
 		// name to ease writing some tests that ./pkg/oonimkall needs given that no
 		// other experiment ever sets the experiment name externally!
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return example.NewExperimentMeasurer(
 					*config.(*example.Config),
 				)

@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "riseupvpn"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.3", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return riseupvpn.NewExperimentMeasurer(
 					*config.(*riseupvpn.Config),
 				)

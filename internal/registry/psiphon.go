@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "psiphon"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.6", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return psiphon.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
