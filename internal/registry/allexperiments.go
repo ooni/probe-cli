@@ -7,21 +7,21 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experimentname"
 )
 
-// experimentFactories contains the registered factories for the versions of a
-// single experiment. Each experiment declares a concrete [defaultVersion] that a
-// bare name resolves to.
-type experimentFactories struct {
-	// defaultVersion is the concrete version key that a bare name resolves to.
-	// It is always one of the keys in [factories].
-	defaultVersion string
+// ExperimentVersions contains the registered factories for the versions of a
+// single experiment. Each experiment declares a concrete [ExperimentVersions.DefaultVersion]
+// that a bare name resolves to.
+type ExperimentVersions struct {
+	// DefaultVersion is the concrete version key that a bare name resolves to.
+	// It is always one of the keys in [ExperimentVersions.Factories].
+	DefaultVersion string
 
-	// factories maps a concrete version key to the function constructing the
+	// Factories maps a concrete version key to the function constructing the
 	// corresponding [*Factory].
-	factories map[string]func() *Factory
+	Factories map[string]func() *Factory
 }
 
 // AllExperiments maps each experiment's base name to its registered versions.
-var AllExperiments = map[string]*experimentFactories{}
+var AllExperiments = map[string]*ExperimentVersions{}
 
 // registerExperiment registers one or more versioned factories for the given
 // base name and declares which version is the default that a bare name resolves
@@ -32,14 +32,14 @@ func registerExperiment(base, defaultVersion string, versions map[string]func() 
 	}
 	entry := AllExperiments[base]
 	if entry == nil {
-		entry = &experimentFactories{factories: map[string]func() *Factory{}}
+		entry = &ExperimentVersions{Factories: map[string]func() *Factory{}}
 		AllExperiments[base] = entry
 	}
-	entry.defaultVersion = defaultVersion
+	entry.DefaultVersion = defaultVersion
 	for version, f := range versions {
 		// Wrap the factory so the canonical name is always the base name,
 		// regardless of the selected version.
-		entry.factories[version] = func() *Factory {
+		entry.Factories[version] = func() *Factory {
 			factory := f()
 			factory.canonicalName = base
 			return factory
@@ -57,8 +57,8 @@ func register(base, version string, f func() *Factory) {
 // experiments.
 func ExperimentNames() (names []string) {
 	for base, entry := range AllExperiments {
-		for version := range entry.factories {
-			names = append(names, displayName(base, version, entry.defaultVersion))
+		for version := range entry.Factories {
+			names = append(names, displayName(base, version, entry.DefaultVersion))
 		}
 	}
 	sort.Strings(names) // sort by name to always provide predictable output
@@ -70,8 +70,8 @@ func ExperimentNames() (names []string) {
 func RegisteredFactories() map[string]func() *Factory {
 	out := map[string]func() *Factory{}
 	for base, entry := range AllExperiments {
-		for version, f := range entry.factories {
-			out[displayName(base, version, entry.defaultVersion)] = f
+		for version, f := range entry.Factories {
+			out[displayName(base, version, entry.DefaultVersion)] = f
 		}
 	}
 	return out

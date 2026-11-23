@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -29,6 +28,9 @@ var (
 
 	// osExitFn allows overwriting os.Exit in tests
 	osExitFn = os.Exit
+
+	// defaultSubdir is the directory holding the schema of the experiment's default version.
+	defaultSubdir = "default"
 )
 
 // moduleRoot walks up from the current directory until it finds the dir
@@ -179,47 +181,68 @@ func schemaForExperiment(name string, factory *registry.Factory) ([]byte, error)
 	return renderSchema(name, experimentVersion, props)
 }
 
-// schemaPath returns the on-disk path of an experiment's schema.
-func schemaPath(outputDir, name string) string {
-	n := experimentname.Parse(name)
-	if n.Version == "" {
-		return filepath.Join(outputDir, n.Base, "config.json")
+// emit writes or verifies a single schema at <outputDir>/<base>/<sub>/config.json.
+func emit(outputDir, base, sub string, want []byte, check bool) (drift int, err error) {
+	path := filepath.Join(outputDir, base, sub, "config.json")
+
+	if check {
+		got, rerr := os.ReadFile(path)
+		if rerr != nil || !bytes.Equal(got, want) {
+			log.Printf("configkit: out of date: %s", path)
+			return 1, nil
+		}
+		return 0, nil
 	}
-	return filepath.Join(outputDir, n.Base, n.Version, "config.json")
+
+	if mkerr := os.MkdirAll(filepath.Dir(path), 0755); mkerr != nil {
+		return 0, mkerr
+	}
+	if werr := os.WriteFile(path, want, 0644); werr != nil {
+		return 0, werr
+	}
+	log.Printf("configkit: wrote %s", path)
+	return 0, nil
 }
 
 // run generates and verifies all schemas.
 func run(outputDir string, check bool) (drift int, err error) {
-	factories := registry.RegisteredFactories()
-	names := make([]string, 0, len(factories))
-	for name := range factories {
-		names = append(names, name)
+	experiments := registry.AllExperiments
+	bases := make([]string, 0, len(experiments))
+	for base := range experiments {
+		bases = append(bases, base)
 	}
-	sort.Strings(names)
+	sort.Strings(bases)
 
-	for _, name := range names {
-		want, err := schemaForExperiment(name, factories[name]())
-		if err != nil {
-			return drift, err
+	for _, base := range bases {
+		info := experiments[base]
+
+		versions := make([]string, 0, len(info.Factories))
+		for version := range info.Factories {
+			versions = append(versions, version)
 		}
-		path := schemaPath(outputDir, name)
+		sort.Strings(versions)
 
-		if check {
-			got, rerr := os.ReadFile(path)
-			if rerr != nil || !bytes.Equal(got, want) {
-				log.Printf("configkit: out of date: %s", path)
-				drift++
+		for _, version := range versions {
+			want, serr := schemaForExperiment(base, info.Factories[version]())
+			if serr != nil {
+				return drift, serr
 			}
-			continue
+			d, werr := emit(outputDir, base, version, want, check)
+			if werr != nil {
+				return drift, werr
+			}
+			drift += d
 		}
 
-		if mkerr := os.MkdirAll(filepath.Dir(path), 0755); mkerr != nil {
-			return drift, mkerr
+		want, serr := schemaForExperiment(base, info.Factories[info.DefaultVersion]())
+		if serr != nil {
+			return drift, serr
 		}
-		if werr := os.WriteFile(path, want, 0644); werr != nil {
+		d, werr := emit(outputDir, base, defaultSubdir, want, check)
+		if werr != nil {
 			return drift, werr
 		}
-		log.Printf("configkit: wrote %s", path)
+		drift += d
 	}
 	return drift, nil
 }

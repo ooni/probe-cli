@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -170,15 +171,31 @@ func TestRenderSchema(t *testing.T) {
 	}
 }
 
-func TestSchemaPath(t *testing.T) {
-	cases := map[string]string{
-		"example":               filepath.Join("schemas", "example", "config.json"),
-		"web_connectivity@v0.5": filepath.Join("schemas", "web_connectivity", "v0.5", "config.json"),
+func TestEmit(t *testing.T) {
+	dir := t.TempDir()
+	want := []byte("{}\n")
+
+	// write mode creates <base>/<sub>/config.json
+	if d, err := emit(dir, "example", defaultSubdir, want, false); err != nil || d != 0 {
+		t.Fatalf("emit write: drift=%d err=%v", d, err)
 	}
-	for name, want := range cases {
-		if got := schemaPath("schemas", name); got != want {
-			t.Errorf("schemaPath(%q) = %q, want %q", name, got, want)
-		}
+	path := filepath.Join(dir, "example", defaultSubdir, "config.json")
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("emit wrote %q, want %q", got, want)
+	}
+
+	if d, err := emit(dir, "example", defaultSubdir, want, true); err != nil || d != 0 {
+		t.Fatalf("emit check in-sync: drift=%d err=%v", d, err)
+	}
+	if d, _ := emit(dir, "example", defaultSubdir, []byte("different\n"), true); d != 1 {
+		t.Fatalf("emit check stale: drift=%d, want 1", d)
+	}
+	if d, _ := emit(dir, "does_not_exist", "v9.9", want, true); d != 1 {
+		t.Fatalf("emit check missing: drift=%d, want 1", d)
 	}
 }
 
@@ -202,11 +219,18 @@ func TestRunGeneratesAndChecks(t *testing.T) {
 		t.Fatalf("check after generate reported drift=%d, want 0", drift)
 	}
 
-	// spot-check a known experiment
-	examplePath := filepath.Join(dir, "example", "config.json")
-	data, err := os.ReadFile(examplePath)
+	exampleDefault := filepath.Join(dir, "example", "default", "config.json")
+	exampleVersion := filepath.Join(dir, "example", "v0.1", "config.json")
+	data, err := os.ReadFile(exampleDefault)
 	if err != nil {
 		t.Fatal(err)
+	}
+	versioned, err := os.ReadFile(exampleVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(data, versioned) {
+		t.Fatal("example default/ and v0.1/ schemas differ")
 	}
 	for _, want := range []string{`"experiment_name": "example"`, `"message"`, `"return_error"`, `"experiment_version"`} {
 		if !strings.Contains(string(data), want) {
@@ -214,8 +238,28 @@ func TestRunGeneratesAndChecks(t *testing.T) {
 		}
 	}
 
+	// a multi-version experiment emits default/ plus one dir per version
+	for _, sub := range []string{"default", "v0.4", "v0.5"} {
+		p := filepath.Join(dir, "web_connectivity", sub, "config.json")
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("missing web_connectivity schema %s: %v", sub, err)
+		}
+	}
+	// web_connectivity's default is v0.4, so default/ must equal v0.4/
+	wcDefault, err := os.ReadFile(filepath.Join(dir, "web_connectivity", "default", "config.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wcV04, err := os.ReadFile(filepath.Join(dir, "web_connectivity", "v0.4", "config.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(wcDefault, wcV04) {
+		t.Fatal("web_connectivity default/ must equal v0.4/ (its default version)")
+	}
+
 	// tampering must be detected
-	if err := os.WriteFile(examplePath, []byte("{}\n"), 0644); err != nil {
+	if err := os.WriteFile(exampleDefault, []byte("{}\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	drift, err = run(dir, true)
