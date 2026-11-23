@@ -11,11 +11,11 @@ import (
 
 func init() {
 	const canonicalName = "dnscheck"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v1.0", func() *Factory {
 		// TODO(bassosimone,DecFox): for now, we MUST keep the InputOrStaticDefault
 		// policy because otherwise ./pkg/oonimkall should break.
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return dnscheck.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,

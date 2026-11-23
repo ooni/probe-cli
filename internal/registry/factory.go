@@ -403,7 +403,7 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 // version unless a remote override selects a different version.
 func resolveDefaultVersion(base string, entry *experimentFactories,
 	kvStore model.KeyValueStore, logger model.Logger) string {
-	fallback := defaultVersion
+	fallback := entry.defaultVersion
 
 	// We only honour a selected version that this probe actually knows about.
 	version := checkincache.GetExperimentVersion(kvStore, base, fallback)

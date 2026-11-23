@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "dash"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.14", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return dash.NewExperimentMeasurer(
 					*config.(*dash.Config),
 				)

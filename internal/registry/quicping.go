@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "quicping"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.1", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return quicping.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,

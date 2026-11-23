@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "http_header_field_manipulation"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.2", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return hhfm.NewExperimentMeasurer(
 					*config.(*hhfm.Config),
 				)
