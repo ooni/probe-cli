@@ -1,0 +1,56 @@
+# Publishes the experiment schemas to GitHub and to S3.
+name: publish schemas
+on:
+  push:
+    branches:
+      - "master"
+      - "fullbuild"
+    tags:
+      - "v*"
+  schedule:
+    - cron: "17 1 * * *"
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+      id-token: write
+    env:
+      SCHEMAS_S3_BUCKET: ooni-config-eu-central-1-1d24426a
+      AWS_ROLE_ARN: arn:aws:iam::471112720364:role/ooni-private-config-bucket-oidc-role
+      AWS_REGION: eu-central-1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create the schemas tarball
+        run: tar -czf experiment-schemas.tar.gz schemas
+
+      - name: Attach the schemas tarball to the GitHub release
+        run: ./script/ghpublish.bash experiment-schemas.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine the release name
+        id: release
+        run: |
+          if [[ "$GITHUB_REF" =~ ^refs/tags/v ]]; then
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=rolling" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publish schemas to S3
+        run: |
+          aws s3 rm "s3://${SCHEMAS_S3_BUCKET}/experiments/${RELEASE}/schemas/" --recursive
+          aws s3 cp schemas "s3://${SCHEMAS_S3_BUCKET}/experiments/${RELEASE}/schemas/" --recursive
+        env:
+          RELEASE: ${{ steps.release.outputs.name }}
