@@ -46,6 +46,7 @@ jobs:
         env:
           EXPECTED_MINGW_W64_VERSION: "16.2.0"
           USERAUTH_FROM_SOURCE: "1"
+          RUSTUP_TOOLCHAIN: "1.99.1"
 
       - uses: actions/upload-artifact@v4
         with:
