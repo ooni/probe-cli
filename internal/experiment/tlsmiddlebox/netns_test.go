@@ -68,12 +68,24 @@ func TestNetns(t *testing.T) {
 		wantTarget:  []string{hu, hu, hu, timeout, timeout, timeout},
 		wantControl: []string{hu, hu, hu, ok},
 	}, {
-		// the uTLS fingerprints are old (gitlab.com/yawning/utls): no ML-KEM, one segment
-		name:        "r2 drops the target SNI in uTLS Chrome's one-segment ClientHello",
+		// uTLS iOS (517 bytes) fits in one segment, so the drop shows at r2's hop
+		name:        "r2 drops the target SNI in uTLS iOS's one-segment ClientHello",
+		rules:       []string{match + " -j DROP"},
+		control:     "control.test",
+		clientID:    4,
+		wantTarget:  []string{hu, hu, timeout, timeout, timeout, timeout},
+		wantControl: []string{hu, hu, hu, ok},
+	}, {
+		// uTLS Chrome carries ML-KEM since #1862 (1.7-1.8 kB, two segments) and shuffles its
+		// extensions, so the SNI is in the first segment of some hellos and in the second of
+		// others (TestClientHelloSegments). Either way r2 drops that one and the other passes:
+		// with TTL 3 it expires at r3, whose time exceeded fails the read, so the drop shows
+		// one hop late, as with Go's ClientHello, whichever segment the SNI is in
+		name:        "r2 drops the target SNI in uTLS Chrome's two-segment ClientHello",
 		rules:       []string{match + " -j DROP"},
 		control:     "control.test",
 		clientID:    2,
-		wantTarget:  []string{hu, hu, timeout, timeout, timeout, timeout},
+		wantTarget:  []string{hu, hu, hu, timeout, timeout, timeout},
 		wantControl: []string{hu, hu, hu, ok},
 	}, {
 		name:        "r2 drops the flow from the segment with the target SNI",
