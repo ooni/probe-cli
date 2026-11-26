@@ -1,7 +1,7 @@
 package netxlite
 
 //
-// Code to use yawning/utls or refraction-networking/utls
+// Code to use refraction-networking/utls
 //
 
 import (
@@ -13,7 +13,7 @@ import (
 	"reflect"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 // NewTLSHandshakerUTLS implements [model.MeasuringNetwork].
@@ -90,7 +90,7 @@ func NewUTLSConn(conn net.Conn, config *tls.Config, cid *utls.ClientHelloID) (*U
 }
 
 // ErrUTLSHandshakePanic indicates that there was panic handshaking
-// when we were using the yawning/utls library for parroting.
+// when we were using the utls library for parroting.
 // See https://github.com/ooni/probe/issues/1770 for more information.
 var ErrUTLSHandshakePanic = errors.New("utls: handshake panic")
 

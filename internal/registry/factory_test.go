@@ -1163,3 +1163,38 @@ func TestExperimentOptionsAreAlwaysSettable(t *testing.T) {
 		})
 	}
 }
+
+func TestFactoryConfigType(t *testing.T) {
+	t.Run("returns the Config struct type", func(t *testing.T) {
+		type sampleConfig struct {
+			X int64
+			Y string
+		}
+		b := &Factory{config: &sampleConfig{}}
+		typ, err := b.ConfigType()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if typ.Kind() != reflect.Struct {
+			t.Fatalf("expected a struct type, got %v", typ.Kind())
+		}
+		if typ.NumField() != 2 {
+			t.Fatalf("expected 2 fields, got %d", typ.NumField())
+		}
+	})
+
+	t.Run("errors when config is not a pointer", func(t *testing.T) {
+		b := &Factory{config: 42}
+		if _, err := b.ConfigType(); !errors.Is(err, ErrConfigIsNotAStructPointer) {
+			t.Fatalf("expected ErrConfigIsNotAStructPointer, got %v", err)
+		}
+	})
+
+	t.Run("errors when config is a pointer to a non-struct", func(t *testing.T) {
+		n := 42
+		b := &Factory{config: &n}
+		if _, err := b.ConfigType(); !errors.Is(err, ErrConfigIsNotAStructPointer) {
+			t.Fatalf("expected ErrConfigIsNotAStructPointer, got %v", err)
+		}
+	})
+}

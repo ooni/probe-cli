@@ -21,7 +21,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingquic"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
-	utls "gitlab.com/yawning/utls.git"
+	utls "github.com/refraction-networking/utls"
 )
 
 // This set of integration tests ensures that we continue to

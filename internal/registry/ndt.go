@@ -11,9 +11,9 @@ import (
 
 func init() {
 	const canonicalName = "ndt"
-	register(canonicalName, func() *Factory {
+	register(canonicalName, "v0.10", func() *Factory {
 		return &Factory{
-			build: func(config interface{}) model.ExperimentMeasurer {
+			build: func(config any) model.ExperimentMeasurer {
 				return ndt7.NewExperimentMeasurer(
 					*config.(*ndt7.Config),
 				)
