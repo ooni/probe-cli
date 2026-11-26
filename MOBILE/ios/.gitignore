@@ -1,3 +1,4 @@
 /*.xcframework/
 /*.zip
 /*.podspec
+/Package.swift

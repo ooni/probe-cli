@@ -1,0 +1,43 @@
+#!/bin/bash
+set -euo pipefail
+
+names=(oonimkall libcrypto libevent libssl libtor libz)
+
+function fail() {
+	echo "FAIL: $1" 1>&2
+	exit 1
+}
+
+function cleanup() {
+	rm -f ./MOBILE/ios/*.xcframework.zip ./MOBILE/ios/Package.swift
+}
+trap cleanup EXIT
+
+# Stage dummy zips with distinct contents so their checksums differ.
+for name in "${names[@]}"; do
+	echo "dummy-${name}" >"./MOBILE/ios/${name}.xcframework.zip"
+done
+
+function generate() {
+	rm -f ./MOBILE/ios/Package.swift
+	env "$@" ./MOBILE/ios/createswiftpackage
+}
+
+generate GITHUB_REF_TYPE=tag GITHUB_REF_NAME=v3.30.0
+grep -q 'url: "https://github.com/ooni/probe-cli/releases/download/v3.30.0/oonimkall.xcframework.zip"' \
+	./MOBILE/ios/Package.swift || fail "tag build does not point at the v3.30.0 release"
+
+generate GITHUB_REF_TYPE=branch GITHUB_SHA=abcdef1234567890
+grep -q 'url: "https://github.com/ooni/probe-cli/releases/download/rolling/oonimkall.xcframework.zip"' \
+	./MOBILE/ios/Package.swift || fail "non-tag build does not point at the rolling release"
+
+# The manifest exposes a single oonimkall product and one binary target per lib,
+# each pinning the real SHA-256 of its zip.
+grep -q 'name: "oonimkall"' ./MOBILE/ios/Package.swift || fail "missing oonimkall product"
+for name in "${names[@]}"; do
+	grep -q "name: \"${name}\"" ./MOBILE/ios/Package.swift || fail "missing target ${name}"
+	want=$(shasum -a 256 "./MOBILE/ios/${name}.xcframework.zip" | cut -d ' ' -f 1)
+	grep -q "checksum: \"${want}\"" ./MOBILE/ios/Package.swift || fail "wrong checksum for ${name}"
+done
+
+echo "OK"
