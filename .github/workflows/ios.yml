@@ -7,7 +7,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "iosbuild"
-      - "feat/oonimkall-spm-package"
     tags:
       - "v*"
   schedule:
@@ -168,7 +167,7 @@ jobs:
   publish_ios_maven:
     runs-on: ubuntu-22.04
     needs: build_ios_mobile
-    if: github.ref_type == 'tag'
+    if: github.event_name != 'schedule'
     permissions:
       contents: write
     strategy:
