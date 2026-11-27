@@ -67,6 +67,76 @@ We publish nightly builds using the [rolling release tag](
 https://github.com/ooni/probe-cli/releases/tag/rolling). These
 builds use the latest commit of the `master` branch.
 
+## Using the oonimkall library
+
+### Supported platforms
+
+| Platform                       | Dependency                                                                                  |
+|--------------------------------|---------------------------------------------------------------------------------------------|
+| Android                        | `org.ooni:oonimkall-android` (Maven Central)                                                |
+| Desktop: Linux, macOS, Windows | `org.ooni:oonimkall-linux`, `org.ooni:oonimkall-darwin`, `org.ooni:oonimkall-windows` (Maven Central) |
+| iOS                            | Swift package published with each [GitHub release](https://github.com/ooni/probe-cli/releases) |
+
+### Android
+
+The Java API is in the `oonimkall` package.
+
+```kotlin
+dependencies {
+    implementation("org.ooni:oonimkall-android:<version>@aar")
+}
+```
+
+### Desktop (JVM)
+
+Add the artifact for the host OS. The Java API is in the `oonimkall` package,
+as on Android:
+
+```kotlin
+dependencies {
+    val os = org.gradle.internal.os.OperatingSystem.current()
+    implementation(
+        when {
+            os.isMacOsX -> "org.ooni:oonimkall-darwin:<version>"
+            os.isWindows -> "org.ooni:oonimkall-windows:<version>"
+            else -> "org.ooni:oonimkall-linux:<version>"
+        },
+    )
+}
+```
+
+### iOS (Swift Package Manager)
+
+Each release publishes `Package.swift`, a Swift package with one library
+product, `oonimkall`, which includes oonimkall and its `libcrypto`, `libevent`,
+`libssl`, `libtor` and `libz` dependencies. The manifest comes with the release
+and isn't in this repository, so add oonimkall as a local Swift package:
+
+1. Download the manifest of the release you want into a folder of your app
+   repository:
+
+   ```bash
+   tag=rolling   # or a vX.Y.Z tag
+   mkdir -p Packages/Oonimkall
+   curl -fsSL -o Packages/Oonimkall/Package.swift \
+     "https://github.com/ooni/probe-cli/releases/download/$tag/Package.swift"
+   ```
+
+   Swift Package Manager downloads the `.xcframework.zip` files from the URLs
+   in `Package.swift` and verifies their checksums.
+2. In Xcode, select File > Add Package Dependencies > Add Local, choose the
+   folder, and add the `oonimkall` library to your app target. From another
+   package, use `.package(path: "Packages/Oonimkall")` and
+   `.product(name: "oonimkall", package: "oonimkall")`.
+3. Add `-ObjC` to *Other Linker Flags* (`OTHER_LDFLAGS`) of the app target.
+   The libraries are static, and without this flag the linker can drop the
+   Objective-C categories they contain.
+4. Commit the folder.
+
+```swift
+import Oonimkall
+```
+
 ## Developer instructions
 
 To setup development for this repository you need Go >= 1.15. The
