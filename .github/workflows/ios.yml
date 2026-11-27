@@ -93,7 +93,12 @@ jobs:
           name: oonimkall.podspec
           path: ./MOBILE/ios/oonimkall.podspec
 
-  publish_ios_mobile:
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Package.swift
+          path: ./MOBILE/ios/Package.swift
+
+  publish_ios_github:
     runs-on: ubuntu-22.04
     needs: build_ios_mobile
     permissions:
@@ -151,7 +156,11 @@ jobs:
         with:
           name: oonimkall.podspec
 
-      - run: ./script/ghpublish.bash libcrypto.xcframework.zip libcrypto.podspec libevent.xcframework.zip libevent.podspec libssl.xcframework.zip libssl.podspec libtor.xcframework.zip libtor.podspec libz.xcframework.zip libz.podspec oonimkall.xcframework.zip oonimkall.podspec
+      - uses: actions/download-artifact@v4
+        with:
+          name: Package.swift
+
+      - run: ./script/ghpublish.bash libcrypto.xcframework.zip libcrypto.podspec libevent.xcframework.zip libevent.podspec libssl.xcframework.zip libssl.podspec libtor.xcframework.zip libtor.podspec libz.xcframework.zip libz.podspec oonimkall.xcframework.zip oonimkall.podspec Package.swift
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -17,6 +17,8 @@ jobs:
 
       - run: ./MOBILE/ios/createpodspecs_test
 
+      - run: ./MOBILE/ios/createswiftpackage_test
+
       - run: ./script/nocopyreadall.bash
 
       - run: ./script/ghpublish_test.bash

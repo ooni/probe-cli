@@ -110,6 +110,7 @@ ios: search/for/zip search/for/xcode
 	./MOBILE/ios/make-extra-frameworks
 	./MOBILE/ios/zipframeworks
 	./MOBILE/ios/createpodspecs
+	./MOBILE/ios/createswiftpackage
 
 #help:
 #help: The `make DESKTOP/windows` command builds the oonimkall jar for windows.
